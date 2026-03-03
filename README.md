@@ -1,20 +1,98 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# ✈️ AeroSky
 
-# Run and deploy your AI Studio app
+**Real-time flight tracking and aviation intelligence platform for Indian airspace.**
 
-This contains everything you need to run your app locally.
+AeroSky is a modern web application that provides live flight tracking, airport intelligence, coverage mapping, and aviation data analytics — with an India-first focus.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1FnPGA6sxskuRWYl92e3sTB7hnP_C602O
+## Features
 
-## Run Locally
+- **Live Flight Map** — Real-time aircraft tracking on an interactive map powered by MapLibre GL with multiple base layer styles (satellite, hybrid, light, dark)
+- **Flight Details** — Detailed telemetry including altitude, ground speed, heading, vertical rate, squawk codes, and flight path history
+- **Airport Hub** — Airport-level intelligence with arrivals, departures, and operational data
+- **Intelligence Dashboard** — Aircraft, airline, and airport analytics
+- **Coverage Map** — Ground station and ADS-B coverage visualization
+- **Data & API** — Aviation data access and API documentation
 
-**Prerequisites:**  Node.js
+## Tech Stack
 
+| Layer | Technology |
+|---|---|
+| **Framework** | React 19 + TypeScript |
+| **Build** | Vite 6 |
+| **Routing** | React Router v7 |
+| **Maps** | MapLibre GL + react-map-gl (Ola Maps tiles) |
+| **Charts** | Recharts |
+| **Icons** | Lucide React |
+| **Data** | OpenSky Network API, Planespotters API |
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+)
+- An [Ola Maps](https://maps.olacabs.com/) API key
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+```
+
+### Environment Setup
+
+Create a `.env.local` file in the project root:
+
+```env
+ola-map-api-key=YOUR_OLA_MAP_API_KEY
+clientId=YOUR_CLIENT_ID
+clientSecret=YOUR_CLIENT_SECRET
+```
+
+### Run Locally
+
+```bash
+npm run dev
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000).
+
+### Build for Production
+
+```bash
+npm run build
+npm run preview
+```
+
+## Project Structure
+
+```
+aerosky-ui-app/
+├── components/         # Shared UI components
+│   ├── Layout.tsx          # App shell (nav, footer)
+│   ├── MapComponent.tsx    # Reusable map wrapper
+│   └── MapBackground.tsx   # Decorative map background
+├── pages/              # Route-level pages
+│   ├── Home.tsx            # Landing page
+│   ├── LiveMap.tsx         # Real-time flight tracking map
+│   ├── FlightDetails.tsx   # Individual flight view
+│   ├── AirportHub.tsx      # Airport intelligence
+│   ├── Intelligence.tsx    # Data analytics dashboard
+│   ├── Coverage.tsx        # ADS-B coverage map
+│   ├── DataApi.tsx         # API documentation
+│   └── GenericContent.tsx  # Template for upcoming sections
+├── services/           # External API integrations
+│   ├── OpenSkyService.ts       # OpenSky Network API
+│   └── PlanespottersService.ts # Aircraft images API
+├── contexts/           # React context providers
+├── utils/              # Helper functions
+├── types.ts            # TypeScript type definitions
+├── App.tsx             # Root component & routing
+├── index.tsx           # Entry point
+├── index.html          # HTML shell
+└── vite.config.ts      # Vite configuration
+```
+
+## License
+
+Private — AeroLytics © 2025
