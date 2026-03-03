@@ -1,0 +1,734 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
+import {
+  Search, Map as MapIcon, ChevronRight, Activity, Globe, Radio,
+  Shield, Flag, Database, Lock, Radar, Plane, TowerControl,
+  BarChart3, Users, Zap, ArrowRight, CheckCircle2, MapPin,
+  CloudLightning, Eye, Server, Fingerprint, IndianRupee
+} from 'lucide-react';
+import MapBackground from '../components/MapBackground';
+import { GLOBAL_STATS, NEWS_TICKER, AIRPORTS } from '../mockData';
+import { generateFallbackFlights } from '../utils/fallbackFlights';
+import type { Flight } from '../types';
+
+/* ─── Animated Counter Hook ─── */
+const useCounter = (end: number, duration: number = 2000, startOnView: boolean = true) => {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(!startOnView);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (startOnView && ref.current) {
+      const obs = new IntersectionObserver(
+        ([e]) => { if (e.isIntersecting) { setStarted(true); obs.disconnect(); } },
+        { threshold: 0.3 }
+      );
+      obs.observe(ref.current);
+      return () => obs.disconnect();
+    }
+  }, [startOnView]);
+
+  useEffect(() => {
+    if (!started) return;
+    let start = 0;
+    const step = Math.ceil(end / (duration / 16));
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= end) { setCount(end); clearInterval(timer); }
+      else setCount(start);
+    }, 16);
+    return () => clearInterval(timer);
+  }, [started, end, duration]);
+
+  return { count, ref };
+};
+
+/* ─── India Flag Colors: Orange → White → Green ─── */
+const INDIA_ORANGE = '#FF9933';
+const INDIA_GREEN = '#138808';
+
+/* ─── India bounding box for OpenSky API ─── */
+const INDIA_BOUNDS = { lamin: 6.5, lomin: 68.0, lamax: 35.5, lomax: 97.5 };
+/* Map center is WEST of India (~64°E) so India's full outline appears in the right
+   55% of the viewport, clear of the hero text overlay on the left. */
+const INDIA_CENTER = { lat: 22, lng: 64 };
+
+/* ─── OpenSky → Flight type adapter ─── */
+const openSkyToFlights = (states: any[]): Flight[] => {
+  if (!states || !Array.isArray(states)) return [];
+  return states
+    .filter((s: any) => s[5] != null && s[6] != null) // must have lat/lng
+    .slice(0, 300) // show up to 300 live flights
+    .map((s: any, i: number) => {
+      const callsign = (s[1] || '').trim() || `FL${i}`;
+      const lat = s[6] as number;
+      const lng = s[5] as number;
+      const alt = Math.round((s[7] || 0) * 3.281); // meters → feet
+      const speed = Math.round((s[9] || 0) * 1.944); // m/s → knots
+      const heading = s[10] || 0;
+      const origin = s[2] || 'IN';
+
+      return {
+        id: callsign,
+        flightNumber: callsign,
+        airline: origin === 'India' ? 'Indian Carrier' : origin,
+        airlineCode: callsign.slice(0, 3),
+        origin: { name: 'Origin', iata: '???', icao: '????', city: 'Unknown', lat: lat - 2, lng: lng - 2 },
+        destination: { name: 'Destination', iata: '???', icao: '????', city: 'Unknown', lat: lat + 2, lng: lng + 2 },
+        status: 'In Air' as const,
+        scheduledDep: '',
+        actualDep: '',
+        scheduledArr: '',
+        estArr: '',
+        aircraft: { type: 'Unknown', registration: 'VT-XXX', age: 'N/A', image: '' },
+        liveMetrics: {
+          altitude: alt,
+          groundSpeed: speed,
+          squawk: '1200',
+          heading,
+          lat,
+          lng,
+          signalConfidence: 'High',
+          operationalStatus: 'En Route',
+          feederCount: 5,
+          rssi: -20,
+          lastUpdate: Date.now() / 1000,
+          vertRate: 0,
+          track: heading,
+        },
+        history: [],
+      } satisfies Flight;
+    });
+};
+
+const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+
+  /* ─── Live OpenSky data for India ─── */
+  const [liveFlights, setLiveFlights] = useState<Flight[]>([]);
+  const [liveCount, setLiveCount] = useState<number>(0);
+  const [dataStatus, setDataStatus] = useState<'loading' | 'live' | 'fallback'>('loading');
+
+  const fetchOpenSky = useCallback(async () => {
+    try {
+      const url = `https://opensky-network.org/api/states/all?lamin=${INDIA_BOUNDS.lamin}&lomin=${INDIA_BOUNDS.lomin}&lamax=${INDIA_BOUNDS.lamax}&lomax=${INDIA_BOUNDS.lomax}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const flights = openSkyToFlights(data.states);
+      if (flights.length > 0) {
+        setLiveFlights(flights);
+        setLiveCount(data.states?.length || 0);
+        setDataStatus('live');
+      } else {
+        throw new Error('No flights returned');
+      }
+    } catch (err) {
+      console.warn('OpenSky API unavailable, using rich fallback:', err);
+      const fallback = generateFallbackFlights();
+      setLiveFlights(fallback);
+      setLiveCount(fallback.length);
+      setDataStatus('fallback');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOpenSky();
+    const interval = setInterval(fetchOpenSky, 15000); // refresh every 15s
+    return () => clearInterval(interval);
+  }, [fetchOpenSky]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchTerm.trim().toUpperCase();
+    if (q === 'DEL') navigate('/airports/DEL');
+    else if (q === 'BOM') navigate('/airports/BOM');
+    else if (q === 'BLR') navigate('/airports/BLR');
+    else if (q === '6E554' || q === '6E 554') navigate('/flights/6E554');
+    else if (q === 'AI101' || q === 'AI 101') navigate('/flights/AI101');
+    else navigate('/explore/map');
+  };
+
+  const quickLinks = [
+    { label: 'DEL', path: '/airports/DEL', full: 'New Delhi' },
+    { label: 'BOM', path: '/airports/BOM', full: 'Mumbai' },
+    { label: 'BLR', path: '/airports/BLR', full: 'Bengaluru' },
+    { label: '6E 554', path: '/flights/6E554', full: 'IndiGo' },
+  ];
+
+  const flightsCounter = useCounter(liveCount || 4203, 2000);
+  const airportsCounter = useCounter(137, 1500);
+  const coverageCounter = useCounter(98, 1200);
+  const feedersCounter = useCounter(850, 1800);
+
+  return (
+    <div className="relative w-full h-full bg-slate-50 dark:bg-sky-950 overflow-y-auto overflow-x-hidden scroll-smooth transition-colors duration-300" id="aerosky-home">
+
+      {/* ══════════════════════════════════════════════════════════
+          Tricolor Top Accent (always visible)
+      ══════════════════════════════════════════════════════════ */}
+      <div className="fixed top-0 left-0 right-0 z-50 h-[3px] flex" aria-hidden="true">
+        <div className="flex-1" style={{ background: INDIA_ORANGE }} />
+        <div className="flex-1 bg-white" />
+        <div className="flex-1" style={{ background: INDIA_GREEN }} />
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 1 — HERO (Map on right, Content on left)
+          Fits entirely above the fold (100vh)
+      ══════════════════════════════════════════════════════════ */}
+      <section
+        id="hero-section"
+        className="relative h-screen w-full overflow-hidden"
+        aria-label="India's Sovereign Airspace Intelligence — Hero"
+      >
+        {/* ── Map Background: light Ola map, dark→light gradient overlay ── */}
+        <div className="absolute inset-0 z-0">
+          <MapBackground
+            interactive={false}
+            flights={liveFlights}
+            showFlights={true}
+            showAirports={true}
+            center={INDIA_CENTER}
+            zoom={4}
+            className="w-full h-full"
+            theme={theme}
+          />
+
+          {/* Layer 1: Dark→Light gradient (left=100% dark, right=transparent) */}
+          <div
+            className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-slate-50 via-slate-50/80 via-30% to-transparent dark:from-[#020617] dark:via-[#020617]/90 dark:via-30% dark:to-transparent"
+          />
+
+          {/* Layer 2: Subtle patriotic accent at transition */}
+          <div
+            className="absolute inset-0 z-10 pointer-events-none opacity-[0.04]"
+            style={{
+              background: `linear-gradient(135deg, ${INDIA_ORANGE}00 30%, ${INDIA_ORANGE} 50%, transparent 55%, ${INDIA_GREEN} 60%, ${INDIA_GREEN}00 75%)`
+            }}
+          />
+
+          {/* Layer 3: Top/bottom blends - reduced opacity in light mode */}
+          <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-slate-50/50 via-transparent to-slate-50/50 dark:from-sky-950/80 dark:via-transparent dark:to-sky-950" />
+        </div>
+
+        {/* ── Live data badge (top-right, over map) ── */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10">
+          <div className={`w-2 h-2 rounded-full ${dataStatus === 'live' ? 'bg-green-400 animate-pulse' : dataStatus === 'loading' ? 'bg-yellow-400 animate-pulse' : 'bg-blue-400'}`} />
+          <span className="text-[10px] font-mono font-bold text-gray-300 uppercase tracking-widest">
+            {dataStatus === 'live' ? `${liveCount} LIVE FLIGHTS` : dataStatus === 'loading' ? 'CONNECTING...' : 'DEMO DATA'}
+          </span>
+        </div>
+
+        {/* ── Hero Content (left side, vertically centered within viewport) ── */}
+        <div className="relative z-20 h-full flex flex-col justify-center px-6 md:px-10 lg:px-20 pt-4 pb-4">
+          <div className="w-full max-w-xl">
+
+            {/* Sovereign Badge */}
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[11px] font-mono font-bold tracking-[0.15em] mb-3 animate-slide-up"
+              style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}
+            >
+              <Shield size={12} className="animate-pulse" />
+              SOVEREIGN DATA • MADE IN INDIA • DGCA COMPLIANT
+            </div>
+
+            {/* H1 */}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-[0.88] tracking-tighter mb-3 animate-slide-up delay-100">
+              <span style={{ color: INDIA_ORANGE }}>India's Own</span><br />
+              <span className="text-slate-900 dark:text-white">Airspace</span>{' '}
+              <span style={{ color: INDIA_GREEN }}>Intelligence</span>
+            </h1>
+
+            {/* SEO Subheading */}
+            <p className="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-2 max-w-lg leading-relaxed animate-slide-up delay-200">
+              India's first sovereign flight tracking &amp; aviation analytics platform.
+              Real-time ADS-B coverage across <strong className="text-slate-900 dark:text-white">137+ Indian airports</strong>,
+              powered by indigenous data infrastructure.
+            </p>
+
+            {/* Trust Badges — unique signals (sovereign/DGCA/infra covered above & in pillars) */}
+            <div className="flex flex-wrap items-center gap-3 mb-4 animate-slide-up delay-200">
+              <TrustBadge icon={<Fingerprint size={11} />} color={INDIA_GREEN} text="DPDPA Compliant" />
+              <span className="text-gray-700 text-[8px]">●</span>
+              <TrustBadge icon={<Activity size={11} />} color="#60A5FA" text="99.9% Uptime SLA" />
+              <span className="text-gray-700 text-[8px]">●</span>
+              <TrustBadge icon={<Zap size={11} />} color={INDIA_ORANGE} text="Sub-Second Latency" />
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-4 animate-slide-up delay-300">
+              <form onSubmit={handleSearch} className={`relative group transition-all duration-500 ease-out ${isFocused ? 'scale-[1.02]' : ''}`}>
+                <div
+                  className={`absolute -inset-1 blur-xl rounded-2xl transition-opacity duration-500 ${isFocused ? 'opacity-100' : 'opacity-0'}`}
+                  style={{ background: `linear-gradient(90deg, ${INDIA_ORANGE}40, #FFFFFF30, ${INDIA_GREEN}40)` }}
+                />
+                <div className="relative bg-white dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-xl flex items-center p-1.5 shadow-xl dark:shadow-2xl hover:border-slate-300 dark:hover:border-white/20 transition-colors">
+                  <Search className={`ml-3 mr-2 transition-colors ${isFocused ? 'text-orange-400' : 'text-slate-400 dark:text-gray-500'}`} size={20} />
+                  <input
+                    id="flight-search-input"
+                    type="text"
+                    placeholder="Track any Indian flight, airport, or reg..."
+                    className="flex-1 bg-transparent border-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:ring-0 text-sm py-2 font-medium outline-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    aria-label="Search flights, airports, or aircraft registrations across Indian airspace"
+                  />
+                  <button
+                    id="flight-search-submit"
+                    type="submit"
+                    className="text-black p-2.5 rounded-lg hover:opacity-90 transition-all shadow-lg font-bold"
+                    style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                    aria-label="Search"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </form>
+              <div className="flex flex-wrap gap-2 mt-2 ml-1">
+                <span className="text-[10px] text-gray-500 font-mono py-0.5 uppercase tracking-wider">Trending:</span>
+                {quickLinks.map((link) => (
+                  <button
+                    key={link.label}
+                    id={`quick-link-${link.label.replace(/\s/g, '')}`}
+                    onClick={() => navigate(link.path)}
+                    className="text-[10px] font-mono font-bold text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 px-2 py-0.5 rounded transition-colors border border-slate-200 dark:border-white/5 hover:border-orange-400/30"
+                  >
+                    {link.label} <span className="text-gray-600 font-normal ml-1">{link.full}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Metrics — compact */}
+            <div className="grid grid-cols-4 gap-px rounded-xl overflow-hidden backdrop-blur-md animate-slide-up delay-400 shadow-xl border border-slate-200 dark:border-white/10 bg-slate-200 dark:bg-white/5">
+              <div ref={flightsCounter.ref}>
+                <StatBlock icon={<Plane size={14} />} label="Flights" value={flightsCounter.count.toLocaleString()} color="text-white" accentColor={INDIA_ORANGE} />
+              </div>
+              <div ref={airportsCounter.ref}>
+                <StatBlock icon={<TowerControl size={14} />} label="Airports" value={airportsCounter.count.toString()} color="text-white" accentColor="#FFFFFF" />
+              </div>
+              <div ref={coverageCounter.ref}>
+                <StatBlock icon={<Radar size={14} />} label="Coverage" value={`${coverageCounter.count}%`} color="text-white" accentColor={INDIA_GREEN} />
+              </div>
+              <div ref={feedersCounter.ref}>
+                <StatBlock icon={<Radio size={14} />} label="Ground Stations" value={feedersCounter.count.toLocaleString()} color="text-white" accentColor="#60A5FA" />
+              </div>
+            </div>
+
+            {/* CTA Row — compact */}
+            <div className="mt-4 flex flex-row gap-3 animate-slide-up delay-500">
+              <button
+                id="cta-open-live-map"
+                onClick={() => navigate('/explore/map')}
+                className="flex-1 text-black text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                <MapIcon size={18} /> Open Live Map
+              </button>
+              <button
+                id="cta-api-access"
+                onClick={() => navigate('/data')}
+                className="px-5 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-sm font-bold text-slate-700 dark:text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Database size={16} /> Sovereign API
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Scroll hint — pinned to bottom */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-0.5 animate-bounce opacity-30">
+          <ChevronRight size={12} className="text-gray-500 rotate-90" />
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 2 — SOVEREIGN DATA PILLARS
+      ══════════════════════════════════════════════════════════ */}
+      <section id="sovereign-pillars" className="relative z-10 py-10 md:py-14 px-6 md:px-12 lg:px-24" aria-label="Why India Needs Sovereign Aviation Data">
+        <article className="max-w-6xl mx-auto">
+          <header className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 text-[11px] font-mono font-bold tracking-widest text-gray-400 uppercase mb-4">
+              <Flag size={12} style={{ color: INDIA_ORANGE }} /> Why Sovereign Aviation Data Matters
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+              Built in India. <span style={{ color: INDIA_ORANGE }}>For India.</span>
+            </h2>
+            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+              AeroSky is India's indigenous airspace intelligence platform — critical Indian aviation data
+              stays on Indian soil, processed by Indian infrastructure, governed by Indian laws.
+            </p>
+          </header>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            <SovereignPillar icon={<Lock size={28} />} title="100% Data Sovereignty" description="Every byte of flight data — ADS-B, MLAT, radar feeds — processed and stored exclusively in Indian data centers. Zero foreign cloud dependency." accentColor={INDIA_ORANGE} stats={[{ label: 'Data Centers', value: 'IN-Only' }, { label: 'GDPR+DPDPA', value: 'Compliant' }]} />
+            <SovereignPillar icon={<Shield size={28} />} title="DGCA & MoCA Aligned" description="Purpose-built for DGCA regulations and Ministry of Civil Aviation directives. ICAO standards with Indian regulatory frameworks." accentColor="#FFFFFF" stats={[{ label: 'Standards', value: 'ICAO/DGCA' }, { label: 'Audit', value: 'Certified' }]} />
+            <SovereignPillar icon={<Zap size={28} />} title="Indigenous Tech Stack" description="From ADS-B receiver firmware to AI-powered flight prediction — entire stack conceived, developed, and maintained by Indian engineers." accentColor={INDIA_GREEN} stats={[{ label: 'Engineers', value: '100% Indian' }, { label: 'R&D', value: 'Bengaluru' }]} />
+          </div>
+        </article>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 3 — INDIA'S AIRSPACE IN NUMBERS
+      ══════════════════════════════════════════════════════════ */}
+      <section id="india-airspace-stats" className="relative z-10 py-10 md:py-14 px-6 md:px-12 lg:px-24" aria-label="Indian Aviation Statistics">
+        <div className="max-w-6xl mx-auto">
+          <header className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 text-[11px] font-mono font-bold tracking-widest text-gray-400 uppercase mb-4">
+              <BarChart3 size={12} className="text-blue-400" /> Indian Aviation at a Glance
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+              The Pulse of <span style={{ color: INDIA_ORANGE }}>Indian Aviation</span>
+            </h2>
+            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+              Real-time intelligence from the world's third-largest and fastest-growing domestic aviation market.
+            </p>
+          </header>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <BigStat value="7,000+" label="Daily Domestic Flights" icon={<Plane size={20} />} color={INDIA_ORANGE} />
+            <BigStat value="137+" label="Airports Connected" icon={<TowerControl size={20} />} color="#FFFFFF" />
+            <BigStat value="14+" label="Indian Airlines Tracked" icon={<Globe size={20} />} color="#60A5FA" />
+            <BigStat value="3.28L Km²" label="Airspace Monitored" icon={<Radar size={20} />} color={INDIA_GREEN} />
+          </div>
+
+          <div className="mt-10 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden bg-white dark:bg-white/[0.02] backdrop-blur-sm shadow-sm dark:shadow-none">
+            <div className="px-5 py-3 border-b border-slate-100 dark:border-white/5 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: INDIA_GREEN }} />
+              <span className="text-[11px] font-mono font-bold text-gray-500 uppercase tracking-widest">Indian Airlines We Track</span>
+            </div>
+            <div className="p-5 flex flex-wrap gap-3 justify-center">
+              {['Air India', 'IndiGo', 'SpiceJet', 'Vistara', 'Akasa Air', 'Air India Express', 'Alliance Air', 'Star Air', 'Fly91', 'IndiGo Cargo', 'Blue Dart Aviation', 'Pawan Hans', 'Air India SATS', 'Heritage Aviation'].map((airline) => (
+                <span key={airline} className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-sm text-slate-700 dark:text-gray-300 font-medium hover:bg-slate-200 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/10 transition-colors cursor-default">{airline}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 4 — MAJOR INDIAN AIRPORTS
+      ══════════════════════════════════════════════════════════ */}
+      <section id="indian-airports" className="relative z-10 py-10 md:py-14 px-6 md:px-12 lg:px-24" aria-label="Major Indian Airports — Live Tracking">
+        <div className="max-w-6xl mx-auto">
+          <header className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 text-[11px] font-mono font-bold tracking-widest text-gray-400 uppercase mb-4">
+              <MapPin size={12} style={{ color: INDIA_GREEN }} /> Airport Intelligence
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+              India's Busiest <span style={{ color: INDIA_GREEN }}>Airports</span>
+            </h2>
+            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+              Live tracking, METAR weather, runway status, and flight schedules for every major Indian airport.
+            </p>
+          </header>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              { code: 'DEL', name: 'Indira Gandhi Intl', city: 'New Delhi', flights: '1,200+', icao: 'VIDP' },
+              { code: 'BOM', name: 'CSM International', city: 'Mumbai', flights: '950+', icao: 'VABB' },
+              { code: 'BLR', name: 'Kempegowda Intl', city: 'Bengaluru', flights: '680+', icao: 'VOBL' },
+              { code: 'MAA', name: 'Chennai Intl', city: 'Chennai', flights: '520+', icao: 'VOMM' },
+              { code: 'CCU', name: 'Netaji Subhas', city: 'Kolkata', flights: '480+', icao: 'VECC' },
+              { code: 'HYD', name: 'Rajiv Gandhi Intl', city: 'Hyderabad', flights: '650+', icao: 'VOHS' },
+              { code: 'GOI', name: 'Manohar Intl', city: 'Goa', flights: '320+', icao: 'VOGO' },
+              { code: 'COK', name: 'Cochin Intl', city: 'Kochi', flights: '380+', icao: 'VOCI' },
+              { code: 'AMD', name: 'Sardar Vallabhbhai', city: 'Ahmedabad', flights: '420+', icao: 'VAAH' },
+              { code: 'JAI', name: 'Jaipur Intl', city: 'Jaipur', flights: '280+', icao: 'VIJP' },
+            ].map((airport) => (
+              <button
+                key={airport.code}
+                onClick={() => navigate(`/airports/${airport.code}`)}
+                id={`airport-card-${airport.code}`}
+                className="group relative p-4 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 hover:shadow-lg dark:hover:bg-white/[0.06] hover:-translate-y-1 text-left shadow-sm dark:shadow-none"
+              >
+                <div className="text-xl font-mono font-bold text-slate-900 dark:text-white mb-0.5 group-hover:text-orange-500 dark:group-hover:text-orange-300 transition-colors">{airport.code}</div>
+                <div className="text-[10px] text-slate-400 dark:text-gray-500 font-mono mb-1.5">{airport.icao}</div>
+                <div className="text-sm text-slate-600 dark:text-gray-300 font-medium mb-0.5">{airport.name}</div>
+                <div className="text-xs text-slate-400 dark:text-gray-500">{airport.city}</div>
+                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                  <span className="text-[11px] font-mono font-bold" style={{ color: INDIA_GREEN }}>{airport.flights} flights/day</span>
+                </div>
+                <ArrowRight size={12} className="absolute top-4 right-4 text-slate-300 dark:text-gray-700 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 5 — CAPABILITIES
+      ══════════════════════════════════════════════════════════ */}
+      <section id="capabilities" className="relative z-10 py-10 md:py-14 px-6 md:px-12 lg:px-24" aria-label="AeroSky Platform Capabilities">
+        <div className="max-w-6xl mx-auto">
+          <header className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 text-[11px] font-mono font-bold tracking-widest text-gray-400 uppercase mb-4">
+              <Eye size={12} style={{ color: INDIA_ORANGE }} /> Platform Capabilities
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+              Intelligence. <span style={{ color: INDIA_ORANGE }}>Reimagined.</span>
+            </h2>
+            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+              Precision tracking technology configured for civil aviation transparency — built from Indian soil.
+            </p>
+          </header>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <FeatureCard icon={<Radar size={24} />} title="Real-Time ADS-B Tracking" desc="Sub-second position updates from 850+ indigenous ADS-B receivers deployed across India, covering every FIR." accent={INDIA_ORANGE} />
+            <FeatureCard icon={<CloudLightning size={24} />} title="Indian METAR & Weather" desc="Live weather feeds from IMD integrated with runway-level conditions for every operational Indian airport." accent="#60A5FA" />
+            <FeatureCard icon={<BarChart3 size={24} />} title="Delay Analytics (DGCA)" desc="OTP metrics aligned with DGCA reporting standards. Compare airlines across Indian routes." accent={INDIA_GREEN} />
+            <FeatureCard icon={<Lock size={24} />} title="Squawk & Alert Intelligence" desc="Real-time squawk code monitoring — 7500, 7600, 7700 — with instant notifications for Indian airspace emergencies." accent="#EF4444" />
+            <FeatureCard icon={<Database size={24} />} title="Sovereign Aviation API" desc="RESTful APIs serving Indian aviation data with sub-100ms latency from Indian servers. DPDPA-compliant." accent="#A855F7" />
+            <FeatureCard icon={<IndianRupee size={24} />} title="INR-First Pricing" desc="No USD markups. Transparent pricing in Indian Rupees with GST-compliant invoicing." accent="#FACC15" />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 6 — TRUST / SOCIAL PROOF
+      ══════════════════════════════════════════════════════════ */}
+      <section id="trusted-by" className="relative z-10 py-10 md:py-14 px-6 md:px-12 lg:px-24" aria-label="Trusted by Indian Aviation Community">
+        <div className="max-w-6xl mx-auto">
+          <header className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+              Trusted Across <span style={{ color: INDIA_ORANGE }}>Indian Aviation</span>
+            </h2>
+            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
+              From avgeek enthusiasts to enterprise stakeholders — AeroSky powers India's airspace awareness.
+            </p>
+          </header>
+          <div className="grid md:grid-cols-3 gap-5">
+            <TrustCard title="Aviation Enthusiasts" icon={<Users size={24} />} stat="50,000+" desc="Indian avgeeks track flights daily on AeroSky." accent={INDIA_ORANGE} />
+            <TrustCard title="Enterprise & MRO" icon={<Zap size={24} />} stat="120+" desc="MRO, cargo, and aviation companies use AeroSky APIs." accent="#60A5FA" />
+            <TrustCard title="Ground Stations" icon={<Radio size={24} />} stat="850+" desc="Community-powered receivers from Srinagar to Kanyakumari." accent={INDIA_GREEN} />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          SECTION 7 — CTA
+      ══════════════════════════════════════════════════════════ */}
+      <section id="cta-section" className="relative z-10 py-10 md:py-14 px-6 md:px-12 lg:px-24" aria-label="Join India's Sovereign Airspace Movement">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-400/20 text-[11px] font-mono font-bold tracking-widest uppercase mb-5" style={{ color: INDIA_ORANGE }}>
+            <Flag size={12} /> Join the Sovereign Airspace Movement
+          </div>
+
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-5 leading-tight">
+            <span style={{ color: INDIA_ORANGE }}>India's Airspace.</span><br />
+            <span className="text-slate-900 dark:text-white">India's Data.</span><br />
+            <span style={{ color: INDIA_GREEN }}>India's Intelligence.</span>
+          </h2>
+
+          <p className="text-slate-600 dark:text-gray-400 text-lg max-w-xl mx-auto mb-8 leading-relaxed">
+            Be part of India's largest community-driven aviation intelligence network.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              id="cta-explore-map-bottom"
+              onClick={() => navigate('/explore/map')}
+              className="px-8 py-4 rounded-xl text-black font-bold text-lg transition-all hover:-translate-y-1 shadow-[0_0_40px_rgba(255,153,51,0.2)] hover:shadow-[0_0_60px_rgba(255,153,51,0.3)] flex items-center justify-center gap-2"
+              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+            >
+              <MapIcon size={22} /> Explore Indian Airspace
+            </button>
+            <button
+              id="cta-become-feeder"
+              onClick={() => navigate('/community')}
+              className="px-8 py-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-slate-900 dark:text-white font-bold text-lg transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm dark:shadow-none"
+            >
+              <Radio size={22} /> Host a Ground Station
+            </button>
+          </div>
+
+          <div className="mt-12 flex justify-center" aria-hidden="true">
+            <div className="w-32 h-1 rounded-full flex overflow-hidden">
+              <div className="flex-1" style={{ background: INDIA_ORANGE }} />
+              <div className="flex-1 bg-white" />
+              <div className="flex-1" style={{ background: INDIA_GREEN }} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════════════════════ */}
+      <footer id="footer" className="relative z-10 border-t border-slate-200 dark:border-white/5 bg-slate-100/80 dark:bg-black/40 backdrop-blur-xl py-12 px-6 md:px-12 lg:px-24" aria-label="AeroSky Footer">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mb-10">
+            <div className="md:col-span-1">
+              <div className="flex items-center gap-2 mb-3">
+                <Plane size={22} style={{ color: INDIA_ORANGE }} className="rotate-[-45deg]" />
+                <span className="text-xl font-bold tracking-tighter text-slate-900 dark:text-white">AeroSky</span>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-gray-500 leading-relaxed mb-3">India's first sovereign airspace intelligence platform. Made in India, for India.</p>
+              <div className="flex items-center gap-2" aria-label="Indian Flag">
+                <div className="w-3 h-3 rounded-sm" style={{ background: INDIA_ORANGE }} />
+                <div className="w-3 h-3 rounded-sm bg-white" />
+                <div className="w-3 h-3 rounded-sm" style={{ background: INDIA_GREEN }} />
+                <span className="text-[10px] text-gray-600 font-mono ml-1">PROUDLY INDIAN</span>
+              </div>
+            </div>
+            <nav aria-label="Flight Tracking">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Flight Tracking</h3>
+              <ul className="space-y-1.5">
+                {['Live Flight Map', 'Flight Status', 'Airport Arrivals & Departures', 'Airline OTP', 'Aircraft Lookup'].map((item) => (
+                  <li key={item}><span className="text-sm text-slate-600 dark:text-gray-500 hover:text-slate-900 dark:hover:text-gray-300 transition-colors cursor-pointer">{item}</span></li>
+                ))}
+              </ul>
+            </nav>
+            <nav aria-label="Indian Airports">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Indian Airports</h3>
+              <ul className="space-y-1.5">
+                {['Delhi (DEL)', 'Mumbai (BOM)', 'Bengaluru (BLR)', 'Chennai (MAA)', 'Hyderabad (HYD)', 'Kolkata (CCU)'].map((item) => (
+                  <li key={item}><span className="text-sm text-slate-600 dark:text-gray-500 hover:text-slate-900 dark:hover:text-gray-300 transition-colors cursor-pointer">{item}</span></li>
+                ))}
+              </ul>
+            </nav>
+            <nav aria-label="Data and Compliance">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Data & Compliance</h3>
+              <ul className="space-y-1.5">
+                {['API Documentation', 'DGCA Compliance', 'DPDPA Policy', 'Ground Station Program', 'Enterprise Solutions', 'Contact'].map((item) => (
+                  <li key={item}><span className="text-sm text-slate-600 dark:text-gray-500 hover:text-slate-900 dark:hover:text-gray-300 transition-colors cursor-pointer">{item}</span></li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+          <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
+            <p className="text-xs text-gray-600">© 2026 AeroSky — AeroLytics Pvt. Ltd. | Made with 🇮🇳 in India</p>
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              <span className="text-[10px] text-slate-500 dark:text-gray-600 font-mono">DGCA Reg. No: RPAS-XXXX</span>
+              <span className="text-slate-400 dark:text-gray-700">|</span>
+              <span className="text-[10px] text-slate-500 dark:text-gray-600 font-mono">ISO 27001:2022</span>
+              <span className="text-slate-400 dark:text-gray-700">|</span>
+              <span className="text-[10px] text-slate-500 dark:text-gray-600 font-mono">Data Hosted: IN (Mumbai, Hyderabad)</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* ══════════════════════════════════════════════════════════
+          LIVE FEED TICKER
+      ══════════════════════════════════════════════════════════ */}
+      <div className="sticky bottom-0 left-0 right-0 z-30 border-t border-slate-200 dark:border-white/10 bg-white/90 dark:bg-black/90 backdrop-blur-xl" role="marquee" aria-label="Live Indian Airspace Feed">
+        <div className="flex items-center h-10">
+          <div className="px-3 md:px-5 h-full flex items-center border-r border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-black/40 gap-2">
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: INDIA_ORANGE }} />
+            <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest" style={{ color: INDIA_ORANGE }}>Live Feed</span>
+          </div>
+          <div className="flex-1 overflow-hidden relative group">
+            <div className="ticker-wrap">
+              <div className="ticker font-mono text-xs md:text-sm text-gray-400 py-2 group-hover:[animation-play-state:paused]">
+                {NEWS_TICKER.map((item) => (
+                  <span key={item.id} className="inline-flex items-center mr-16">
+                    <span className={`mr-3 font-bold ${item.type === 'alert' ? 'text-red-500' : 'text-blue-400'}`}>
+                      {item.type === 'alert' ? '/// ALERT' : '/// INFO'}
+                    </span>
+                    {item.text}
+                  </span>
+                ))}
+                {NEWS_TICKER.map((item) => (
+                  <span key={`dup-${item.id}`} className="inline-flex items-center mr-16">
+                    <span className={`mr-3 font-bold ${item.type === 'alert' ? 'text-red-500' : 'text-blue-400'}`}>
+                      {item.type === 'alert' ? '/// ALERT' : '/// INFO'}
+                    </span>
+                    {item.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="absolute top-0 bottom-0 right-0 w-12 bg-gradient-to-l from-white dark:from-black to-transparent pointer-events-none" />
+            {/* Left gradient for ticker fade */}
+            <div className="absolute top-0 bottom-0 left-0 w-12 bg-gradient-to-r from-white dark:from-black to-transparent pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SUB-COMPONENTS
+═══════════════════════════════════════════════════════════════ */
+
+const TrustBadge = ({ icon, color, text }: { icon: React.ReactNode; color: string; text: string }) => (
+  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+    <span style={{ color }}>{icon}</span> {text}
+  </span>
+);
+
+const StatBlock = ({ icon, label, value, color, accentColor }: {
+  icon: React.ReactNode; label: string; value: string; color: string; accentColor: string;
+}) => (
+  <div className="bg-white/40 dark:bg-black/30 p-3 hover:bg-white/60 dark:hover:bg-white/5 transition-all duration-300 group cursor-default backdrop-blur-sm border-r border-slate-200 dark:border-white/5 last:border-0 relative">
+    <div className="flex items-center gap-1.5 mb-1">
+      <span style={{ color: accentColor }}>{icon}</span>
+      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-gray-500 group-hover:text-slate-800 dark:group-hover:text-gray-300 transition-colors">{label}</span>
+    </div>
+    <div className={`text-xl md:text-2xl font-mono font-bold text-slate-900 dark:text-white`}>{value}</div>
+  </div>
+);
+
+const SovereignPillar = ({ icon, title, description, accentColor, stats }: {
+  icon: React.ReactNode; title: string; description: string; accentColor: string;
+  stats: { label: string; value: string }[];
+}) => (
+  <article className="group relative p-6 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all duration-500 hover:shadow-lg dark:hover:bg-white/[0.04] shadow-sm dark:shadow-none">
+    <div className="absolute top-0 left-6 right-6 h-[2px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: accentColor }} />
+    <div className="mb-3" style={{ color: accentColor }}>{icon}</div>
+    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{title}</h3>
+    <p className="text-slate-600 dark:text-gray-400 text-sm leading-relaxed mb-4">{description}</p>
+    <div className="flex gap-3">
+      {stats.map((s) => (
+        <div key={s.label} className="flex-1 bg-slate-50 dark:bg-white/[0.03] rounded-lg p-2.5 border border-slate-100 dark:border-white/5">
+          <div className="text-[10px] font-mono text-slate-500 dark:text-gray-600 uppercase tracking-wider">{s.label}</div>
+          <div className="font-bold text-slate-800 dark:text-white text-sm mt-0.5">{s.value}</div>
+        </div>
+      ))}
+    </div>
+  </article>
+);
+
+const BigStat = ({ value, label, icon, color }: {
+  value: string; label: string; icon: React.ReactNode; color: string;
+}) => (
+  <div className="text-center p-6 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all hover:shadow-md dark:hover:bg-white/[0.04] shadow-sm dark:shadow-none">
+    <div className="mb-2 flex justify-center" style={{ color }}>{icon}</div>
+    <div className="text-3xl md:text-4xl font-mono font-bold text-slate-900 dark:text-white mb-1">{value}</div>
+    <div className="text-xs text-slate-500 dark:text-gray-500 uppercase tracking-wider font-medium">{label}</div>
+  </div>
+);
+
+const FeatureCard = ({ icon, title, desc, accent }: {
+  icon: React.ReactNode; title: string; desc: string; accent: string;
+}) => (
+  <article className="group relative p-5 rounded-xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 hover:shadow-lg dark:hover:bg-white/[0.05] hover:-translate-y-1 shadow-sm dark:shadow-none">
+    <div className="mb-3 p-2.5 rounded-lg inline-flex" style={{ background: `${accent}12`, color: accent }}>{icon}</div>
+    <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">{title}</h3>
+    <p className="text-slate-600 dark:text-gray-400 text-sm leading-relaxed">{desc}</p>
+  </article>
+);
+
+const TrustCard = ({ title, icon, stat, desc, accent }: {
+  title: string; icon: React.ReactNode; stat: string; desc: string; accent: string;
+}) => (
+  <div className="text-center p-6 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all hover:shadow-md shadow-sm dark:shadow-none">
+    <div className="mb-3 flex justify-center" style={{ color: accent }}>{icon}</div>
+    <div className="text-4xl font-mono font-bold text-slate-900 dark:text-white mb-1">{stat}</div>
+    <div className="text-sm font-bold text-slate-700 dark:text-white mb-1.5">{title}</div>
+    <p className="text-slate-600 dark:text-gray-500 text-sm">{desc}</p>
+  </div>
+);
+
+export default Home;
