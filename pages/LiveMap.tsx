@@ -1,153 +1,138 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, Suspense, lazy } from 'react';
 import {
-  Filter, Layers, Navigation, Wind, Search, X,
-  Settings, Plus, Minus, Locate, Map as MapIcon,
-  Crosshair, ArrowUpRight, Gauge, Plane, Check,
-  ChevronDown, ChevronUp, Menu, Globe, Activity,
-  Radio, AlertTriangle, Clock, Signal, ArrowLeft,
-  BarChart3, ShieldAlert, Calendar, Users, Briefcase,
-  Armchair, Thermometer, Compass, ArrowDown, ArrowUp,
-  RefreshCw, Luggage, CircleDollarSign, MapPin, Moon, Sun
+  Plane,
+  Map as MapIcon,
+  Filter,
+  Settings,
+  Layers,
+  Wind,
+  PlayCircle,
+  LayoutDashboard,
+  Search,
+  Globe,
+  Clock,
+  Navigation,
+  Activity,
+  Signal,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpRight,
+  AlertTriangle,
+  ShieldAlert,
+  MapPin,
+  X,
+  Menu,
+  Sun,
+  Moon,
+  Info,
+  ChevronRight,
+  ChevronDown,
+  ArrowLeft,
+  Users,
+  Briefcase,
+  Eye,
+  Radar,
+  Calendar,
+  Zap,
+  Radio,
+  Wifi,
+  Thermometer,
+  CloudRain
 } from 'lucide-react';
-import MapComponent from '../components/MapComponent';
-import type { MapControls } from '../components/MapComponent';
-import { OpenSkyService } from '../services/OpenSkyService';
+import { useNavigate } from 'react-router-dom';
 import { FLIGHTS as MOCK_FLIGHTS } from '../mockData';
 import { generateFallbackFlights } from '../utils/fallbackFlights';
-import { Flight } from '../types';
 import { PlanespottersService } from '../services/PlanespottersService';
-import { getOperationalStatus, getDelayRiskDetails, generatePilotReport, getFeederStatus, getFlightPhase, getIndianAirspaceContext, getDestinationIntel } from '../utils/OperationalIntelligence';
+import { getIndianAirspaceContext, getFlightPhase, generatePilotReport, getDelayRiskDetails, getDestinationIntel, deriveOperationalStatus, getFeederStatus } from '../utils/OperationalIntelligence';
+import IntelligenceDock, { DockMode } from '../components/IntelligenceDock';
+import DynamicWidgetPanel from '../components/DynamicWidgetPanel';
 
-type PanelMode = 'FILTER' | 'FLIGHT' | 'ANALYTICS' | 'SYSTEM';
-type MapStyleId = 'dark' | 'light' | 'satellite' | 'hybrid';
+// Lazy load MapComponent
+const MapComponent = lazy(() => import('../components/MapComponent'));
 
-const OLA_API_KEY = import.meta.env.VITE_OLA_MAP_API_KEY || 'dSpdveDyWcUJ4q2XAnRuweHDDnim2xnv0BFR73kQ';
-const MAP_STYLES: Record<MapStyleId, { label: string; icon: string; url: string }> = {
-  dark: { label: 'Dark', icon: '🌙', url: `https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json?api_key=${OLA_API_KEY}` },
-  light: { label: 'Light', icon: '☀️', url: `https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json?api_key=${OLA_API_KEY}` },
-  satellite: { label: 'Satellite', icon: '🛰️', url: `https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard-satellite/style.json?api_key=${OLA_API_KEY}` },
-  hybrid: { label: 'Terrain', icon: '🏔️', url: `https://api.olamaps.io/tiles/vector/v1/styles/default-earth-standard/style.json?api_key=${OLA_API_KEY}` },
-};
-
-function useSmoothFlights(targetFlights: Flight[], intervalMs: number = 60000): Flight[] {
-  const [renderFlights, setRenderFlights] = useState<Flight[]>(targetFlights);
-
-  useEffect(() => {
-    let animationFrameId: number;
-    let startTime = performance.now();
-    const startFlights = renderFlights;
-    const targetMap = new Map(targetFlights.map(f => [f.id, f]));
-
-    const tick = (time: number) => {
-      let elapsed = time - startTime;
-      if (elapsed > intervalMs) elapsed = intervalMs;
-      const progress = elapsed / intervalMs;
-
-      setRenderFlights((prev) => {
-        return targetFlights.map(targetFlight => {
-          const startFlight = startFlights.find(f => f.id === targetFlight.id);
-          if (!startFlight) return targetFlight;
-
-          const latDiff = targetFlight.liveMetrics.lat - startFlight.liveMetrics.lat;
-          const lngDiff = targetFlight.liveMetrics.lng - startFlight.liveMetrics.lng;
-
-          return {
-            ...targetFlight,
-            liveMetrics: {
-              ...targetFlight.liveMetrics,
-              lat: startFlight.liveMetrics.lat + latDiff * progress,
-              lng: startFlight.liveMetrics.lng + lngDiff * progress,
-            }
-          };
-        });
-      });
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(tick);
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(tick);
-
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [targetFlights]);
-
-  return renderFlights;
-}
+// Stub for smoothing hook if not found
+const useSmoothFlights = (flights: any[], _interval: number) => flights;
 
 const LiveMap: React.FC = () => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const mapRef = useRef<MapControls>(null);
-  const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
-  const [panelMode, setPanelMode] = useState<PanelMode>('FILTER');
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
-  const [activeMapStyle, setActiveMapStyle] = useState<MapStyleId>('dark');
-  const [isStylePickerOpen, setIsStylePickerOpen] = useState(false);
 
-  // Sync map style with global theme
+  // --- Title Logic ---
   useEffect(() => {
-    setActiveMapStyle(theme === 'dark' ? 'dark' : 'light');
+    document.title = "Live Map Intelligence | AeroSky";
+  }, []);
+
+  // --- Theme Logic ---
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
+  // --- Dock & Panel Management ---
+  const [activeDockMode, setActiveDockMode] = useState<DockMode>(null);
 
-  // Initial Mode Logic
+  // Map Controls State
+  const [layerConfig, setLayerConfig] = useState({
+    showFIR: true,
+    showTerrain: false,
+    showHolding: true,
+    showAeroCharts: false,
+    showAirportPins: true,
+    showAirportLabels: true,
+    showAircraftLabels: true,
+    mapBrightness: 100
+  });
+
+  const [widgetConfig, setWidgetConfig] = useState({
+    showTelemetry: true,
+    showCompass: true,
+    showMiniMap: false,
+    showWeatherLegend: false,
+    showNetworkStatus: true,
+    showSignalConfidence: true
+  });
+
+  const [activeMapStyle, setActiveMapStyle] = useState<'dark' | 'satellite' | 'street' | 'vector'>('dark');
+
+  // Flight Selection
+  const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
+  const [flightImage, setFlightImage] = useState<string | null>(null);
+
   useEffect(() => {
     if (selectedFlightId) {
-      setPanelMode('FLIGHT');
-      setIsPanelCollapsed(false);
-    } else if (panelMode === 'FLIGHT' && !selectedFlightId) {
-      setPanelMode('FILTER');
+      setActiveDockMode('FLIGHT');
+    } else if (activeDockMode === 'FLIGHT') {
+      setActiveDockMode(null);
     }
   }, [selectedFlightId]);
 
   const handleBackToFilter = () => {
     setSelectedFlightId(null);
-    setPanelMode('FILTER');
-  }
+    setActiveDockMode('FILTER');
+  };
 
   // --- State Management ---
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
-  const [mapType, setMapType] = useState<'dark' | 'satellite' | 'hybrid'>('dark');
-
-  // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [altRange, setAltRange] = useState([0, 60000]);
   const [speedRange, setSpeedRange] = useState([0, 800]);
   const [activeAirlines, setActiveAirlines] = useState<string[]>([]);
   const [activeFIRs, setActiveFIRs] = useState<string[]>([]);
 
-  // Map Layer States
-  const [showWeather, setShowWeather] = useState(false);
-  const [showATC, setShowATC] = useState(true);
-  const [showTerrain, setShowTerrain] = useState(true);
-  const [showHolding, setShowHolding] = useState(true);
-
-  // Live Data State
-  const [liveFlights, setLiveFlights] = useState<Flight[]>([]);
-  const [useLiveData, setUseLiveData] = useState(true);
-
-  // Fetch Live Data
-  useEffect(() => {
-    if (!useLiveData) return;
-    const fetchFlights = async () => {
-      try {
-        const data = await OpenSkyService.fetchLiveFlights();
-        if (data.length > 0) setLiveFlights(data);
-      } catch (err) {
-        console.error("Failed to fetch live flights", err);
-      }
-    };
-    fetchFlights();
-    const interval = setInterval(fetchFlights, 60000);
-    return () => clearInterval(interval);
-  }, [useLiveData]);
-
   // Data Processing
-  const fallbackFlights = useMemo(() => [...MOCK_FLIGHTS, ...generateFallbackFlights()], []);
-  const allFlights = useMemo(() => useLiveData && liveFlights.length > 0 ? liveFlights : fallbackFlights, [liveFlights, useLiveData, fallbackFlights]);
+  const allFlights = useMemo(() => [...MOCK_FLIGHTS, ...generateFallbackFlights()], []);
 
   const rawFilteredFlights = useMemo(() => {
     return allFlights.filter(f => {
@@ -175,15 +160,13 @@ const LiveMap: React.FC = () => {
   }, [searchQuery, altRange, speedRange, activeAirlines, allFlights]);
 
   const filteredFlights = useSmoothFlights(rawFilteredFlights, 60000);
-
   const selectedFlight = useMemo(() => allFlights.find(f => f.id === selectedFlightId), [selectedFlightId, allFlights]);
 
   // Image Handling
-  const [flightImage, setFlightImage] = useState<string | null>(null);
   useEffect(() => {
-    if (!selectedFlight) return;
-    setFlightImage(selectedFlight.aircraft.image);
     const fetchImage = async () => {
+      setFlightImage(null);
+      if (!selectedFlight) return;
       if (selectedFlight.aircraft.registration && selectedFlight.aircraft.registration !== 'N/A') {
         const url = await PlanespottersService.fetchPhoto(selectedFlight.aircraft.registration);
         if (url) setFlightImage(url);
@@ -192,53 +175,7 @@ const LiveMap: React.FC = () => {
     fetchImage();
   }, [selectedFlight?.id]);
 
-  // Flight Track Handling
-  const [flightTrack, setFlightTrack] = useState<any[] | null>(null);
-  useEffect(() => {
-    if (!selectedFlightId) {
-      setFlightTrack(null);
-      return;
-    }
-    const flight = allFlights.find(f => f.id === selectedFlightId);
-    if (!flight) return;
-
-    setFlightTrack(null); // clear old track while loading
-    if (flight.id.startsWith('flight-')) {
-      OpenSkyService.fetchFlightTrack(flight.id).then(track => {
-        if (track && track.path) {
-          setFlightTrack(track.path);
-        }
-      });
-    }
-  }, [selectedFlightId, allFlights]);
-
-
   // --- Mode Renderers ---
-
-  const renderHeader = () => (
-    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 rounded-xl shadow-lg mb-4 flex items-center justify-between shrink-0">
-      <div className="flex items-center gap-3">
-        {panelMode !== 'FILTER' && (
-          <button onClick={handleBackToFilter} className="p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-colors text-slate-400 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white">
-            <ArrowLeft size={18} />
-          </button>
-        )}
-        <div>
-          <h2 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-            {panelMode === 'FILTER' && <><Filter size={14} className="text-cyan-600 dark:text-cyan-400" /> Flight Filter</>}
-            {panelMode === 'FLIGHT' && <><Plane size={14} className="text-amber-500 dark:text-yellow-400" /> Operational Detail</>}
-            {panelMode === 'ANALYTICS' && <><BarChart3 size={14} className="text-purple-600 dark:text-purple-400" /> Network Analytics</>}
-          </h2>
-          <div className="text-[10px] text-slate-500 dark:text-gray-500 font-mono mt-0.5">
-            {panelMode === 'FILTER' ? `${filteredFlights.length} Active Targets` : panelMode === 'FLIGHT' ? selectedFlight?.flightNumber : 'System Nominal'}
-          </div>
-        </div>
-      </div>
-      <button onClick={() => setIsPanelCollapsed(!isPanelCollapsed)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 transition-colors">
-        {isPanelCollapsed ? <Menu size={18} /> : <X size={18} />}
-      </button>
-    </div>
-  );
 
   const renderFilterMode = () => {
     const airlineMap: Record<string, { name: string; emoji: string; hub: string }> = {
@@ -260,8 +197,6 @@ const LiveMap: React.FC = () => {
 
     return (
       <div className="flex-1 flex flex-col min-h-0">
-
-        {/* ── Indian Sky Status Banner ── */}
         <div className="bg-gradient-to-r from-orange-500/[0.08] via-slate-500/[0.05] to-green-500/[0.06] dark:via-white/[0.02] border border-slate-200 dark:border-white/[0.06] rounded-lg p-3 mb-3 shrink-0">
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5">
@@ -275,13 +210,9 @@ const LiveMap: React.FC = () => {
           </div>
           <p className="text-[9px] text-slate-500 dark:text-white/40 leading-relaxed">
             Tracking <span className="text-cyan-600 dark:text-cyan-400 font-semibold">{filteredFlights.length}</span> flights across Indian airspace.
-            {filteredFlights.filter(f => f.status === 'Delayed').length > 0 && (
-              <span className="text-amber-600/80 dark:text-amber-400/80"> {filteredFlights.filter(f => f.status === 'Delayed').length} delayed.</span>
-            )}
           </p>
         </div>
 
-        {/* ── Search ── */}
         <div className="relative group mb-3 shrink-0">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/20 group-focus-within:text-cyan-600 dark:group-focus-within:text-cyan-400 transition-colors duration-300" size={14} />
           <input
@@ -293,20 +224,18 @@ const LiveMap: React.FC = () => {
           />
         </div>
 
-        {/* ── Tab Selector ── */}
         <div className="flex p-0.5 bg-slate-100 dark:bg-white/[0.03] mb-3 rounded-lg shrink-0 border border-slate-200 dark:border-white/[0.04]">
           <button onClick={() => setActiveTab('basic')} className={`flex-1 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 rounded-md flex items-center justify-center gap-1 ${activeTab === 'basic' ? 'bg-white dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-cyan-500/10 text-cyan-600 dark:text-cyan-400 shadow-sm' : 'text-slate-400 dark:text-white/30 hover:text-slate-600 dark:hover:text-white/50'}`}>
             <Globe size={10} /> Discover
           </button>
           <button onClick={() => setActiveTab('advanced')} className={`flex-1 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 rounded-md flex items-center justify-center gap-1 ${activeTab === 'advanced' ? 'bg-white dark:bg-gradient-to-r dark:from-cyan-500/20 dark:to-cyan-500/10 text-cyan-600 dark:text-cyan-400 shadow-sm' : 'text-slate-400 dark:text-white/30 hover:text-slate-600 dark:hover:text-white/50'}`}>
-            <Settings size={10} /> Layers
+            <Settings size={10} /> Range
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
           {activeTab === 'basic' ? (
             <>
-              {/* ── Airlines ── */}
               <CollapsibleSection title="🛫  Airlines" defaultOpen>
                 <div className="space-y-0.5">
                   {Object.entries(airlineMap).map(([code, info]) => (
@@ -315,7 +244,6 @@ const LiveMap: React.FC = () => {
                 </div>
               </CollapsibleSection>
 
-              {/* ── Indian Airspace ── */}
               <CollapsibleSection title="🗺️  Indian Airspace" defaultOpen>
                 <div className="grid grid-cols-2 gap-1.5">
                   {Object.entries(firMap).map(([code, info]) => (
@@ -335,773 +263,548 @@ const LiveMap: React.FC = () => {
                   ))}
                 </div>
               </CollapsibleSection>
-
-              {/* ── Quick Insights ── */}
-              <CollapsibleSection title="⚡  Quick Insights">
-                <div className="flex flex-wrap gap-1.5">
-                  <FilterTag label="✈️ In Air" count={filteredFlights.filter(f => f.status === 'In Air' || f.status === 'On Time').length} color="text-cyan-600 dark:text-cyan-400" bg="bg-cyan-100 dark:bg-cyan-500/10 border-cyan-200 dark:border-cyan-500/15" />
-                  <FilterTag label="⏳ Delayed" count={filteredFlights.filter(f => f.status === 'Delayed').length} color="text-amber-600 dark:text-amber-400" bg="bg-amber-100 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/15" />
-                  <FilterTag label="📍 Landing" count={filteredFlights.filter(f => f.status === 'Landing').length} color="text-orange-600 dark:text-orange-400" bg="bg-orange-100 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/15" />
-                  <FilterTag label="🛬 Ground" count={filteredFlights.filter(f => f.liveMetrics.altitude === 0).length} color="text-emerald-600 dark:text-emerald-400" bg="bg-emerald-100 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/15" />
-                </div>
-              </CollapsibleSection>
             </>
           ) : (
-            <>
-              {/* ── Altitude & Speed ── */}
-              <CollapsibleSection title="📊  Telemetry Range" defaultOpen>
-                <div className="space-y-3 pt-1">
-                  <RangeSlider label="Altitude" min={0} max={60000} value={altRange} onChange={(val: number[]) => setAltRange(val)} unit="ft" emoji="🏔️" />
-                  <RangeSlider label="Speed" min={0} max={800} value={speedRange} onChange={(val: number[]) => setSpeedRange(val)} unit="kts" emoji="💨" />
-                </div>
-              </CollapsibleSection>
-
-              {/* ── Map Intelligence Layers ── */}
-              <CollapsibleSection title="🗺️  Map Intelligence" defaultOpen>
-                <div className="space-y-0.5">
-                  <ToggleSwitch label="Weather Radar" description="Monsoon & turbulence data" active={showWeather} onClick={() => setShowWeather(!showWeather)} icon={<Wind size={11} />} color="cyan" />
-                  <ToggleSwitch label="FIR Boundaries" description="Indian ATC sectors" active={showATC} onClick={() => setShowATC(!showATC)} icon={<Crosshair size={11} />} color="amber" />
-                  <ToggleSwitch label="Terrain Awareness" description="Himalayan corridor alerts" active={showTerrain} onClick={() => setShowTerrain(!showTerrain)} icon={<MapIcon size={11} />} color="emerald" />
-                </div>
-              </CollapsibleSection>
-
-              {/* ── Data Source ── */}
-              <CollapsibleSection title="📡  Data Source">
-                <ToggleSwitch label="Live ADS-B Feed" description="OpenSky Network" active={useLiveData} onClick={() => setUseLiveData(!useLiveData)} icon={<Radio size={11} />} color="green" />
-                <div className="mt-2 text-[8px] text-slate-400 dark:text-white/20 leading-relaxed px-1">
-                  {useLiveData
-                    ? '🟢 Streaming live ADS-B telemetry from Indian receivers'
-                    : '⚪ Using simulated India-first flight data'
-                  }
-                </div>
-              </CollapsibleSection>
-            </>
+            <CollapsibleSection title="📊  Telemetry Range" defaultOpen>
+              <div className="space-y-3 pt-1">
+                <RangeSlider label="Altitude" min={0} max={60000} value={altRange} onChange={(val: number[]) => setAltRange(val)} unit="ft" emoji="🏔️" />
+                <RangeSlider label="Speed" min={0} max={800} value={speedRange} onChange={(val: number[]) => setSpeedRange(val)} unit="kts" emoji="💨" />
+              </div>
+            </CollapsibleSection>
           )}
         </div>
       </div>
     );
   };
 
-  const renderFlightMode = () => {
-    if (!selectedFlight) return <div className="flex-1 flex items-center justify-center text-gray-500 text-xs">No flight selected</div>;
+  const flightIntelligenceCardContent = useMemo(() => {
+    if (!selectedFlight) return (
+      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-white/20 p-8 space-y-4">
+        <Plane size={48} className="opacity-20 translate-y-2 animate-bounce" />
+        <p className="text-xs font-bold tracking-widest uppercase">Select an aircraft for intelligence</p>
+      </div>
+    );
+
+    const phase = getFlightPhase(selectedFlight);
+    const briefing = generatePilotReport(selectedFlight);
+    const intel = getIndianAirspaceContext(selectedFlight);
+    const feeder = getFeederStatus(selectedFlight);
     const vr = selectedFlight.liveMetrics.vertRate || 0;
-    const vrLabel = vr > 50 ? 'CLIMBING' : vr < -50 ? 'DESCENDING' : 'LEVEL';
-    const vrColor = vr > 50 ? 'text-emerald-600 dark:text-emerald-400' : vr < -50 ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-gray-400';
-    const statusColor = selectedFlight.status === 'On Time' ? 'bg-emerald-500' : selectedFlight.status === 'Delayed' ? 'bg-amber-500' : selectedFlight.status === 'In Air' ? 'bg-cyan-500' : 'bg-gray-500';
+
+    const vrColor = vr > 300 ? 'text-emerald-500' : vr < -300 ? 'text-orange-500' : 'text-slate-400 dark:text-white/40';
+    const statusColor = selectedFlight.status === 'On Time' ? 'bg-emerald-500' : selectedFlight.status === 'Delayed' ? 'bg-amber-500' : 'bg-cyan-500';
+
+    // Phase Timeline steps
+    const phases = [
+      { id: 'T-OFF', label: 'Departed', active: ['TAKEOFF', 'CLIMB', 'CRUISE', 'TOD', 'APPROACH', 'FINAL', 'EN_ROUTE'].includes(phase.phase) },
+      { id: 'CRZ', label: 'Cruise', active: ['CRUISE', 'TOD', 'APPROACH', 'FINAL'].includes(phase.phase) },
+      { id: 'APP', label: 'Approach', active: ['APPROACH', 'FINAL'].includes(phase.phase) },
+      { id: 'LAND', label: 'Landing', active: phase.phase === 'FINAL' }
+    ];
 
     return (
-      <div className="flex flex-col min-h-0 animate-in fade-in duration-700">
-
-        {/* ═══════════════════════════════════════════ */}
-        {/* HERO: Cinematic Aircraft Banner */}
-        {/* ═══════════════════════════════════════════ */}
-        <div className="relative h-36 shrink-0 overflow-hidden rounded-t-xl group">
+      <div className="flex flex-col min-h-0 h-full animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out overflow-hidden">
+        {/* --- AIRCRAFT HERO --- */}
+        <div className="relative h-44 shrink-0 overflow-hidden group">
           <img
             src={flightImage || selectedFlight.aircraft.image}
-            className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-[2s] ease-out"
+            className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-[4s] ease-out brightness-90 animate-in zoom-in-110 duration-1000"
             alt="Aircraft"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-[#0a0e1a]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0e1a]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0e1a]/70 via-[#0a0e1a]/20 to-transparent" />
 
-          {/* Status Badges */}
-          <div className="absolute top-2 left-2.5 flex items-center gap-1.5">
-            <span className="bg-red-500/90 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-lg shadow-red-500/20">
-              <span className="w-1 h-1 bg-white rounded-full animate-pulse" /> LIVE
+          <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+            <span className="bg-red-600/90 backdrop-blur-md text-white text-[10px] font-black px-2 py-1 rounded-sm flex items-center gap-1.5 shadow-2xl border border-white/10">
+              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_white]" />
+              SOVEREIGN LIVE
             </span>
-            <span className={`${statusColor} backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg`}>
-              {selectedFlight.status.toUpperCase()}
+            <span className={`${statusColor} backdrop-blur-md text-white text-[10px] font-black px-2 py-1 rounded-sm shadow-2xl border border-white/10 uppercase tracking-wider`}>
+              {selectedFlight.status}
             </span>
           </div>
 
-          {/* Flight Identity (Overlay) */}
-          <div className="absolute bottom-0 inset-x-0 p-3">
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="text-[9px] text-cyan-400 font-semibold tracking-[0.2em] uppercase mb-0.5">{selectedFlight.airline}</div>
-                <h1 className="text-2xl font-black text-white leading-none tracking-tight">{selectedFlight.flightNumber}</h1>
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] text-cyan-400 font-black tracking-[0.25em] uppercase mb-1 drop-shadow-md truncate">{selectedFlight.airline}</div>
+                <h1 className="text-3xl font-black text-white leading-none tracking-tighter drop-shadow-lg flex items-center gap-3">
+                  {selectedFlight.flightNumber}
+                  <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full font-mono text-white/50 border border-white/5">{selectedFlight.aircraft.registration}</span>
+                </h1>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-white/90 font-mono">{selectedFlight.aircraft.registration}</div>
-                <div className="text-[8px] text-white/50 font-medium">{selectedFlight.aircraft.type}</div>
+              <div className="text-right shrink-0">
+                <div className="w-10 h-10 bg-white/5 backdrop-blur-md rounded-lg border border-white/10 flex items-center justify-center mb-1 ml-auto">
+                  <Plane size={24} className="text-cyan-400 opacity-80" />
+                </div>
+                <div className="text-[10px] text-white/60 font-black uppercase tracking-widest">{selectedFlight.aircraft.type}</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* SCROLLABLE CONTENT */}
-        {/* ═══════════════════════════════════════════ */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-gradient-to-b dark:from-[#0a0e1a] dark:to-[#080c16]">
-          <div className="space-y-0">
+        {/* --- INTELLIGENCE CONTENT --- */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar-heavy dark:bg-[#0c1020]/40">
+          <div className="space-y-5 p-5">
 
-            {/* ── HUMAN-READABLE FLIGHT STATUS ── */}
-            {(() => {
-              const phase = getFlightPhase(selectedFlight);
-              const intel = getIndianAirspaceContext(selectedFlight);
-              return (
-                <div className="px-3.5 pt-3 pb-1.5">
-                  <div className="bg-gradient-to-r from-cyan-500/[0.06] to-transparent border border-cyan-500/10 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <div className="text-lg">{phase.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={`text-[10px] font-bold ${phase.color}`}>{phase.humanLabel}</span>
-                          <span className="text-[7px] text-slate-300 dark:text-white/20">•</span>
-                          <span className="text-[8px] text-slate-400 dark:text-white/30 font-mono">{intel.fir.name}</span>
-                        </div>
-                        <p className="text-[9px] text-slate-500 dark:text-white/45 leading-relaxed">
-                          {intel.humanSummary}
-                        </p>
-                      </div>
+            {/* 1. MISSION PROGRESS & PHASE TIMELINE */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <div className="text-center group cursor-help">
+                  <div className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-1 group-hover:text-cyan-400 transition-colors uppercase">{selectedFlight.origin.iata}</div>
+                  <div className="text-[9px] text-slate-500 dark:text-white/40 font-bold uppercase tracking-tight">{selectedFlight.origin.city}</div>
+                </div>
+
+                <div className="flex-1 px-6 relative flex flex-col items-center">
+                  <div className="w-full h-1 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 animate-pulse"
+                      style={{ width: phase.phase === 'FINAL' ? '95%' : phase.phase === 'APPROACH' ? '80%' : phase.phase === 'CRUISE' ? '50%' : '20%' }}
+                    />
+                  </div>
+                  <div className="absolute inset-x-0 top-0.5 flex justify-center translate-y-[-6px]">
+                    <div
+                      className="p-1 bg-white dark:bg-[#0c1020] rounded-full border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all duration-1000"
+                      style={{ marginLeft: phase.phase === 'FINAL' ? '90%' : phase.phase === 'APPROACH' ? '60%' : phase.phase === 'CRUISE' ? '0%' : '-60%' }}
+                    >
+                      <Plane size={10} className="text-cyan-500 rotate-90" />
                     </div>
                   </div>
-                </div>
-              );
-            })()}
-
-            {/* ── ALERTS (if any) ── */}
-            {(() => {
-              const intel = getIndianAirspaceContext(selectedFlight);
-              if (intel.alerts.length === 0) return null;
-              return (
-                <div className="px-3.5 pb-1.5">
-                  <div className="space-y-1">
-                    {intel.alerts.map((alert, i) => (
-                      <div key={i} className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-500/[0.06] border border-amber-200 dark:border-amber-500/10 rounded px-2 py-1.5">
-                        <AlertTriangle size={9} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                        <span className="text-[8px] text-amber-700/80 dark:text-amber-300/80">{alert}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── ROUTE VISUAL ── */}
-            <div className="px-3.5 py-3">
-              <div className="flex items-center gap-5">
-                {/* Origin */}
-                <div className="flex-1 min-w-0">
-                  <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{selectedFlight.origin.iata}</div>
-                  <div className="text-[9px] text-slate-500 dark:text-white/40 truncate">{selectedFlight.origin.city}</div>
-                  <div className="text-xs font-semibold text-cyan-500 dark:text-cyan-400 mt-1 tabular-nums">{selectedFlight.actualDep || selectedFlight.scheduledDep || '—'}</div>
-                  {selectedFlight.flightInfo?.terminalOrigin && (
-                    <div className="text-[8px] text-slate-400 dark:text-white/30 mt-0.5">T{selectedFlight.flightInfo.terminalOrigin} · Gate {selectedFlight.flightInfo.gateOrigin}</div>
-                  )}
-                </div>
-
-                {/* Flight Progress */}
-                <div className="flex-1 flex flex-col items-center px-2">
-                  <div className="w-full flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
-                    <div className="flex-1 h-[2px] bg-slate-200 dark:bg-white/10 relative rounded-full overflow-hidden">
-                      <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full" style={{ width: '65%' }} />
-                      <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500/50 to-cyan-400/50 rounded-full animate-pulse" style={{ width: '65%' }} />
-                    </div>
-                    <div className="w-2 h-2 rounded-full border border-slate-300 dark:border-white/20" />
-                  </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    <Plane size={10} className="text-cyan-500 dark:text-cyan-400 -rotate-12" />
-                    <span className="text-[9px] text-slate-400 dark:text-white/40 font-medium">EN ROUTE</span>
+                  <div className="text-[9px] font-black text-cyan-400/80 uppercase tracking-widest bg-cyan-400/5 px-3 py-1 rounded-full border border-cyan-400/10">
+                    {selectedFlight.duration} TO DEST
                   </div>
                 </div>
 
-                {/* Destination */}
-                <div className="flex-1 min-w-0 text-right">
-                  <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{selectedFlight.destination.iata}</div>
-                  <div className="text-[9px] text-slate-500 dark:text-white/40 truncate">{selectedFlight.destination.city}</div>
-                  <div className="text-xs font-semibold text-slate-700 dark:text-white/80 mt-1 tabular-nums">{selectedFlight.estArr || selectedFlight.scheduledArr || '—'}</div>
-                  {selectedFlight.flightInfo?.terminalDest && (
-                    <div className="text-[8px] text-slate-400 dark:text-white/30 mt-0.5">T{selectedFlight.flightInfo.terminalDest} · Gate {selectedFlight.flightInfo.gateDest}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-
-            {/* ── PRIMARY TELEMETRY ── */}
-            <div className="px-3.5 py-3">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] border border-slate-200 dark:border-white/[0.04] hover:border-cyan-500/20 rounded-lg p-2.5 transition-all duration-300 group cursor-default">
-                  <div className="text-[8px] text-slate-400 dark:text-white/30 uppercase tracking-wider mb-1 group-hover:text-cyan-600 dark:group-hover:text-cyan-400/60 transition-colors">Altitude</div>
-                  <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums leading-none">{selectedFlight.liveMetrics.altitude.toLocaleString()}</div>
-                  <div className="text-[8px] text-slate-400 dark:text-white/20 mt-0.5">ft · FL{Math.round(selectedFlight.liveMetrics.altitude / 100)}</div>
-                </div>
-                <div className="bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] border border-slate-200 dark:border-white/[0.04] hover:border-yellow-500/20 rounded-lg p-2.5 transition-all duration-300 group cursor-default">
-                  <div className="text-[8px] text-slate-400 dark:text-white/30 uppercase tracking-wider mb-1 group-hover:text-yellow-600 dark:group-hover:text-yellow-400/60 transition-colors">GND Speed</div>
-                  <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums leading-none">{selectedFlight.liveMetrics.groundSpeed}</div>
-                  <div className="text-[8px] text-slate-400 dark:text-white/20 mt-0.5">kts</div>
-                </div>
-                <div className="bg-slate-50 dark:bg-white/[0.03] hover:bg-slate-100 dark:hover:bg-white/[0.06] border border-slate-200 dark:border-white/[0.04] hover:border-purple-500/20 rounded-lg p-2.5 transition-all duration-300 group cursor-default">
-                  <div className="text-[8px] text-slate-400 dark:text-white/30 uppercase tracking-wider mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400/60 transition-colors">Track</div>
-                  <div className="text-base font-bold text-slate-900 dark:text-white tabular-nums leading-none">{selectedFlight.liveMetrics.track || selectedFlight.liveMetrics.heading}°</div>
-                  <div className="text-[8px] text-slate-400 dark:text-white/20 mt-0.5">mag</div>
+                <div className="text-center group cursor-help">
+                  <div className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-1 group-hover:text-cyan-400 transition-colors uppercase">{selectedFlight.destination.iata}</div>
+                  <div className="text-[9px] text-slate-500 dark:text-white/40 font-bold uppercase tracking-tight">{selectedFlight.destination.city}</div>
                 </div>
               </div>
 
-              {/* Vertical Rate Ribbon */}
-              <div className="mt-2 flex items-center gap-2 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-md px-2.5 py-1.5">
-                <div className={`flex items-center gap-1 ${vrColor}`}>
-                  {vr > 50 ? <ArrowUp size={12} /> : vr < -50 ? <ArrowDown size={12} /> : <ArrowUpRight size={12} className="rotate-90" />}
-                  <span className="text-xs font-bold tabular-nums">{Math.abs(vr).toLocaleString()}</span>
-                  <span className="text-[8px] text-slate-400 dark:text-white/30">fpm</span>
-                </div>
-                <div className={`text-[8px] font-bold uppercase tracking-widest ${vrColor}`}>{vrLabel}</div>
-                <div className="flex-1" />
-                <div className="text-[8px] text-slate-400 dark:text-white/20 font-medium font-mono">SQK {selectedFlight.liveMetrics.squawk}</div>
-              </div>
-            </div>
-
-            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-
-            {/* ── PERFORMANCE + ENVIRONMENT ── */}
-            <div className="px-3.5 py-3">
-              <div className="text-[8px] text-slate-500 dark:text-white/25 uppercase tracking-[0.2em] font-semibold mb-2">Performance & Environment</div>
-              <div className="grid grid-cols-4 gap-x-3 gap-y-2">
-                <DataCell label="Mach" value={`M${selectedFlight.liveMetrics.mach || '.78'}`} />
-                <DataCell label="TAS" value={`${Math.round(selectedFlight.liveMetrics.tas || 0)}`} unit="kt" />
-                <DataCell label="IAS" value={`${Math.round(selectedFlight.liveMetrics.ias || 0)}`} unit="kt" />
-                <DataCell label="Roll" value={`${(selectedFlight.liveMetrics.roll || 0).toFixed(1)}°`} />
-                <DataCell label="OAT" value={`${(selectedFlight.liveMetrics.oat || -45).toFixed(0)}°`} unit="C" />
-                <DataCell label="Baro" value={`${(selectedFlight.liveMetrics.baro || 1013).toFixed(0)}`} unit="hPa" />
-                <DataCell label="Wind" value={`${selectedFlight.liveMetrics.windDir || 0}°`} />
-                <DataCell label="W/Spd" value={`${selectedFlight.liveMetrics.windSpeed || 0}`} unit="kt" />
-              </div>
-            </div>
-
-            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-
-            {/* ── INDIA-FIRST: OPERATIONAL INTELLIGENCE ── */}
-            <div className="px-3.5 py-3">
-              <div className="bg-gradient-to-br from-purple-500/[0.08] to-indigo-500/[0.04] border border-purple-500/10 rounded-lg p-3 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full blur-2xl" />
-
-                <div className="flex items-center gap-1.5 mb-2 relative z-10">
-                  <div className="w-4 h-4 rounded bg-purple-500/20 flex items-center justify-center">
-                    <Activity size={8} className="text-purple-400" />
-                  </div>
-                  <span className="text-[8px] text-purple-300/80 uppercase tracking-[0.15em] font-bold">Pilot Report — Indian Airspace</span>
-                </div>
-
-                <p className="text-[9px] text-slate-700 dark:text-white/55 leading-relaxed italic relative z-10 mb-2">
-                  "{generatePilotReport(selectedFlight)}"
-                </p>
-
-                {(() => {
-                  const intel = getIndianAirspaceContext(selectedFlight);
-                  return (
-                    <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-indigo-200/30 dark:border-white/[0.04] relative z-10">
-                      <MapPin size={8} className="text-indigo-500 dark:text-indigo-400" />
-                      <span className="text-[8px] text-slate-500 dark:text-white/45">
-                        <span className="text-indigo-600 dark:text-indigo-300 font-semibold">{intel.fir.name}</span>
-                        <span className="text-slate-300 dark:text-white/20 mx-1">·</span>
-                        {intel.fir.center}
-                        <span className="text-slate-300 dark:text-white/20 mx-1">·</span>
-                        <span className="font-mono text-slate-400 dark:text-white/30">{intel.fir.freq}</span>
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                <div className="flex items-center gap-5 relative z-10">
-                  <div>
-                    <div className="text-[7px] text-slate-400 dark:text-white/25 uppercase tracking-wider">Delay Risk</div>
-                    <div className={`text-[10px] font-bold mt-0.5 ${getDelayRiskDetails(selectedFlight).riskColor}`}>{getDelayRiskDetails(selectedFlight).level}</div>
-                  </div>
-                  <div>
-                    <div className="text-[7px] text-slate-400 dark:text-white/25 uppercase tracking-wider">Signal</div>
-                    <div className="text-[10px] font-bold text-slate-600 dark:text-white/70 mt-0.5 flex items-center gap-1">
-                      <Signal size={8} className="text-green-500 dark:text-green-400" /> {selectedFlight.liveMetrics.feederCount} feeders
+              {/* Graphical Phase Stepper */}
+              <div className="grid grid-cols-4 gap-1 px-1">
+                {phases.map(p => (
+                  <div key={p.id} className="space-y-1.5">
+                    <div className={`h-1.5 rounded-full transition-all duration-700 ${p.active ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)]' : 'bg-slate-200 dark:bg-white/5'}`} />
+                    <div className={`text-[8px] font-black uppercase text-center tracking-tighter ${p.active ? 'text-cyan-400' : 'text-slate-400 dark:text-white/10'}`}>
+                      {p.label}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[7px] text-slate-400 dark:text-white/25 uppercase tracking-wider">RSSI</div>
-                    <div className="text-[10px] font-bold text-slate-600 dark:text-white/70 mt-0.5 font-mono">{selectedFlight.liveMetrics.rssi} dB</div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. HUMAN OPERATIONAL BRIEFING */}
+            <div className="bg-gradient-to-br from-cyan-500/[0.08] via-transparent to-transparent border border-cyan-500/10 rounded-xl p-4 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Globe size={40} className="text-cyan-400" />
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className={`p-1.5 rounded-lg bg-white dark:bg-white/5 shadow-sm border border-cyan-500/20 ${phase.color}`}>
+                  {phase.icon}
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+                    Human Intelligence Brief
+                    <span className="w-1 h-1 bg-cyan-400 rounded-full animate-ping" />
+                  </h3>
+                  <div className="text-[9px] font-bold text-slate-400 dark:text-white/30 uppercase">{phase.humanLabel} • {intel.fir.name}</div>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-white/70 leading-relaxed font-medium italic pr-4">
+                "{briefing}"
+              </p>
+
+              {intel.alerts.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {intel.alerts.map((alert, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-black rounded uppercase tracking-tighter">
+                      {alert}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3. TELEMETRY HUB (HIGH PRECISION) */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-slate-50 dark:bg-white/[0.03] p-3 rounded-xl border border-slate-200 dark:border-white/[0.05] hover:border-cyan-500/30 transition-colors">
+                <div className="text-[9px] font-bold text-slate-400 dark:text-white/20 uppercase mb-1">Altitude (ft)</div>
+                <div className="text-lg font-black dark:text-white font-mono leading-none flex items-baseline gap-1">
+                  {selectedFlight.liveMetrics.altitude.toLocaleString()}
+                  <span className="text-[10px] text-blue-400">FL{Math.round(selectedFlight.liveMetrics.altitude / 100)}</span>
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-white/[0.03] p-3 rounded-xl border border-slate-200 dark:border-white/[0.05] hover:border-cyan-500/30 transition-colors">
+                <div className="text-[9px] font-bold text-slate-400 dark:text-white/20 uppercase mb-1">Grd Spd (kts)</div>
+                <div className="text-lg font-black dark:text-white font-mono leading-none">
+                  {selectedFlight.liveMetrics.groundSpeed}
+                </div>
+              </div>
+              <div className="bg-slate-50 dark:bg-white/[0.03] p-3 rounded-xl border border-slate-200 dark:border-white/[0.05] hover:border-cyan-500/30 transition-colors">
+                <div className="text-[9px] font-bold text-slate-400 dark:text-white/20 uppercase mb-1">Vert Rate</div>
+                <div className={`text-lg font-black font-mono leading-none ${vrColor}`}>
+                  {vr > 0 ? '+' : ''}{vr}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. SOVEREIGN DATA CHAIN */}
+            <div className="p-4 bg-[#0a0e1a]/20 border border-white/[0.03] rounded-xl space-y-4">
+              <div>
+                <h4 className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-3 flex items-center justify-between">
+                  Sovereign Context
+                  <Signal size={12} className="text-emerald-500" />
+                </h4>
+                <div className="grid grid-cols-2 gap-y-3">
+                  <InfoRow label="FIR Sector" value={intel.fir.name} last={false} />
+                  <InfoRow label="Frequency" value={intel.fir.freq} mono last={false} />
+                  <InfoRow label="Squawk" value={selectedFlight.aircraft.squawk} last={false} />
+                  <InfoRow label="Track" value={`${selectedFlight.liveMetrics.track || 0}°`} last={false} />
+                  <InfoRow label="Mode S" value={selectedFlight.id.slice(0, 6).toUpperCase()} last={false} />
+                  <InfoRow label="Station ID" value="VIDP-FDR-01" last={false} />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity size={12} className="text-cyan-400" />
+                    <div className="text-[10px] font-black text-white/60 tracking-tight uppercase">{feeder.text}</div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-bold text-white/30 uppercase">Quality:</span>
+                    <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 text-[8px] font-black rounded border border-emerald-500/20">{feeder.quality.toUpperCase()}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-
-            {/* ── DESTINATION INTELLIGENCE ── */}
-            {(() => {
-              const destIntel = getDestinationIntel(selectedFlight.destination.iata);
-              const congestionColors: Record<string, string> = {
-                'Saturated': 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/10 border-red-200 dark:border-red-500/20',
-                'High': 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20',
-                'Moderate': 'text-amber-600 dark:text-yellow-400 bg-amber-100 dark:bg-yellow-500/10 border-amber-200 dark:border-yellow-500/20',
-                'Low': 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20',
-              };
-              const cColor = congestionColors[destIntel.congestion] || congestionColors['Low'];
-              return (
-                <div className="px-3.5 py-3">
-                  <div className="text-[8px] text-slate-400 dark:text-white/25 uppercase tracking-[0.15em] font-semibold mb-2 flex items-center gap-1.5">
-                    <MapPin size={8} className="text-orange-500 dark:text-orange-400" /> {selectedFlight.destination.iata} — Arrival Intelligence
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border ${cColor}`}>
-                        {destIntel.congestion}
-                      </span>
-                      <span className="text-[8px] text-slate-400 dark:text-white/30">congestion</span>
-                    </div>
-                    <p className="text-[9px] text-slate-500 dark:text-white/45 leading-relaxed">{destIntel.humanNote}</p>
-                    {destIntel.notam && (
-                      <div className="flex items-start gap-1.5 bg-amber-50 dark:bg-amber-500/[0.04] border border-amber-200 dark:border-amber-500/[0.08] rounded px-2 py-1.5">
-                        <ShieldAlert size={8} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                        <span className="text-[8px] text-amber-700/80 dark:text-amber-300/70">{destIntel.notam}</span>
-                      </div>
-                    )}
-                    <div className="text-[8px] text-slate-400 dark:text-white/30 font-mono">{destIntel.rwyInfo}</div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-
-            {/* ── AIRCRAFT & SERVICE ── */}
-            <div className="px-3.5 py-3">
-              <div className="text-[8px] text-slate-500 dark:text-white/25 uppercase tracking-[0.15em] font-semibold mb-2">Aircraft & Service</div>
-              <div className="space-y-0">
-                <InfoRow label="Registration" value={selectedFlight.aircraft.registration} mono />
-                <InfoRow label="Type" value={selectedFlight.aircraft.type} />
-                <InfoRow label="Age" value={selectedFlight.aircraft.age || 'N/A'} />
-                <InfoRow label="Seats" value={`${selectedFlight.service?.seats || 180}`} />
-                <InfoRow label="Classes" value={selectedFlight.service?.classes?.join(' / ') || 'Economy'} />
-                <InfoRow label="Service" value={selectedFlight.service?.type || 'Passenger'} last />
-              </div>
-            </div>
-
-            {/* ── ACTION BUTTONS ── */}
-            <div className="px-3.5 pb-3.5 pt-1.5 flex gap-2">
-              <button className="flex-1 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/5">
-                Share
-              </button>
-              <button onClick={() => navigate(`/flights/${selectedFlight.id}`)} className="flex-1 py-2 bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.06] border border-slate-200 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/10 text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white/80 text-[9px] font-bold uppercase tracking-widest rounded-md transition-all duration-300 flex items-center justify-center gap-1">
-                Full Report <ArrowUpRight size={9} />
-              </button>
-            </div>
+            {/* ACTION BUTTON */}
+            <button
+              onClick={() => navigate(`/flights/${selectedFlight.id}`)}
+              className="group relative w-full py-3.5 bg-white dark:bg-white/[0.03] hover:bg-cyan-500 p-2 text-slate-700 dark:text-white/80 hover:text-white border border-slate-200 dark:border-white/[0.1] hover:border-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-sm overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+              FULL ADIZ INTELLIGENCE REPORT <ArrowUpRight size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </button>
 
           </div>
         </div>
       </div>
     );
-  };
+  }, [selectedFlight, flightImage, navigate]);
 
   return (
-    <div className="w-full h-full relative bg-slate-50 dark:bg-slate-950 overflow-hidden flex font-sans transition-colors duration-300">
+    <div className="relative w-full h-screen bg-[#0c1020] overflow-hidden flex flex-col font-sans selection:bg-cyan-500/30">
+      <div className="flex-1 relative">
+        <Suspense fallback={<div className="w-full h-full bg-slate-900 animate-pulse flex items-center justify-center text-white/20 italic">Loading Aeronautical Charts...</div>}>
+          <MapComponent
+            flights={filteredFlights}
+            selectedFlightId={selectedFlightId}
+            onFlightClick={setSelectedFlightId}
+            showFIR={layerConfig.showFIR}
+            showTerrain={layerConfig.showTerrain}
+            showHolding={layerConfig.showHolding}
+            showAeroCharts={layerConfig.showAeroCharts}
+            showAirportPins={layerConfig.showAirportPins}
+            showAirportLabels={layerConfig.showAirportLabels}
+            showAircraftLabels={layerConfig.showAircraftLabels}
+            mapBrightness={layerConfig.mapBrightness}
+            activeMapStyle={activeMapStyle}
+          />
+        </Suspense>
 
-      {/* --- MAP LAYER --- */}
-      <div className="absolute inset-0 z-0">
-        <MapComponent
-          ref={mapRef}
-          interactive={true}
-          flights={filteredFlights}
-          onFlightClick={(id) => setSelectedFlightId(id)}
-          selectedFlightId={selectedFlightId}
-          showFIR={showATC}
-          showTerrain={showTerrain}
-          showHolding={showHolding}
-          mapStyleUrl={MAP_STYLES[activeMapStyle].url}
-          flightTrack={flightTrack}
+        {/* --- INTELLIGENCE DOCK --- */}
+        <IntelligenceDock
+          activeMode={activeDockMode}
+          onModeChange={setActiveDockMode}
         />
-      </div>
 
-      {/* --- LEFT DYNAMIC PANEL --- */}
-      <div
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        className="absolute left-3 top-20 z-20 w-[340px] max-h-[calc(100vh-96px)] pointer-events-auto"
-      >
-
-        {/* Collapsed — Floating Orbs (GPU-only: opacity + transform) */}
-        <div
-          className="absolute top-0 left-0 flex flex-col gap-2.5 will-change-[opacity,transform]"
-          style={{
-            opacity: isPanelCollapsed ? 1 : 0,
-            transform: isPanelCollapsed ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.9)',
-            transition: 'opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-            pointerEvents: isPanelCollapsed ? 'auto' : 'none',
-          }}
+        {/* --- DYNAMIC WIDGET PANEL --- */}
+        <DynamicWidgetPanel
+          isOpen={activeDockMode !== null}
+          onClose={() => setActiveDockMode(null)}
+          width={activeDockMode === 'FLIGHT' ? 420 : 340}
+          title={
+            activeDockMode === 'FLIGHT' ? 'Flight Intelligence' :
+              activeDockMode === 'LAYERS' ? 'Map Infrastructure' :
+                activeDockMode === 'SETTINGS' ? 'System Configuration' :
+                  activeDockMode === 'FILTER' ? 'Traffic Filtering' :
+                    activeDockMode === 'WEATHER' ? 'Meteorological Data' :
+                      activeDockMode === 'WIDGETS' ? 'UI Instrumentation' : 'Playback Control'
+          }
+          subtitle={
+            activeDockMode === 'FLIGHT' ? (selectedFlight?.flightNumber || 'Target Analysis') :
+              'Configure real-time intelligence feeds'
+          }
+          icon={
+            activeDockMode === 'FLIGHT' ? <Plane size={18} /> :
+              activeDockMode === 'LAYERS' ? <Layers size={18} /> :
+                activeDockMode === 'SETTINGS' ? <Settings size={18} /> :
+                  activeDockMode === 'FILTER' ? <Filter size={18} /> :
+                    activeDockMode === 'WEATHER' ? <Wind size={18} /> :
+                      activeDockMode === 'WIDGETS' ? <LayoutDashboard size={18} /> : <PlayCircle size={18} />
+          }
         >
-          <button onClick={() => { setIsPanelCollapsed(false); setPanelMode('FILTER'); }} className="w-10 h-10 bg-gradient-to-br from-slate-100/90 to-slate-200/90 dark:from-slate-800/90 dark:to-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-xl flex items-center justify-center text-cyan-600 dark:text-cyan-400 hover:text-slate-900 dark:hover:text-white hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all duration-300 group" title="Discover">
-            <Globe size={16} />
-          </button>
-          <button onClick={() => { setIsPanelCollapsed(false); setPanelMode('FLIGHT'); }} className="w-10 h-10 bg-gradient-to-br from-slate-100/90 to-slate-200/90 dark:from-slate-800/90 dark:to-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-xl flex items-center justify-center text-amber-500 dark:text-amber-400 hover:text-slate-900 dark:hover:text-white hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)] transition-all duration-300 group" title="Flight">
-            <Plane size={16} />
-          </button>
-          <button onClick={() => { setIsPanelCollapsed(false); setPanelMode('ANALYTICS'); }} className="w-10 h-10 bg-gradient-to-br from-slate-100/90 to-slate-200/90 dark:from-slate-800/90 dark:to-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-xl flex items-center justify-center text-purple-500 dark:text-purple-400 hover:text-slate-900 dark:hover:text-white hover:border-purple-500/40 hover:shadow-[0_0_15px_rgba(168,85,247,0.15)] transition-all duration-300 group" title="Intelligence">
-            <BarChart3 size={16} />
-          </button>
-        </div>
+          {activeDockMode === 'FILTER' && renderFilterMode()}
 
-        {/* Expanded Panel (GPU-only: opacity + transform) */}
-        <div
-          className="flex flex-col w-full max-h-[calc(100vh-96px)] overflow-hidden bg-white/95 dark:bg-[#0c1020]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/[0.07] rounded-xl shadow-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] will-change-[opacity,transform]"
-          style={{
-            opacity: isPanelCollapsed ? 0 : 1,
-            transform: isPanelCollapsed ? 'translateX(-12px) scale(0.97)' : 'translateX(0) scale(1)',
-            transition: 'opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-            pointerEvents: isPanelCollapsed ? 'none' : 'auto',
-          }}
-        >
+          {activeDockMode === 'LAYERS' && (
+            <div className="space-y-6">
+              <CollapsibleSection title="Base Layers" defaultOpen>
+                <div className="grid grid-cols-2 gap-2 p-1">
+                  {[
+                    { id: 'dark', label: 'Dark', icon: <Moon size={14} /> },
+                    { id: 'satellite', label: 'Satellite', icon: <Globe size={14} /> },
+                    { id: 'street', label: 'Streets', icon: <MapIcon size={14} /> },
+                    { id: 'vector', label: 'Vectors', icon: <Navigation size={14} /> },
+                  ].map((style) => (
+                    <button
+                      key={style.id}
+                      onClick={() => setActiveMapStyle(style.id as any)}
+                      className={`flex items-center gap-2 p-3 rounded-xl border transition-all text-left ${activeMapStyle === style.id ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400' : 'bg-slate-100 dark:bg-white/5 border-transparent hover:bg-slate-200 dark:hover:bg-white/10'}`}
+                    >
+                      {style.icon}
+                      <span className="text-[10px] font-bold">{style.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </CollapsibleSection>
 
-          {/* Panel Header */}
-          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 dark:border-white/[0.05] shrink-0">
-            <div className="flex items-center gap-2">
-              {panelMode !== 'FILTER' && (
-                <button onClick={handleBackToFilter} className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-all duration-300">
-                  <ArrowLeft size={13} />
-                </button>
-              )}
-              <div>
-                <h2 className="text-[11px] font-bold text-slate-900 dark:text-white/90 flex items-center gap-1.5">
-                  {panelMode === 'FILTER' && <><Globe size={12} className="text-cyan-600 dark:text-cyan-400" /> Indian Sky</>}
-                  {panelMode === 'FLIGHT' && <><Plane size={12} className="text-amber-500 dark:text-amber-400" /> Flight Intelligence</>}
-                  {panelMode === 'ANALYTICS' && <><Activity size={12} className="text-purple-600 dark:text-purple-400" /> Airspace Insights</>}
-                </h2>
-                <div className="text-[8px] text-slate-500 dark:text-white/25 tracking-wider mt-0.5">
-                  {panelMode === 'FILTER' ? 'Discover & Filter' : panelMode === 'FLIGHT' ? 'Live Telemetry' : 'India Intelligence'}
+              <CollapsibleSection title="Aeronautical Info" defaultOpen>
+                <div className="space-y-1">
+                  <ToggleSwitch label="ATC Boundaries" active={layerConfig.showFIR} onClick={() => setLayerConfig(p => ({ ...p, showFIR: !p.showFIR }))} icon={<ShieldAlert size={14} />} description="FIR Sector lines" />
+                  <ToggleSwitch label="Aero Charts" active={layerConfig.showAeroCharts} onClick={() => setLayerConfig(p => ({ ...p, showAeroCharts: !p.showAeroCharts }))} icon={<MapIcon size={14} />} description="Airways & Waypoints" />
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Infrastructure" defaultOpen>
+                <div className="space-y-1">
+                  <ToggleSwitch label="Airport Pins" active={layerConfig.showAirportPins} onClick={() => setLayerConfig(p => ({ ...p, showAirportPins: !p.showAirportPins }))} icon={<MapPin size={14} />} />
+                  <ToggleSwitch label="Airport Labels" active={layerConfig.showAirportLabels} onClick={() => setLayerConfig(p => ({ ...p, showAirportLabels: !p.showAirportLabels }))} icon={<Info size={14} />} />
+                  <ToggleSwitch label="Aircraft Labels" active={layerConfig.showAircraftLabels} onClick={() => setLayerConfig(p => ({ ...p, showAircraftLabels: !p.showAircraftLabels }))} icon={<Plane size={14} />} />
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Visual Exposure" defaultOpen>
+                <div className="px-1 py-1">
+                  <RangeSlider label="Brightness" min={0} max={100} value={[0, layerConfig.mapBrightness]} onChange={([_, val]: any) => setLayerConfig(p => ({ ...p, mapBrightness: val }))} emoji="☀️" />
+                </div>
+              </CollapsibleSection>
+            </div>
+          )}
+
+          {activeDockMode === 'SETTINGS' && (
+            <div className="space-y-6">
+              <CollapsibleSection title="Theme Engine" defaultOpen>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={toggleTheme} className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${theme === 'light' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-500' : 'bg-white/5 border-transparent text-slate-400'}`}><Sun size={16} /><span className="text-[10px] font-bold">Standard</span></button>
+                  <button onClick={toggleTheme} className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${theme === 'dark' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-white/5 border-transparent text-slate-400'}`}><Moon size={16} /><span className="text-[10px] font-bold">Night Ops</span></button>
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Data Strategy" defaultOpen>
+                <div className="p-3 bg-cyan-500/[0.04] rounded-xl border border-cyan-500/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Radio size={14} className="text-cyan-400 animate-pulse" />
+                    <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Sovereign Data Mode</span>
+                  </div>
+                  <p className="text-[9px] text-white/30 leading-relaxed">
+                    Native ADS-B streams active. External API dependencies (OpenSky) disabled for maximum data sovereignty and reliability.
+                  </p>
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="App Settings" defaultOpen>
+                <div className="space-y-1">
+                  <ToggleSwitch label="Humanized Metrics" active={true} onClick={() => { }} icon={<Briefcase size={14} />} description="DGCA-compliant units" />
+                  <ToggleSwitch label="Auto-Tracking" active={true} onClick={() => { }} icon={<Eye size={14} />} description="Focus on selection" />
+                </div>
+              </CollapsibleSection>
+            </div>
+          )}
+
+          {activeDockMode === 'WEATHER' && (
+            <div className="space-y-6">
+              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
+                <div className="flex items-center gap-2 mb-2 text-blue-400">
+                  <CloudRain size={20} />
+                  <span className="text-[11px] font-black uppercase tracking-widest">IMD Radar Active</span>
+                </div>
+                <p className="text-[9px] text-white/40 mb-3">Fetching real-time precipitation data from Indian Meteorological Department stations.</p>
+                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500/40 w-[65%] rounded-full animate-pulse" />
                 </div>
               </div>
+
+              <CollapsibleSection title="Radar Layers" defaultOpen>
+                <div className="space-y-1">
+                  <ToggleSwitch label="Rainfall Radar" active={false} onClick={() => { }} icon={<CloudRain size={14} />} description="Precipitation overlay" />
+                  <ToggleSwitch label="Wind Streamlines" active={false} onClick={() => { }} icon={<Wind size={14} />} description="Global upper winds" />
+                  <ToggleSwitch label="Temperature Map" active={false} onClick={() => { }} icon={<Thermometer size={14} />} description="Surface OAT" />
+                </div>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Weather Alerts" defaultOpen>
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <div className="flex items-center gap-2 text-amber-400 mb-1">
+                    <AlertTriangle size={12} />
+                    <span className="text-[9px] font-bold uppercase">SIGMET Advisory</span>
+                  </div>
+                  <p className="text-[8px] text-white/40">Moderate turbulence reported over Himalayan corridor. Visibility 3000m at VIDP.</p>
+                </div>
+              </CollapsibleSection>
             </div>
+          )}
 
-            <button onClick={() => setIsPanelCollapsed(true)} className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] text-slate-400 dark:text-white/25 hover:text-slate-900 dark:hover:text-white/60 transition-all duration-300">
-              <X size={13} />
-            </button>
-          </div>
+          {activeDockMode === 'WIDGETS' && (
+            <div className="space-y-6">
+              <CollapsibleSection title="Map Overlays" defaultOpen>
+                <div className="space-y-1">
+                  <ToggleSwitch label="Flight Telemetry" active={widgetConfig.showTelemetry} onClick={() => setWidgetConfig(p => ({ ...p, showTelemetry: !p.showTelemetry }))} icon={<Activity size={14} />} />
+                  <ToggleSwitch label="System Compass" active={widgetConfig.showCompass} onClick={() => setWidgetConfig(p => ({ ...p, showCompass: !p.showCompass }))} icon={<Navigation size={14} />} />
+                  <ToggleSwitch label="Network Monitor" active={widgetConfig.showNetworkStatus} onClick={() => setWidgetConfig(p => ({ ...p, showNetworkStatus: !p.showNetworkStatus }))} icon={<Wifi size={14} />} />
+                  <ToggleSwitch label="Signal Reliability" active={widgetConfig.showSignalConfidence} onClick={() => setWidgetConfig(p => ({ ...p, showSignalConfidence: !p.showSignalConfidence }))} icon={<Signal size={14} />} />
+                </div>
+              </CollapsibleSection>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <div className="p-3.5">
-              {panelMode === 'FILTER' && renderFilterMode()}
-              {panelMode === 'FLIGHT' && renderFlightMode()}
-              {panelMode === 'ANALYTICS' && (
-                <div className="space-y-3">
-                  {/* India Airspace Health */}
-                  <div className="bg-slate-50 dark:bg-gradient-to-br dark:from-purple-500/[0.06] dark:to-indigo-500/[0.03] border border-slate-200 dark:border-purple-500/10 rounded-lg p-3 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl" />
-                    <div className="flex items-center gap-1.5 mb-2.5 relative z-10">
-                      <span className="text-sm">🇮🇳</span>
-                      <span className="text-[10px] font-bold text-slate-800 dark:text-white/80">Indian Airspace Health</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 relative z-10">
-                      {[
-                        { label: 'Delhi FIR', status: 'Normal', color: 'text-emerald-600 dark:text-emerald-400', icon: '🟢' },
-                        { label: 'Mumbai FIR', status: 'Congested', color: 'text-amber-600 dark:text-amber-400', icon: '🟡' },
-                        { label: 'Chennai FIR', status: 'Clear', color: 'text-emerald-600 dark:text-emerald-400', icon: '🟢' },
-                        { label: 'Kolkata FIR', status: 'Normal', color: 'text-emerald-600 dark:text-emerald-400', icon: '🟢' },
-                      ].map((fir) => (
-                        <div key={fir.label} className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.04] rounded-md p-2 shadow-sm dark:shadow-none">
-                          <div className="text-[9px] text-slate-500 dark:text-white/50 font-medium">{fir.label}</div>
-                          <div className={`text-[10px] font-bold ${fir.color} mt-0.5 flex items-center gap-1`}>
-                            <span className="text-xs">{fir.icon}</span> {fir.status}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              <CollapsibleSection title="Intelligence Feed" defaultOpen>
+                <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[9px] font-bold text-white/40 uppercase">Feed Source</span>
+                    <span className="text-[8px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded font-mono">LIVE ADS-B</span>
                   </div>
-
-                  {/* Fleet Snapshot */}
-                  <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05] rounded-lg p-3">
-                    <div className="text-[9px] text-slate-400 dark:text-white/40 font-semibold uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                      <Briefcase size={10} className="text-cyan-600 dark:text-cyan-400" /> Fleet Overview
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[10px] text-white/60">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Station #402 (DEL) Online
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-cyan-600 dark:text-cyan-400 tabular-nums">{filteredFlights.length}</div>
-                        <div className="text-[8px] text-slate-400 dark:text-white/30">Tracked</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-emerald-500 dark:text-emerald-400 tabular-nums">{filteredFlights.filter(f => f.liveMetrics.altitude > 10000).length}</div>
-                        <div className="text-[8px] text-slate-400 dark:text-white/30">Cruising</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-amber-500 dark:text-amber-400 tabular-nums">{filteredFlights.filter(f => f.status === 'Delayed').length}</div>
-                        <div className="text-[8px] text-slate-400 dark:text-white/30">Delayed</div>
-                      </div>
+                    <div className="flex items-center gap-2 text-[10px] text-white/60">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Station #811 (BOM) Online
                     </div>
-                  </div>
-
-                  {/* Intelligence Notes */}
-                  <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05] rounded-lg p-3">
-                    <div className="text-[9px] text-slate-400 dark:text-white/40 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <AlertTriangle size={10} className="text-amber-500 dark:text-amber-400" /> Operational Advisories
-                    </div>
-                    <div className="space-y-2">
-                      {[
-                        { text: 'Mumbai FIR experiencing higher sequencing delays due to monsoon approach patterns', icon: '🌧️' },
-                        { text: 'Himalayan corridor (Leh-Srinagar) VFR restricted until 1400 IST', icon: '🏔️' },
-                        { text: 'Delhi IGI T3 international gates congested — expect ground delays', icon: '✈️' },
-                      ].map((note, i) => (
-                        <div key={i} className="flex items-start gap-2 group">
-                          <span className="text-xs mt-0.5 shrink-0">{note.icon}</span>
-                          <p className="text-[9px] text-slate-500 dark:text-white/40 leading-relaxed group-hover:text-slate-700 dark:group-hover:text-white/60 transition-colors duration-300">{note.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Data Quality */}
-                  <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.05] rounded-lg p-3">
-                    <div className="text-[9px] text-slate-400 dark:text-white/40 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Signal size={10} className="text-green-500 dark:text-green-400" /> Receiver Health
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="h-1.5 bg-slate-200 dark:bg-white/[0.05] rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full" style={{ width: '94%' }} />
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">94%</span>
-                    </div>
-                    <div className="text-[8px] text-slate-400 dark:text-white/25 mt-1.5">Coverage across 48 Indian ADS-B receivers</div>
                   </div>
                 </div>
-              )}
+              </CollapsibleSection>
             </div>
-          </div>
+          )}
 
-          {/* Footer */}
-          <div className="h-6 border-t border-slate-200 dark:border-white/[0.04] flex items-center px-3 justify-between shrink-0 bg-slate-100 dark:bg-black/20">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[7px] text-slate-500 dark:text-white/25 tracking-widest">ADS-B LIVE</span>
-            </div>
-            <div className="text-[7px] text-slate-400 dark:text-white/15 tracking-wider font-mono">
-              48 receivers · 94% coverage
-            </div>
-          </div>
-        </div>
+          {activeDockMode === 'PLAYBACK' && (
+            <div className="space-y-6">
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 bg-cyan-500/10 border border-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <PlayCircle size={32} className="text-cyan-400" />
+                </div>
+                <h3 className="text-xs font-black text-white uppercase tracking-widest mb-2">History Playback</h3>
+                <p className="text-[10px] text-white/30 leading-relaxed">Rewind airspace to any point in the last 24 hours.</p>
+              </div>
 
-      </div>
+              <div className="px-2">
+                <RangeSlider label="Time Period" min={0} max={1440} value={[0, 1440]} onChange={() => { }} emoji="🕒" unit="min ago" />
+                <div className="flex justify-between items-center mt-3 px-1 text-[8px] text-white/20 font-black uppercase tracking-tighter">
+                  <span>-24 hours</span>
+                  <span>Now</span>
+                </div>
+              </div>
 
-      {/* --- AEROSKY MAP CONTROLS --- */}
-      <div className="absolute right-3 bottom-3 z-10 pointer-events-auto flex flex-col items-center gap-2">
-        {/* Zoom Controls */}
-        <div className="flex flex-col bg-white/90 dark:bg-[#0c1020]/90 backdrop-blur-xl border border-slate-200 dark:border-white/[0.07] rounded-xl overflow-hidden shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-          <button
-            onClick={() => mapRef.current?.zoomIn()}
-            className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-            title="Zoom In"
-          >
-            <Plus size={18} />
-          </button>
-          <div className="h-px bg-slate-200 dark:bg-white/[0.07]" />
-          <button
-            onClick={() => mapRef.current?.zoomOut()}
-            className="w-10 h-10 flex items-center justify-center text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-            title="Zoom Out"
-          >
-            <Minus size={18} />
-          </button>
-        </div>
-
-        {/* Nav Controls */}
-        <div className="flex flex-col bg-white/90 dark:bg-[#0c1020]/90 backdrop-blur-xl border border-slate-200 dark:border-white/[0.07] rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-          <button
-            onClick={() => mapRef.current?.resetView()}
-            className="w-10 h-10 flex items-center justify-center text-slate-400 dark:text-white/40 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all duration-300 border-b border-slate-200 dark:border-white/[0.05] group"
-            title="Center on India"
-          >
-            <Navigation size={15} className="group-hover:scale-110 group-hover:-rotate-45 transition-all duration-300" />
-          </button>
-          <button
-            onClick={() => {
-              if (selectedFlight) mapRef.current?.flyToFlight(selectedFlight);
-            }}
-            className={`w-10 h-10 flex items-center justify-center transition-all duration-300 group ${selectedFlight
-              ? 'text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-white hover:bg-cyan-500/10'
-              : 'text-slate-300 dark:text-white/15 cursor-not-allowed'
-              }`}
-            title={selectedFlight ? `Fly to ${selectedFlight.flightNumber}` : 'Select a flight'}
-            disabled={!selectedFlight}
-          >
-            <Locate size={15} className="group-hover:scale-110 transition-transform duration-200" />
-          </button>
-        </div>
-
-        {/* Map Style Picker */}
-        <div className="relative">
-          {/* Style Options (expands upward) */}
-          <div
-            className="absolute bottom-full right-0 mb-1.5 will-change-[opacity,transform]"
-            style={{
-              opacity: isStylePickerOpen ? 1 : 0,
-              transform: isStylePickerOpen ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.95)',
-              transition: 'opacity 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-              pointerEvents: isStylePickerOpen ? 'auto' : 'none',
-            }}
-          >
-            <div className="bg-[#0c1020]/95 backdrop-blur-xl border border-white/[0.07] rounded-xl p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.6)] min-w-[140px]">
-              <div className="text-[7px] text-white/25 uppercase tracking-widest px-2 pt-1 pb-1.5">Base Map</div>
-              {(Object.entries(MAP_STYLES) as [MapStyleId, typeof MAP_STYLES[MapStyleId]][]).map(([id, style]) => (
-                <button
-                  key={id}
-                  onClick={() => { setActiveMapStyle(id); setIsStylePickerOpen(false); }}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all duration-200 ${activeMapStyle === id
-                    ? 'bg-cyan-500/15 text-cyan-400'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
-                    }`}
-                >
-                  <span className="text-sm">{style.icon}</span>
-                  <span className="text-[10px] font-medium">{style.label}</span>
-                  {activeMapStyle === id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400" />}
+              <div className="pt-4">
+                <button className="w-full py-3 bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-cyan-400 transition-colors shadow-xl shadow-cyan-500/10">
+                  Initialize Playback
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Toggle Button */}
-          <button
-            onClick={() => setIsStylePickerOpen(!isStylePickerOpen)}
-            className={`w-10 h-10 bg-white/90 dark:bg-[#0c1020]/90 backdrop-blur-xl border rounded-xl flex items-center justify-center transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.5)] ${isStylePickerOpen
-              ? 'border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
-              : 'border-slate-200 dark:border-white/[0.07] text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white/70 hover:border-slate-300 dark:hover:border-white/20'
-              }`}
-            title="Map Style"
-          >
-            <Layers size={15} />
-          </button>
-        </div>
+          {activeDockMode === 'FLIGHT' && flightIntelligenceCardContent}
+        </DynamicWidgetPanel>
+
+
+
+
       </div>
-
     </div>
   );
 };
 
-
-// --- SUB COMPONENTS ---
-
-const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = true }) => {
+// --- Sub-Components ---
+const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode; defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className="pb-2 last:pb-0">
-      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between text-[10px] font-semibold text-slate-500 dark:text-white/50 py-1.5 hover:text-slate-800 dark:hover:text-white/70 transition-colors duration-300 group">
-        <span className="group-hover:text-slate-900 dark:group-hover:text-white/80 transition-colors duration-300">{title}</span>
-        <ChevronDown size={11} className={`text-slate-400 dark:text-white/20 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-      {/* Grid-row trick: 0fr→1fr animates actual content height smoothly (no max-height jank) */}
-      <div
-        className="grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-        style={{ gridTemplateRows: isOpen ? '1fr' : '0fr', opacity: isOpen ? 1 : 0 }}
-      >
-        <div className="overflow-hidden">
-          <div className={`transition-[margin] duration-300 ${isOpen ? 'mt-1.5' : 'mt-0'}`}>
-            {children}
-          </div>
+    <div className="mb-2">
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between text-[10px] font-black text-slate-400 dark:text-white/20 uppercase tracking-[0.2em] py-2.5 group transition-colors">
+        <span className="group-hover:text-slate-600 dark:group-hover:text-white/40">{title}</span>
+        <div className="w-5 h-5 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/[0.03] group-hover:bg-cyan-500/10 transition-all">
+          {isOpen ? <ChevronDown size={10} className="group-hover:text-cyan-500" /> : <ChevronRight size={10} className="group-hover:text-cyan-500" />}
         </div>
-      </div>
+      </button>
+      {isOpen && <div className="animate-in fade-in slide-in-from-top-1 duration-300">{children}</div>}
     </div>
   );
 };
 
-const FilterCheckbox: React.FC<{ label: string; code: string; checked: boolean; onChange: () => void; emoji?: string; subtitle?: string }> = ({ label, code, checked, onChange, emoji, subtitle }) => (
-  <label className={`flex items-center gap-2.5 cursor-pointer group p-2 rounded-lg transition-all duration-300 ${checked ? 'bg-slate-100 dark:bg-white/[0.08] border border-slate-300 dark:border-white/20 shadow-sm' : 'hover:bg-slate-50 dark:hover:bg-white/[0.04] border border-transparent'}`}>
-    <div className={`w-3.5 h-3.5 border rounded-[4px] flex items-center justify-center transition-all duration-300 shrink-0 ${checked ? 'bg-cyan-500 border-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.3)]' : 'border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-transparent group-hover:border-slate-400 dark:group-hover:border-white/30'}`}>
-      {checked && <Check size={8} className="text-white dark:text-black" strokeWidth={4} />}
+const FilterCheckbox = ({ label, code, emoji, subtitle, checked, onChange }: any) => (
+  <div onClick={onChange} className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/[0.03] cursor-pointer group transition-all duration-300">
+    <div className="flex items-center gap-3">
+      <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all duration-300 ${checked ? 'bg-cyan-500 border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)]' : 'border-slate-300 dark:border-white/10 p-0.5'}`}>
+        {checked && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+      </div>
+      <div>
+        <div className={`text-[10px] font-bold transition-colors ${checked ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-white/60'}`}>{emoji} {label}</div>
+        <div className="text-[8px] text-slate-400 dark:text-white/25 uppercase tracking-tight">{code} · {subtitle}</div>
+      </div>
     </div>
-    {emoji && <span className="text-xs shrink-0 drop-shadow-sm">{emoji}</span>}
-    <div className="flex-1 min-w-0">
-      <span className={`text-[10px] font-bold transition-colors duration-300 ${checked ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-white/60 group-hover:text-slate-900 dark:group-hover:text-white/90'}`}>{label}</span>
-      {subtitle && <span className={`text-[8px] ml-1.5 ${checked ? 'text-slate-500 dark:text-white/40' : 'text-slate-400 dark:text-white/30 group-hover:text-slate-500 dark:group-hover:text-white/50'} transition-colors duration-300`}>· {subtitle}</span>}
-    </div>
-  </label>
+  </div>
 );
 
 const ToggleSwitch: React.FC<{ label: string; active: boolean; onClick: () => void; icon: React.ReactNode; description?: string; color?: string }> = ({ label, active, onClick, icon, description, color = 'cyan' }) => {
-  const colorMap: Record<string, string> = {
-    cyan: active ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border-cyan-500/20' : '',
-    amber: active ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/20' : '',
-    emerald: active ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' : '',
-    green: active ? 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/20' : '',
-  };
-  const dotColor: Record<string, string> = {
-    cyan: 'bg-cyan-500',
-    amber: 'bg-amber-500',
-    emerald: 'bg-emerald-500',
-    green: 'bg-green-500',
-  };
   return (
-    <div onClick={onClick} className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer group transition-all duration-300 border ${active ? colorMap[color] : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'}`}>
-      <div className="flex items-center gap-2.5">
-        <div className={`p-1 rounded-md transition-all duration-300 ${active ? `${colorMap[color]}` : 'bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-white/30'}`}>{icon}</div>
+    <div onClick={onClick} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${active ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'}`}>
+      <div className="flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-cyan-500/20' : 'bg-slate-100 dark:bg-white/[0.04]'}`}>
+          {icon}
+        </div>
         <div>
-          <span className={`text-[10px] font-medium transition-colors duration-300 block ${active ? 'text-slate-900 dark:text-white/90' : 'text-slate-500 dark:text-white/50 group-hover:text-slate-700 dark:group-hover:text-white/70'}`}>{label}</span>
-          {description && <span className={`text-[8px] ${active ? 'text-slate-400 dark:text-white/30' : 'text-slate-300 dark:text-white/15'} transition-colors duration-300`}>{description}</span>}
+          <span className={`text-[10px] font-bold block ${active ? 'text-cyan-400' : 'text-slate-700 dark:text-white/70'}`}>{label}</span>
+          {description && <span className="text-[8px] opacity-40 block mt-0.5">{description}</span>}
         </div>
       </div>
-      <div className={`w-7 h-3.5 rounded-full relative transition-all duration-300 ${active ? dotColor[color] : 'bg-slate-200 dark:bg-white/10'}`}>
-        <div className={`absolute top-[3px] w-2 h-2 bg-white rounded-full transition-all duration-300 shadow-sm ${active ? 'left-[14px]' : 'left-[3px]'}`} />
+      <div className={`w-8 h-4 rounded-full relative transition-all ${active ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-white/10'}`}>
+        <div className={`absolute top-[4px] w-2 h-2 bg-white rounded-full transition-all ${active ? 'left-[18px]' : 'left-[4px]'}`} />
       </div>
     </div>
   );
 };
 
 const RangeSlider = ({ label, min, max, value, onChange, unit, emoji }: any) => (
-  <div className="space-y-1">
-    <div className="flex justify-between items-center">
-      <span className="text-[9px] text-slate-500 dark:text-white/40 flex items-center gap-1">
-        {emoji && <span className="text-xs">{emoji}</span>} {label}
-      </span>
-      <span className="text-[9px] text-cyan-600 dark:text-cyan-400/80 font-mono tabular-nums">{value[0].toLocaleString()} – {value[1].toLocaleString()} <span className="text-slate-300 dark:text-white/20">{unit}</span></span>
+  <div className="space-y-1.5 py-1">
+    <div className="flex justify-between items-center mb-1">
+      <span className="text-[9px] font-bold text-slate-500 dark:text-white/30 truncate uppercase tracking-widest">{emoji} {label}</span>
+      <span className="text-[10px] font-black text-cyan-500 dark:text-cyan-400 font-mono bg-cyan-500/10 px-1.5 py-0.5 rounded">{value[1]}{unit}</span>
     </div>
-    <input type="range" min={min} max={max} value={value[1]} onChange={(e) => onChange([value[0], Number(e.target.value)])} className="w-full h-1 bg-slate-200 dark:bg-white/[0.06] rounded-full appearance-none cursor-pointer accent-cyan-500 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(6,182,212,0.4)] [&::-webkit-slider-thumb]:appearance-none" />
+    <div className="relative h-6 flex items-center">
+      <input type="range" min={min} max={max} value={value[1]} onChange={(e) => onChange([value[0], Number(e.target.value)])} className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-500" />
+    </div>
   </div>
 );
 
 const FilterTag = ({ label, count, color, bg }: any) => (
-  <div className={`px-2.5 py-1.5 ${bg || 'bg-slate-100 dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.05]'} border rounded-lg text-[9px] font-medium text-slate-500 dark:text-white/60 flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-white/[0.06] cursor-pointer transition-all duration-300 group`}>
-    <span className="group-hover:text-slate-800 dark:group-hover:text-white/80 transition-colors duration-300">{label}</span>
-    <span className={`${color} font-mono font-bold text-[10px] tabular-nums`}>{count}</span>
+  <div className={`px-2 py-1 border rounded-lg text-[8px] font-bold flex items-center gap-2 ${bg || 'bg-white/5 border-white/5 text-white/40'}`}>
+    <span>{label}</span>
+    <span className={color}>{count}</span>
   </div>
 );
 
 const TelemetryBox = ({ label, value, unit }: any) => (
-  <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.04] p-2 rounded-lg flex flex-col items-center">
-    <span className="text-[7px] text-slate-400 dark:text-white/25 uppercase tracking-widest mb-0.5">{label}</span>
-    <span className="text-[11px] font-bold text-slate-800 dark:text-white/80 font-mono">{value} <span className="text-[7px] font-normal text-slate-300 dark:text-white/25">{unit}</span></span>
-  </div>
-);
-
-const ControlButton: React.FC<{ icon: React.ReactNode; active?: boolean }> = ({ icon, active }) => (
-  <button className={`p-2 rounded-lg backdrop-blur-md shadow-lg border transition-all duration-300 ${active ? 'bg-yellow-400 text-black border-yellow-400' : 'bg-white/90 dark:bg-[#0c1020]/90 text-slate-500 dark:text-white/50 border-slate-200 dark:border-white/[0.07] hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20'}`}>
-    {icon}
-  </button>
-);
-
-const TelemetryCard = ({ label, value, unit, icon, color = 'text-white', subValue, font = 'font-sans', dim }: any) => (
-  <div className={`bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.04] p-2.5 rounded-lg flex flex-col justify-between h-16 relative overflow-hidden group hover:border-slate-300 dark:hover:border-white/10 transition-all duration-300 ${dim ? 'opacity-60 hover:opacity-100' : ''}`}>
-    <div className="flex justify-between items-start z-10">
-      <span className="text-[8px] text-slate-400 dark:text-white/25 uppercase tracking-widest">{label}</span>
-      <div className="text-slate-300 dark:text-white/15 group-hover:text-slate-500 dark:group-hover:text-white/30 transition-colors duration-300">{icon}</div>
-    </div>
-    <div className="z-10">
-      <div className={`text-base font-bold ${color} ${font} tracking-tight leading-none`}>
-        {value} <span className="text-[8px] font-normal text-slate-300 dark:text-white/25 ml-0.5">{unit}</span>
-      </div>
-      {subValue && <div className="text-[7px] font-bold text-slate-300 dark:text-white/25 mt-0.5 uppercase tracking-wider">{subValue}</div>}
-    </div>
-  </div>
-);
-
-const DataCell = ({ label, value, unit }: { label: string; value: string; unit?: string }) => (
-  <div className="group cursor-default">
-    <div className="text-[7px] text-slate-500 dark:text-white/25 uppercase tracking-wider mb-0.5 group-hover:text-slate-700 dark:group-hover:text-white/40 transition-colors duration-300">{label}</div>
-    <div className="text-[11px] font-semibold text-slate-900 dark:text-white/80 tabular-nums group-hover:text-black dark:group-hover:text-white transition-colors duration-300">
-      {value}{unit && <span className="text-[8px] text-slate-400 dark:text-white/25 ml-0.5 font-normal">{unit}</span>}
-    </div>
+  <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 p-2 rounded-lg flex flex-col items-center">
+    <span className="text-[7px] text-slate-400 dark:text-white/20 uppercase mb-0.5 font-black tracking-widest">{label}</span>
+    <span className="text-[11px] font-black text-slate-800 dark:text-white font-mono">{value} <span className="text-[7px] font-normal opacity-40 ml-0.5">{unit}</span></span>
   </div>
 );
 
 const InfoRow = ({ label, value, mono, last }: { label: string; value: string; mono?: boolean; last?: boolean }) => (
-  <div className={`flex items-start justify-between py-1.5 ${!last ? 'border-b border-slate-100 dark:border-white/[0.04]' : ''} group hover:bg-slate-50 dark:hover:bg-white/[0.02] -mx-1 px-1 rounded transition-colors duration-300 cursor-default`}>
-    <span className="text-[9px] text-slate-500 dark:text-white/30 uppercase tracking-wider mt-0.5 shrink-0">{label}</span>
-    <span className={`text-[10px] font-semibold text-slate-700 dark:text-white/80 ${mono ? 'font-mono' : ''} text-right leading-tight max-w-[70%]`}>{value}</span>
+  <div className={`flex items-center justify-between py-2 ${!last ? 'border-b border-slate-100 dark:border-white/5' : ''}`}>
+    <span className="text-[8px] text-slate-400 dark:text-white/20 uppercase font-bold tracking-wider">{label}</span>
+    <span className={`text-[10px] font-black text-slate-700 dark:text-white/70 ${mono ? 'font-mono' : ''}`}>{value}</span>
   </div>
 );
 

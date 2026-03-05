@@ -2,29 +2,262 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════
+   AeroSky Design Token System
+   Version: 1.0
+   ═══════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* ─── Primitive Color Tokens ─── */
+    --color-india-saffron: #FF9933;
+    --color-india-green: #138808;
+    --color-india-navy: #000080;
+    --color-india-white: #FFFFFF;
+
+    /* ─── Semantic Color Tokens ─── */
+    --color-brand-primary: var(--color-india-saffron);
+    --color-brand-secondary: var(--color-india-green);
+    --color-brand-accent: #FFD700;
+    --color-brand-amber: #F59E0B;
+
+    /* Status Colors */
+    --color-status-live: #22C55E;
+    --color-status-delayed: #EF4444;
+    --color-status-alert: var(--color-india-saffron);
+    --color-status-info: #3B82F6;
+
+    /* Flight Marker Colors */
+    --color-plane-default: #FACC15;
+    --color-plane-alert: var(--color-india-saffron);
+    --color-plane-selected: #EF4444;
+
+    /* Surface Colors (Light Mode) */
+    --color-surface-primary: #FFFFFF;
+    --color-surface-secondary: #F8FAFC;
+    --color-surface-elevated: rgba(255, 255, 255, 0.95);
+    --color-surface-glass: rgba(255, 255, 255, 0.8);
+    --color-surface-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Text Colors (Light Mode) */
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #475569;
+    --color-text-muted: #64748B;
+    --color-text-disabled: #94A3B8;
+
+    /* Border Colors (Light Mode) */
+    --color-border-default: #E2E8F0;
+    --color-border-subtle: #F1F5F9;
+    --color-border-strong: #CBD5E1;
+
+    /* ─── Fluid Typography Scale ─── */
+    --text-hero: clamp(2.25rem, 5vw + 1rem, 4.5rem);
+    --text-h1: clamp(2rem, 4vw + 0.5rem, 3.5rem);
+    --text-h2: clamp(1.5rem, 3vw + 0.5rem, 2.5rem);
+    --text-h3: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
+    --text-h4: clamp(1rem, 1.5vw + 0.5rem, 1.25rem);
+    --text-body: clamp(0.875rem, 1vw + 0.5rem, 1rem);
+    --text-caption: clamp(0.75rem, 0.5vw + 0.5rem, 0.875rem);
+    --text-min: 0.6875rem; /* 11px — absolute minimum text size */
+
+    /* ─── Spacing Scale (8-point grid) ─── */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;   /* 20px */
+    --space-6: 1.5rem;    /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --space-10: 2.5rem;   /* 40px */
+    --space-12: 3rem;     /* 48px */
+    --space-16: 4rem;     /* 64px */
+    --space-20: 5rem;     /* 80px */
+
+    /* ─── Border Radius ─── */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* ─── Shadows ─── */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-glow-brand: 0 0 20px rgba(255, 153, 51, 0.3);
+    --shadow-glow-status: 0 0 15px rgba(34, 197, 94, 0.3);
+
+    /* ─── Transitions ─── */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ─── Dark Mode Token Overrides ─── */
+  .dark {
+    --color-surface-primary: #020617;
+    --color-surface-secondary: #0F172A;
+    --color-surface-elevated: rgba(6, 10, 24, 0.95);
+    --color-surface-glass: rgba(0, 0, 0, 0.65);
+    --color-surface-overlay: rgba(0, 0, 0, 0.8);
+
+    --color-text-primary: #FFFFFF;
+    --color-text-secondary: #94A3B8;
+    --color-text-muted: #64748B;
+    --color-text-disabled: #475569;
+
+    --color-border-default: rgba(255, 255, 255, 0.06);
+    --color-border-subtle: rgba(255, 255, 255, 0.03);
+    --color-border-strong: rgba(255, 255, 255, 0.12);
+
+    --shadow-glow-brand: 0 0 20px rgba(255, 153, 51, 0.2);
+    --shadow-glow-status: 0 0 15px rgba(34, 197, 94, 0.2);
+  }
+}
+
 @layer components {
-  /* 
-   * Glassmorphism Utilities
-   * Base class for all floating UI panels
-   */
+  /* ─── Glassmorphism Utilities ─── */
   .glass-panel {
-    @apply bg-slate-900/60 backdrop-blur-md border border-white/10 text-white shadow-xl;
+    background: var(--color-surface-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-lg);
   }
 
   .glass-panel-heavy {
     @apply bg-slate-950/80 backdrop-blur-xl border border-white/10 text-white shadow-2xl;
   }
 
-  /* Custom Scrollbar for Sidebar */
+  /* ─── Skip Navigation (Accessibility) ─── */
+  .skip-link {
+    @apply sr-only;
+  }
+  .skip-link:focus {
+    @apply not-sr-only fixed top-4 left-4 z-[100] bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-6 py-3 rounded-lg shadow-xl ring-2 ring-amber-500 font-semibold text-sm;
+  }
+
+  /* ─── Focus Visible Ring (Accessibility) ─── */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900;
+  }
+
+  /* ─── Custom Scrollbar ─── */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
   }
+}
+
+@layer utilities {
+  /* ─── Fluid Typography Utility Classes ─── */
+  .text-fluid-hero { font-size: var(--text-hero); }
+  .text-fluid-h1 { font-size: var(--text-h1); }
+  .text-fluid-h2 { font-size: var(--text-h2); }
+  .text-fluid-h3 { font-size: var(--text-h3); }
+  .text-fluid-h4 { font-size: var(--text-h4); }
+  .text-fluid-body { font-size: var(--text-body); }
+  .text-fluid-caption { font-size: var(--text-caption); }
+}
+
+/* ═══ Global Styles (outside layers) ═══ */
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom selection color */
+::selection {
+  background: rgba(255, 153, 51, 0.3);
+  color: white;
+}
+
+/* ─── Reduced Motion Support (Accessibility) ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Global Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ─── Ticker Animation ─── */
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ticker {
+  display: inline-block;
+  animation: ticker 30s linear infinite;
+}
+
+@keyframes ticker {
+  0% { transform: translate3d(100%, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* ─── Entry Animations ─── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.8s var(--transition-spring) forwards;
+  opacity: 0;
+}
+
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* ─── Minimum Font Size Policy ─── */
+/* Enforce 11px minimum for readability (WCAG) */
+.text-safe-xs {
+  font-size: max(0.6875rem, var(--text-min));
 }

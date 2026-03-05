@@ -1,8 +1,19 @@
-import React, { useMemo, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
+import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import Map, { Source, Layer, Marker, MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Flight } from '../types';
-import { FIR_BOUNDARIES, TERRAIN_BLIND_SPOTS, HOLDING_STACKS } from '../utils/navigationLayers';
+import {
+  OLA_API_KEY,
+  OLA_MAP_STYLES,
+  INDIA_CENTER,
+  INDIA_BOUNDS,
+  PLANE_SVG_PATH,
+  PLANE_COLORS,
+  getPlaneColor,
+  normalizeHeading,
+  olaTransformRequest,
+} from '../utils/mapConstants';
+import { FIR_BOUNDARIES, TERRAIN_BLIND_SPOTS, HOLDING_STACKS, AERO_CHARTS, AIRPORTS } from '../utils/navigationLayers';
 
 export interface MapControls {
   zoomIn: () => void;
@@ -22,29 +33,13 @@ interface MapComponentProps {
   showHolding?: boolean;
   mapStyleUrl?: string;
   flightTrack?: any[] | null;
+  showAeroCharts?: boolean;
+  showAirportPins?: boolean;
+  showAirportLabels?: boolean;
+  showAircraftLabels?: boolean;
+  mapBrightness?: number; // 0 to 100
+  activeMapStyle?: 'dark' | 'satellite' | 'street' | 'vector';
 }
-
-/* ─── Ola Maps Configuration ─── */
-const OLA_API_KEY = import.meta.env.VITE_OLA_MAP_API_KEY || 'dSpdveDyWcUJ4q2XAnRuweHDDnim2xnv0BFR73kQ';
-const OLA_MAPS_STYLE = `https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json?api_key=${OLA_API_KEY}`;
-
-/* ─── Plane SVG from public/assets/plane.svg ─── */
-const PLANE_SVG_PATH = 'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329z';
-
-const PLANE_COLORS = {
-  default: '#FACC15',  // Yellow — normal
-  alert: '#FF9933',    // Orange — squawk / event
-  selected: '#EF4444', // Red — clicked
-} as const;
-
-/* ─── Get plane color based on flight state ─── */
-const getPlaneColor = (flight: Flight, isSelected: boolean): string => {
-  if (isSelected) return PLANE_COLORS.selected;
-  const squawk = flight.liveMetrics?.squawk;
-  if (squawk === '7500' || squawk === '7600' || squawk === '7700') return PLANE_COLORS.alert;
-  if (flight.status === 'Delayed' || flight.status === 'Diverted') return PLANE_COLORS.alert;
-  return PLANE_COLORS.default;
-};
 
 /* ─── Plane SVG marker component ─── */
 const PlaneSVGMarker: React.FC<{
@@ -53,17 +48,20 @@ const PlaneSVGMarker: React.FC<{
   onClick?: () => void;
 }> = ({ flight, isSelected, onClick }) => {
   const color = getPlaneColor(flight, isSelected);
-  const heading = flight.liveMetrics.heading || 0;
-  const rotation = (heading + 135) % 360; // normalize SVG to north-up
+  const rotation = normalizeHeading(flight.liveMetrics.heading || 0);
   const size = isSelected ? 28 : 20;
 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-      className={`cursor-pointer transition-all duration-300 ${isSelected ? 'z-50 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'z-10 drop-shadow-md hover:scale-110'}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`Flight ${flight.flightNumber} — ${flight.airline}, ${flight.status}`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
+      className={`cursor-pointer transition-all duration-300 focus-ring rounded-full ${isSelected ? 'z-50 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'z-10 drop-shadow-md hover:scale-110'}`}
       style={{ width: size, height: size }}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 32 32">
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
         <path d={PLANE_SVG_PATH} fill={color} transform={`rotate(${rotation} 16 16)`} />
       </svg>
     </div>
@@ -78,21 +76,35 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   showFIR = false,
   showTerrain = false,
   showHolding = false,
+  showAeroCharts = false,
+  showAirportPins = false,
+  showAirportLabels = false,
+  showAircraftLabels = false,
+  mapBrightness = 100,
+  activeMapStyle = 'dark',
   mapStyleUrl,
   flightTrack
 }, ref) => {
   const mapRef = useRef<MapRef>(null);
 
+  const finalMapStyle = useMemo(() => {
+    if (mapStyleUrl) return mapStyleUrl;
+    if (activeMapStyle === 'satellite') return OLA_MAP_STYLES.satellite;
+    if (activeMapStyle === 'street') return OLA_MAP_STYLES.light;
+    if (activeMapStyle === 'vector') return OLA_MAP_STYLES.hybrid;
+    return OLA_MAP_STYLES.dark;
+  }, [mapStyleUrl, activeMapStyle]);
+
   useImperativeHandle(ref, () => ({
     zoomIn: () => mapRef.current?.getMap()?.zoomIn({ duration: 300 }),
     zoomOut: () => mapRef.current?.getMap()?.zoomOut({ duration: 300 }),
     resetView: () => {
-      (mapRef.current as any)?.flyTo({ center: [78.9629, 22.5937], zoom: 4.5, duration: 1200, essential: true });
+      (mapRef.current as any)?.flyTo({ center: [INDIA_CENTER.lng, INDIA_CENTER.lat], zoom: INDIA_CENTER.zoom, duration: 1200, essential: true });
     },
     flyToFlight: (flight: Flight) => {
       (mapRef.current as any)?.flyTo({ center: [flight.liveMetrics.lng, flight.liveMetrics.lat], zoom: 8, duration: 1000, essential: true });
     },
-    getZoom: () => mapRef.current?.getMap()?.getZoom() ?? 4.5,
+    getZoom: () => mapRef.current?.getMap()?.getZoom() ?? INDIA_CENTER.zoom,
   }));
 
 
@@ -119,33 +131,22 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
       <Map
         ref={mapRef}
         initialViewState={{
-          longitude: 78.9629,  // Center of India
-          latitude: 22.5937,
-          zoom: 4.5            // Asia-centric zoom showing India prominently
+          longitude: INDIA_CENTER.lng,
+          latitude: INDIA_CENTER.lat,
+          zoom: INDIA_CENTER.zoom,
         }}
-        // Bounds optimized for Asia view while keeping India central
-        maxBounds={[
-          [40.0, -10.0], // Southwest (Indian Ocean)
-          [110.0, 50.0]  // Northeast (China/Mongolia border)
-        ]}
+        maxBounds={[INDIA_BOUNDS.southwest, INDIA_BOUNDS.northeast]}
         minZoom={3}
         maxZoom={18}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={mapStyleUrl || OLA_MAPS_STYLE}
+        mapStyle={finalMapStyle}
         attributionControl={false}
         interactive={interactive}
-        transformRequest={(url: string) => {
-          if (url.includes('olamaps.io') && !url.includes('api_key')) {
-            return { url: `${url}${url.includes('?') ? '&' : '?'}api_key=${OLA_API_KEY}` };
-          }
-          return { url };
-        }}
+        transformRequest={olaTransformRequest}
         onError={(e) => {
           console.error("[MapComponent] Map Error:", e);
         }}
       >
-        {/* Default controls removed — using custom AeroSky controls */}
-
         {/* --- LAYERS --- */}
 
         {/* 1. Terrain / Blind Spots */}
@@ -155,7 +156,7 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
               id="terrain-fill"
               type="fill"
               paint={{
-                'fill-color': '#450a0a', // Deep Red (Red-950)
+                'fill-color': '#450a0a',
                 'fill-opacity': 0.3
               }}
             />
@@ -163,14 +164,12 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
               id="terrain-outline"
               type="line"
               paint={{
-                'line-color': '#ef4444', // Red-500
+                'line-color': '#ef4444',
                 'line-width': 1,
                 'line-dasharray': [4, 2],
                 'line-opacity': 0.6
               }}
             />
-            {/* Simple Labels for Terrain */}
-            {/* Note: Symbol layers need an icon or text-field. We'll skip complex labels for now to keep it simple or add if needed */}
           </Source>
         )}
 
@@ -182,27 +181,92 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
               type="line"
               paint={{
                 'line-color': ['get', 'color'],
-                'line-width': 2.5, // Thicker
+                'line-width': 2.5,
                 'line-opacity': 0.9
               }}
             />
           </Source>
         )}
 
-        {/* 3. Holding Stacks (Heatmap-like circles) */}
+        {/* 3. Holding Stacks */}
         {showHolding && (
           <Source id="holding-source" type="geojson" data={HOLDING_STACKS as any}>
             <Layer
               id="holding-circles"
               type="circle"
               paint={{
-                'circle-radius': 35, // Larger
+                'circle-radius': 35,
                 'circle-color': '#EF4444',
                 'circle-opacity': 0.4,
                 'circle-blur': 0.6
               }}
             />
           </Source>
+        )}
+
+        {/* 4. Aeronautical Charts (Vector Sectors) */}
+        {showAeroCharts && (
+          <Source id="aero-charts-source" type="geojson" data={AERO_CHARTS as any}>
+            <Layer
+              id="aero-charts-lines"
+              type="line"
+              paint={{
+                'line-color': '#06b6d4',
+                'line-width': 1,
+                'line-opacity': 0.4,
+                'line-dasharray': [2, 1]
+              }}
+            />
+          </Source>
+        )}
+
+        {/* 5. Airport Pins & Labels */}
+        {(showAirportPins || showAirportLabels) && (
+          <Source id="airports-source" type="geojson" data={AIRPORTS as any}>
+            {showAirportPins && (
+              <Layer
+                id="airport-dots"
+                type="circle"
+                paint={{
+                  'circle-radius': 4,
+                  'circle-color': '#ffffff',
+                  'circle-stroke-width': 1.5,
+                  'circle-stroke-color': '#0f172a'
+                }}
+              />
+            )}
+            {showAirportLabels && (
+              <Layer
+                id="airport-labels"
+                type="symbol"
+                layout={{
+                  'text-field': ['get', 'iata'],
+                  'text-font': ['Open Sans Bold'],
+                  'text-size': 10,
+                  'text-offset': [0, 1.2],
+                  'text-anchor': 'top'
+                }}
+                paint={{
+                  'text-color': '#ffffff',
+                  'text-halo-color': '#0f172a',
+                  'text-halo-width': 1
+                }}
+              />
+            )}
+          </Source>
+        )}
+
+        {/* 6. Brightness / Day-Night Mask */}
+        {mapBrightness < 100 && (
+          <Layer
+            id="brightness-mask"
+            type="background"
+            paint={{
+              'background-color': '#000000',
+              'background-opacity': (100 - mapBrightness) / 100
+            }}
+            beforeId="fir-lines" // Ensure it stays behind flight data/FIRs if possible, or just as a base
+          />
         )}
 
         {markers}
@@ -214,7 +278,6 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
           const start = [flight.origin.lng, flight.origin.lat];
           const current = [flight.liveMetrics.lng, flight.liveMetrics.lat];
           const dest = [flight.destination.lng, flight.destination.lat];
-
 
           const isWeakSignal = flight.liveMetrics.signalConfidence !== 'High';
           const isLostSignal = flight.liveMetrics.signalConfidence === 'Low';
@@ -234,7 +297,7 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
 
           return (
             <React.Fragment key={`path-${flight.id}`}>
-              {/* Flown Path / Track - Solid if High, Dotted if Weak/Low */}
+              {/* Flown Path / Track */}
               <Source id={`source-flown-${flight.id}`} type="geojson" data={flownGeoJson as any}>
                 <Layer
                   id={`layer-flown-${flight.id}`}
@@ -243,12 +306,12 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
                     'line-color': flightTrack ? '#00f0ff' : PLANE_COLORS.selected,
                     'line-width': flightTrack ? 4 : 3,
                     'line-opacity': isLostSignal ? 0.4 : 0.8,
-                    'line-dasharray': isWeakSignal && !flightTrack ? [2, 2] : [1, 0] // Dotted if weak
+                    'line-dasharray': isWeakSignal && !flightTrack ? [2, 2] : [1, 0]
                   }}
                 />
               </Source>
 
-              {/* Projected Path (Dashed White - always dashed for projection) */}
+              {/* Projected Path */}
               <Source id={`source-projected-${flight.id}`} type="geojson" data={projectedGeoJson as any}>
                 <Layer
                   id={`layer-projected-${flight.id}`}
@@ -265,7 +328,7 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
           );
         })}
       </Map>
-    </div >
+    </div>
   );
 });
 

@@ -109,3 +109,51 @@ export const HOLDING_STACKS = {
         }
     ]
 };
+
+export const AERO_CHARTS = {
+    type: 'FeatureCollection',
+    features: [
+        {
+            type: 'Feature',
+            properties: { name: 'Airway J1', category: 'High Altitude' },
+            geometry: {
+                type: 'LineString',
+                coordinates: [[72.0, 19.0], [77.0, 28.0], [88.0, 22.0]]
+            }
+        },
+        {
+            type: 'Feature',
+            properties: { name: 'Approach Corridor V1', category: 'Terminal' },
+            geometry: {
+                type: 'LineString',
+                coordinates: [[76.5, 27.5], [77.1, 28.5]]
+            }
+        }
+    ]
+};
+
+export const AIRPORTS = {
+    type: 'FeatureCollection',
+    features: [
+        {
+            type: 'Feature',
+            properties: { iata: 'DEL', name: 'Indira Gandhi Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [77.1025, 28.5562] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'BOM', name: 'Chhatrapati Shivaji Maharaj Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [72.8656, 19.0896] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'BLR', name: 'Kempegowda Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [77.7066, 13.1986] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'MAA', name: 'Chennai Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [80.1709, 12.9941] }
+        }
+    ]
+};

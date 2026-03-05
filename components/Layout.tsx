@@ -55,7 +55,6 @@ const Layout: React.FC = () => {
         {
           title: 'Infrastructure', items: [
             { label: 'Airport Intelligence', icon: <TowerControl size={14} />, to: '/intelligence?tab=airports' },
-            { label: 'Network status', icon: <BarChart3 size={14} />, to: '/coverage' },
           ]
         }
       ]
@@ -107,6 +106,11 @@ const Layout: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full relative">
 
+      {/* ═══ Skip Navigation (Accessibility — WCAG 2.4.1) ═══ */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* ═══ Desktop Navigation Bar ═══ */}
       <header role="banner" className="hidden md:block absolute top-0 left-0 right-0 z-50 pointer-events-none">
         <nav
@@ -140,10 +144,14 @@ const Layout: React.FC = () => {
             <div className="flex items-center gap-1">
               {NAV_STRUCTURE.map((item) => (
                 <div key={item.id} className="relative group">
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-300">
+                  <button
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-300 focus-ring"
+                  >
                     <span className={`opacity-70 group-hover:opacity-100 transition-opacity ${item.accent}`}>{item.icon}</span>
                     {item.label}
-                    <ChevronDown size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" />
+                    <ChevronDown size={10} className="opacity-40 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                   </button>
 
                   {/* Dropdown Panel */}
@@ -189,20 +197,21 @@ const Layout: React.FC = () => {
 
             {/* Settings & Profile */}
             <div className="flex items-center gap-1">
-              <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors">
-                <Bell size={16} />
+              <button aria-label="Notifications" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
+                <Bell size={16} aria-hidden="true" />
               </button>
-              <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors">
-                <Settings size={16} />
+              <button aria-label="Settings" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
+                <Settings size={16} aria-hidden="true" />
               </button>
 
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-amber-500 dark:hover:text-amber-400 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-amber-500 dark:hover:text-amber-400 transition-colors focus-ring"
+                aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
                 title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               >
-                {theme === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+                {theme === 'dark' ? <Moon size={16} aria-hidden="true" /> : <Sun size={16} aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -210,7 +219,7 @@ const Layout: React.FC = () => {
       </header>
 
       {/* ═══ Main Content Area ═══ */}
-      <main className={`flex-1 relative ${isMapPage ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`} role="main">
+      <main id="main-content" className={`flex-1 relative ${isMapPage ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`} role="main">
         <Outlet />
       </main>
 

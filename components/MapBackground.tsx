@@ -1,8 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AIRPORTS } from '../mockData';
 import { Flight } from '../types';
+import {
+  OLA_API_KEY,
+  OLA_MAP_STYLES,
+  PLANE_SVG_PATH,
+  getPlaneColor,
+  normalizeHeading,
+  olaTransformRequest,
+} from '../utils/mapConstants';
 
 interface MapProps {
   interactive?: boolean;
@@ -16,40 +24,6 @@ interface MapProps {
   className?: string;
   theme?: 'dark' | 'light';
 }
-
-/* ─── Ola Maps Configuration ─── */
-const OLA_API_KEY = import.meta.env.VITE_OLA_MAP_API_KEY || 'dSpdveDyWcUJ4q2XAnRuweHDDnim2xnv0BFR73kQ';
-const OLA_STYLES = {
-  dark: `https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json?api_key=${OLA_API_KEY}`,
-  light: `https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json?api_key=${OLA_API_KEY}`,
-};
-
-/* ─── Plane SVG Icon Builder ───
-   Colors:
-     Yellow (#FACC15) = Default / Normal flight
-     Orange (#FF9933) = Alert / Squawk event
-     Red    (#EF4444) = Selected / Clicked
-*/
-const PLANE_SVG_PATH = 'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475 5.785-0.316c0.297-0.386 0.96-1.234 1.374-1.648l5.271-5.271-10.989-5.388 2.782-2.782 13.932 2.444 4.933-4.933c0.585-0.585 1.496-0.894 2.634-0.894 0.776 0 1.395 0.143 1.421 0.149l0.3 0.070 0.089 0.295c0.469 1.55 0.187 3.298-0.67 4.155l-4.956 4.956 2.434 13.875-2.782 2.782-5.367-10.945-4.923 4.924c-0.518 0.517-1.623 1.536-2.033 1.912l-0.431 5.425-2.449 1.329z';
-
-const PLANE_COLORS = {
-  default: '#FACC15',  // Yellow — normal flight
-  alert: '#FF9933',    // Orange — squawk / event
-  selected: '#EF4444', // Red — clicked / selected
-} as const;
-
-/* ─── Determine plane color based on flight status / events ─── */
-const getPlaneColor = (flight: Flight, isSelected: boolean, theme: 'dark' | 'light'): string => {
-  if (isSelected) return PLANE_COLORS.selected;
-  const squawk = flight.liveMetrics?.squawk;
-  if (squawk === '7500' || squawk === '7600' || squawk === '7700') return PLANE_COLORS.alert;
-  if (flight.status === 'Delayed' || flight.status === 'Diverted') return PLANE_COLORS.alert;
-
-  // High contrast for light mode
-  if (theme === 'light') return '#EA580C'; // orange-600
-
-  return PLANE_COLORS.default;
-};
 
 const MapBackground: React.FC<MapProps> = ({
   interactive = true,
@@ -73,17 +47,12 @@ const MapBackground: React.FC<MapProps> = ({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: OLA_STYLES[theme],
+      style: OLA_MAP_STYLES[theme],
       center: [center.lng, center.lat],
       zoom,
       interactive,
       attributionControl: false,
-      transformRequest: (url: string) => {
-        if (url.includes('olamaps.io') && !url.includes('api_key')) {
-          return { url: `${url}${url.includes('?') ? '&' : '?'}api_key=${OLA_API_KEY}` };
-        }
-        return { url };
-      },
+      transformRequest: olaTransformRequest,
     });
 
     // Disable all interactions for background map
@@ -117,7 +86,7 @@ const MapBackground: React.FC<MapProps> = ({
   // Update map style when theme changes
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.setStyle(OLA_STYLES[theme]);
+      mapRef.current.setStyle(OLA_MAP_STYLES[theme as keyof typeof OLA_MAP_STYLES]);
     }
   }, [theme]);
 
@@ -134,10 +103,10 @@ const MapBackground: React.FC<MapProps> = ({
         if (flight.liveMetrics.altitude === 0 && flight.liveMetrics.lat === 0) return;
 
         const isSelected = flight.id === selectedFlightId;
-        const color = getPlaneColor(flight, isSelected, theme);
+        const color = getPlaneColor(flight, isSelected, theme as 'dark' | 'light');
         const heading = flight.liveMetrics.heading || 0;
         const size = isSelected ? 28 : 18;
-        const rotation = (heading + 135) % 360; // normalize SVG orientation
+        const rotation = normalizeHeading(heading);
 
         // Create SVG element for marker
         const el = document.createElement('div');
@@ -145,12 +114,21 @@ const MapBackground: React.FC<MapProps> = ({
         el.style.height = `${size}px`;
         el.style.cursor = 'pointer';
         el.style.transition = 'transform 0.3s ease';
-        el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32"><path d="${PLANE_SVG_PATH}" fill="${color}" transform="rotate(${rotation} 16 16)"/></svg>`;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', `Flight ${flight.flightNumber} — ${flight.status}`);
+        el.setAttribute('tabindex', '0');
+        el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true"><path d="${PLANE_SVG_PATH}" fill="${color}" transform="rotate(${rotation} 16 16)"/></svg>`;
 
         if (onFlightClick) {
           el.addEventListener('click', (e) => {
             e.stopPropagation();
             onFlightClick(flight.id);
+          });
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onFlightClick(flight.id);
+            }
           });
         }
 
@@ -175,6 +153,7 @@ const MapBackground: React.FC<MapProps> = ({
         el.style.opacity = '0.8';
         el.style.boxShadow = '0 0 6px rgba(34,197,94,0.4)';
         el.title = airport.iata;
+        el.setAttribute('aria-label', `Airport: ${airport.iata}`);
 
         const marker = new maplibregl.Marker({
           element: el,
@@ -186,7 +165,7 @@ const MapBackground: React.FC<MapProps> = ({
         markersRef.current.push(marker);
       });
     }
-  }, [flights, showFlights, showAirports, selectedFlightId, onFlightClick]);
+  }, [flights, showFlights, showAirports, selectedFlightId, onFlightClick, theme]);
 
   return <div ref={mapContainerRef} className={className} />;
 };

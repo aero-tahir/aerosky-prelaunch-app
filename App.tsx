@@ -20,9 +20,9 @@ const Placeholder = ({ title }: { title: string }) => (
 );
 
 const LoadingPage = () => (
-  <div className="flex items-center justify-center h-full min-h-screen bg-sky-950 text-white font-mono flex-col gap-4">
-    <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-    <div className="text-cyan-500 font-bold uppercase tracking-widest text-sm">Loading AeroSky Interface...</div>
+  <div className="flex items-center justify-center h-full min-h-screen bg-slate-50 dark:bg-sky-950 text-slate-900 dark:text-white font-mono flex-col gap-4">
+    <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" aria-label="Loading"></div>
+    <div className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-sm">Loading AeroSky Interface...</div>
   </div>
 );
 
