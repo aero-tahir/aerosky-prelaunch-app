@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // Expose env vars that don't start with VITE_
-      'import.meta.env.VITE_OLA_MAP_API_KEY': JSON.stringify(env['ola-map-api-key']),
+      'import.meta.env.VITE_OLA_MAP_API_KEY': JSON.stringify(env.VITE_OLA_MAP_API_KEY),
       'import.meta.env.clientId': JSON.stringify(env.clientId),
       'import.meta.env.clientSecret': JSON.stringify(env.clientSecret)
     },

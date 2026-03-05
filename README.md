@@ -44,7 +44,7 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-ola-map-api-key=YOUR_OLA_MAP_API_KEY
+VITE_OLA_MAP_API_KEY=YOUR_OLA_MAP_API_KEY
 clientId=YOUR_CLIENT_ID
 clientSecret=YOUR_CLIENT_SECRET
 ```
