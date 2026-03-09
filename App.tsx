@@ -59,6 +59,13 @@ const App: React.FC = () => {
             <Route path="alerts/*" element={<GenericContent />} />
             <Route path="community/*" element={<GenericContent />} />
             <Route path="playback/*" element={<GenericContent />} />
+            <Route path="intelligence/*" element={<GenericContent />} />
+            <Route path="contribute/*" element={<GenericContent />} />
+            <Route path="contribute" element={<GenericContent />} />
+            <Route path="commercial" element={<GenericContent />} />
+            <Route path="commercial/*" element={<GenericContent />} />
+            <Route path="blog" element={<GenericContent />} />
+            <Route path="blog/*" element={<GenericContent />} />
 
             <Route path="login" element={<Placeholder title="Login" />} />
 

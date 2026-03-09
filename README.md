@@ -1,17 +1,17 @@
 # ✈️ AeroSky
 
-**Real-time flight tracking and aviation intelligence platform for Indian airspace.**
+**Real-time flight visibility and aviation intelligence platform for Indian airspace.**
 
-AeroSky is a modern web application that provides live flight tracking, airport intelligence, coverage mapping, and aviation data analytics — with an India-first focus.
+AeroSky is a modern web application that provides live flight visibility, airport intelligence, coverage mapping, and aviation data analytics with an India-first focus.
 
 ## Features
 
-- **Live Flight Map** — Real-time aircraft tracking on an interactive map powered by MapLibre GL with multiple base layer styles (satellite, hybrid, light, dark)
-- **Flight Details** — Detailed telemetry including altitude, ground speed, heading, vertical rate, squawk codes, and flight path history
-- **Airport Hub** — Airport-level intelligence with arrivals, departures, and operational data
-- **Intelligence Dashboard** — Aircraft, airline, and airport analytics
-- **Coverage Map** — Ground station and ADS-B coverage visualization
-- **Data & API** — Aviation data access and API documentation
+- **Live Flight Map**: Real-time aircraft visibility on an interactive map powered by MapLibre GL with multiple base layer styles (satellite, hybrid, light, dark)
+- **Flight Details**: Detailed telemetry including altitude, ground speed, heading, vertical rate, squawk codes, and flight path history
+- **Airport Hub**: Airport-level intelligence with arrivals, departures, and operational data
+- **Intelligence Dashboard**: Aircraft, airline, and airport analytics
+- **Coverage Map**: Ground station and ADS-B coverage visualization
+- **Data & API**: Aviation data access and API documentation
 
 ## Tech Stack
 
@@ -74,7 +74,7 @@ aerosky-ui-app/
 │   └── MapBackground.tsx   # Decorative map background
 ├── pages/              # Route-level pages
 │   ├── Home.tsx            # Landing page
-│   ├── LiveMap.tsx         # Real-time flight tracking map
+│   ├── LiveMap.tsx         # Real-time flight visibility map
 │   ├── FlightDetails.tsx   # Individual flight view
 │   ├── AirportHub.tsx      # Airport intelligence
 │   ├── Intelligence.tsx    # Data analytics dashboard
@@ -95,4 +95,4 @@ aerosky-ui-app/
 
 ## License
 
-Private — AeroLytics © 2025
+Private: AeroLytics © 2025

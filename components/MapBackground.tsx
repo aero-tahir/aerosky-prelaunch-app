@@ -115,7 +115,7 @@ const MapBackground: React.FC<MapProps> = ({
         el.style.cursor = 'pointer';
         el.style.transition = 'transform 0.3s ease';
         el.setAttribute('role', 'button');
-        el.setAttribute('aria-label', `Flight ${flight.flightNumber} — ${flight.status}`);
+        el.setAttribute('aria-label', `Flight ${flight.flightNumber}: ${flight.status}`);
         el.setAttribute('tabindex', '0');
         el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true"><path d="${PLANE_SVG_PATH}" fill="${color}" transform="rotate(${rotation} 16 16)"/></svg>`;
 

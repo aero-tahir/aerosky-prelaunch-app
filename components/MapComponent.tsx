@@ -56,7 +56,7 @@ const PlaneSVGMarker: React.FC<{
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
       role="button"
       tabIndex={0}
-      aria-label={`Flight ${flight.flightNumber} — ${flight.airline}, ${flight.status}`}
+      aria-label={`Flight ${flight.flightNumber}: ${flight.airline}, ${flight.status}`}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }}
       className={`cursor-pointer transition-all duration-300 focus-ring rounded-full ${isSelected ? 'z-50 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'z-10 drop-shadow-md hover:scale-110'}`}
       style={{ width: size, height: size }}

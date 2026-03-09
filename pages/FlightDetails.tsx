@@ -12,9 +12,9 @@ const FlightDetails: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-sky-950 flex items-center justify-center pt-20 px-4">
         <div className="text-center space-y-4">
-          <AlertCircle size={48} className="mx-auto text-slate-400 dark:text-gray-500" />
-          <h2 className="text-xl font-bold text-slate-700 dark:text-gray-300">Flight not found</h2>
-          <p className="text-slate-500 dark:text-gray-500 text-sm">The flight you're looking for doesn't exist or has been removed.</p>
+          <AlertCircle size={48} className="mx-auto text-slate-500 dark:text-gray-400" />
+          <h2 className="text-xl font-bold text-slate-700 dark:text-gray-200">Flight not found</h2>
+          <p className="text-slate-600 dark:text-gray-300 text-sm">The flight you're looking for doesn't exist or has been removed.</p>
           <Link to="/explore/map" className="inline-flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:underline text-sm font-medium">
             <ArrowLeft size={14} /> Back to Map
           </Link>
@@ -34,7 +34,7 @@ const FlightDetails: React.FC = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-sky-950 pt-20 px-4 md:px-8 pb-20">
       <Link
         to="/explore/map"
-        className="inline-flex items-center text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white mb-6 transition-colors focus-ring rounded-md px-2 py-1"
+        className="inline-flex items-center text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white mb-6 transition-colors focus-ring rounded-md px-2 py-1"
       >
         <ArrowLeft size={16} className="mr-2" /> Back to Map
       </Link>
@@ -48,7 +48,7 @@ const FlightDetails: React.FC = () => {
               <div className="w-8 h-8 bg-slate-200 dark:bg-white rounded-sm flex items-center justify-center text-slate-800 dark:text-black font-bold text-xs">
                 {flight.airlineCode}
               </div>
-              <h2 className="text-xl text-slate-500 dark:text-gray-400">{flight.airline}</h2>
+              <h2 className="text-xl text-slate-600 dark:text-gray-300">{flight.airline}</h2>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-slate-900 dark:text-white tracking-tighter font-mono">
               {flight.flightNumber}
@@ -68,11 +68,11 @@ const FlightDetails: React.FC = () => {
             {/* Origin */}
             <div className="text-left">
               <div className="text-4xl font-bold text-slate-900 dark:text-white mb-1">{flight.origin.iata}</div>
-              <div className="text-sm text-slate-500 dark:text-gray-400">{flight.origin.city}</div>
+              <div className="text-sm text-slate-600 dark:text-gray-400">{flight.origin.city}</div>
               <div className="mt-4 font-mono">
-                <div className="text-xs text-slate-400 dark:text-gray-500 uppercase mb-1">Scheduled</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400 uppercase mb-1">Scheduled</div>
                 <div className="text-lg text-slate-700 dark:text-white">{flight.scheduledDep}</div>
-                <div className="text-xs text-slate-400 dark:text-gray-500 uppercase mt-2 mb-1">Actual</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400 uppercase mt-2 mb-1">Actual</div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white">{flight.actualDep}</div>
               </div>
             </div>
@@ -100,9 +100,9 @@ const FlightDetails: React.FC = () => {
             {/* Destination */}
             <div className="text-right">
               <div className="text-4xl font-bold text-slate-900 dark:text-white mb-1">{flight.destination.iata}</div>
-              <div className="text-sm text-slate-500 dark:text-gray-400">{flight.destination.city}</div>
+              <div className="text-sm text-slate-600 dark:text-gray-400">{flight.destination.city}</div>
               <div className="mt-4 font-mono">
-                <div className="text-xs text-slate-400 dark:text-gray-500 uppercase mb-1">Scheduled</div>
+                <div className="text-xs text-slate-500 dark:text-gray-400 uppercase mb-1">Scheduled</div>
                 <div className="text-lg text-slate-700 dark:text-white">{flight.scheduledArr}</div>
                 <div className="text-xs text-slate-400 dark:text-gray-500 uppercase mt-2 mb-1">Estimated</div>
                 <div className={`text-lg font-bold ${isDelayed ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{flight.estArr}</div>
@@ -115,11 +115,11 @@ const FlightDetails: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Aircraft Card */}
           <div className="bg-white dark:bg-transparent dark:glass-panel p-6 rounded-xl border border-slate-200 dark:border-transparent shadow-sm dark:shadow-none">
-            <h3 className="text-sm font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-white/10 pb-2">Aircraft Details</h3>
+            <h3 className="text-sm font-bold text-slate-600 dark:text-gray-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-white/10 pb-2">Aircraft Details</h3>
             <div className="flex gap-4 items-start">
               <img
                 src={flight.aircraft.image}
-                alt={`${flight.aircraft.type} aircraft — Registration ${flight.aircraft.registration}`}
+                alt={`${flight.aircraft.type} aircraft: Registration ${flight.aircraft.registration}`}
                 className="w-24 h-24 object-cover rounded-lg border border-slate-200 dark:border-white/10"
               />
               <div className="space-y-2">
@@ -140,13 +140,13 @@ const FlightDetails: React.FC = () => {
             {/* Confidence Badge */}
             <div className="mt-6 flex items-center gap-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 px-3 py-2 rounded-lg text-xs font-mono border border-blue-200 dark:border-blue-500/20">
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" aria-hidden="true" />
-              <span>Tracking Source: ADS-B (Live)</span>
+              <span>Data Source: ADS-B (Live)</span>
             </div>
           </div>
 
           {/* Altitude Graph */}
           <div className="bg-white dark:bg-transparent dark:glass-panel p-6 rounded-xl border border-slate-200 dark:border-transparent shadow-sm dark:shadow-none">
-            <h3 className="text-sm font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-white/10 pb-2">Flight Profile</h3>
+            <h3 className="text-sm font-bold text-slate-600 dark:text-gray-300 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-white/10 pb-2">Flight Profile</h3>
             <div className="h-40 w-full" role="img" aria-label="Altitude profile chart showing flight altitude over time">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={flight.history}>

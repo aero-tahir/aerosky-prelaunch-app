@@ -13,9 +13,9 @@ const AirportHub: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-sky-950 flex items-center justify-center pt-20 px-4">
         <div className="text-center space-y-4">
-          <AlertCircle size={48} className="mx-auto text-slate-400 dark:text-gray-500" />
-          <h2 className="text-xl font-bold text-slate-700 dark:text-gray-300">Airport Not Found</h2>
-          <p className="text-slate-500 dark:text-gray-500 text-sm">The airport you're looking for doesn't exist in our database.</p>
+          <AlertCircle size={48} className="mx-auto text-slate-500 dark:text-gray-400" />
+          <h2 className="text-xl font-bold text-slate-700 dark:text-gray-200">Airport Not Found</h2>
+          <p className="text-slate-600 dark:text-gray-300 text-sm">The airport you're looking for doesn't exist in our database.</p>
           <Link to="/intelligence?tab=airports" className="inline-flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:underline text-sm font-medium">
             <ArrowLeft size={14} /> Browse Airports
           </Link>
@@ -40,12 +40,12 @@ const AirportHub: React.FC = () => {
               <span className="text-2xl text-slate-400 dark:text-gray-400 font-mono">{airport.icao}</span>
             </div>
             <h2 className="text-xl md:text-2xl text-slate-600 dark:text-gray-300">{airport.name}</h2>
-            <p className="text-slate-500 dark:text-gray-500">{airport.city}, India</p>
+            <p className="text-slate-600 dark:text-gray-400">{airport.city}, India</p>
           </div>
           <div className="mt-4 md:mt-0">
             {/* Congestion Gauge */}
             <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 flex flex-col items-center">
-              <div className="text-xs text-slate-500 dark:text-gray-400 uppercase mb-2 font-medium">Congestion Index</div>
+              <div className="text-xs text-slate-600 dark:text-gray-400 uppercase mb-2 font-medium">Congestion Index</div>
               <div className="relative w-32 h-16 overflow-hidden" role="meter" aria-label="Airport congestion level" aria-valuenow={25} aria-valuemin={0} aria-valuemax={100}>
                 {/* Gauge Arc Background */}
                 <svg viewBox="0 0 120 60" className="w-full h-full">
@@ -60,7 +60,7 @@ const AirportHub: React.FC = () => {
                     </linearGradient>
                   </defs>
                   <path d="M 10 55 A 50 50 0 0 1 110 55" fill="none" stroke="url(#gauge-gradient)" strokeWidth="8" strokeLinecap="round" opacity="0.6" />
-                  {/* Needle — positioned at 25% (Low Traffic) */}
+                  {/* Needle: positioned at 25% (Low Traffic) */}
                   <line x1="60" y1="55" x2="30" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-slate-600 dark:text-white" />
                   {/* Center dot */}
                   <circle cx="60" cy="55" r="4" fill="currentColor" className="text-slate-600 dark:text-white" />
@@ -91,8 +91,8 @@ const AirportHub: React.FC = () => {
               aria-selected={tab === 'departures'}
               aria-controls="fids-panel"
               className={`flex-1 py-4 text-center rounded-xl font-bold text-lg border transition-all focus-ring ${tab === 'departures'
-                  ? 'bg-amber-400 dark:bg-yellow-400 text-slate-900 dark:text-black border-amber-400 dark:border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]'
-                  : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
+                ? 'bg-amber-400 dark:bg-yellow-400 text-slate-900 dark:text-black border-amber-400 dark:border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]'
+                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
                 }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -105,8 +105,8 @@ const AirportHub: React.FC = () => {
               aria-selected={tab === 'arrivals'}
               aria-controls="fids-panel"
               className={`flex-1 py-4 text-center rounded-xl font-bold text-lg border transition-all focus-ring ${tab === 'arrivals'
-                  ? 'bg-amber-400 dark:bg-yellow-400 text-slate-900 dark:text-black border-amber-400 dark:border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]'
-                  : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-gray-400 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
+                ? 'bg-amber-400 dark:bg-yellow-400 text-slate-900 dark:text-black border-amber-400 dark:border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)]'
+                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
                 }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -143,7 +143,7 @@ const AirportHub: React.FC = () => {
                           {flight.status}
                         </span>
                       </td>
-                      <td className="p-4 text-slate-400 dark:text-gray-400">A12</td>
+                      <td className="p-4 text-slate-500 dark:text-gray-400">A12</td>
                     </tr>
                   ))}
                   {/* Placeholder rows for visual density */}

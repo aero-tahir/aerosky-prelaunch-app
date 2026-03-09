@@ -3,7 +3,7 @@ import { Flight } from '../types';
 export const SignalQuality = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 
 /**
- * Operational Intelligence Engine — India First
+ * Operational Intelligence Engine (India First)
  * 
  * Transforms raw ADS-B telemetry into human-readable aviation insights.
  * Deep awareness of Indian airspace, FIR sectors, key airports,
@@ -87,14 +87,14 @@ const AIRPORT_INTEL: Record<string, {
     'SXR': {
         congestion: 'Moderate',
         risk: 'High',
-        humanNote: 'Srinagar Sheikh ul-Alam. Mountain-surrounded approach — visual only in clear weather. High-security clearances required.',
+        humanNote: 'Srinagar Sheikh ul-Alam: Mountain-surrounded approach (visual only in clear weather). High-security clearances required.',
         notam: 'NOTAM: Restricted area active. ATC clearance mandatory before descent.',
         rwyInfo: 'RWY 17/35 VOR/DME',
     },
     'IXL': {
         congestion: 'Low',
         risk: 'High',
-        humanNote: 'Leh Kushok Bakula — one of the world\'s highest airports. Ops limited to morning window 0530-0930 local due to terrain winds.',
+        humanNote: 'Leh Kushok Bakula: one of the world\'s highest airports. Operations are limited to a morning window (0530-0930 local) due to terrain winds.',
         notam: 'CRITICAL: All operations daylight VFR only. No go-around possible.',
         rwyInfo: 'RWY 07/25 VISUAL',
     },
@@ -206,12 +206,12 @@ export const generatePilotReport = (flight: Flight): string => {
 
     // Terrain awareness - Himalayan corridor
     if (lat > 30 && lng > 75 && lng < 85) {
-        return `Operating in Himalayan corridor. Mountain wave turbulence possible. ${fir.center} monitoring on ${fir.freq}. Minimum sector altitude restrictions apply.`;
+        return `Operating in Himalayan corridor. Mountain wave turbulence possible. ${fir.center} providing awareness on ${fir.freq}. Minimum sector altitude restrictions apply.`;
     }
 
     // Signal degradation
     if (signalConfidence === 'Low') {
-        return `ADS-B signal intermittent — likely terrain masking in ${fir.name}. Position accuracy may be reduced. Last reliable fix at FL${Math.round(altitude / 100)}.`;
+        return `ADS-B signal intermittent. Likely terrain masking in ${fir.name}, position accuracy may be reduced. Last reliable fix at FL${Math.round(altitude / 100)}.`;
     }
 
     // High winds
@@ -221,7 +221,7 @@ export const generatePilotReport = (flight: Flight): string => {
 
     // Cold temperature
     if (oat && oat < -55) {
-        return `Cold air mass at FL${Math.round(altitude / 100)}, OAT ${Math.round(oat)}°C. Temperature correction required for altitude. Crew monitoring fuel temperature limits.`;
+        return `Cold air mass at FL${Math.round(altitude / 100)}, OAT ${Math.round(oat)}°C. Temperature correction required for altitude. Crew observing fuel temperature limits.`;
     }
 
     // Approach to congested airport
@@ -234,7 +234,7 @@ export const generatePilotReport = (flight: Flight): string => {
 
     // Cruising - provide sector awareness
     if (phase.phase === 'CRUISE') {
-        return `Cruising at FL${Math.round(altitude / 100)} through ${fir.name}. ${fir.center} monitoring. Smooth ride, operations normal.`;
+        return `Cruising at FL${Math.round(altitude / 100)} through ${fir.name}. ${fir.center} observing. Smooth ride, operations normal.`;
     }
 
     // Climbing
@@ -264,13 +264,13 @@ export const getIndianAirspaceContext = (flight: Flight): {
 
     // Generate alerts
     if (destIntel.congestion === 'Saturated' || destIntel.congestion === 'High') {
-        alerts.push(`⚠️ ${flight.destination.iata}: ${destIntel.congestion} traffic — expect delays`);
+        alerts.push(`⚠️ ${flight.destination.iata}: ${destIntel.congestion} traffic. Expect delays.`);
     }
     if (flight.liveMetrics.lat > 30 && flight.liveMetrics.lng > 75) {
-        alerts.push(`🏔️ Himalayan Corridor — terrain awareness zone`);
+        alerts.push(`🏔️ Himalayan Corridor: terrain awareness zone`);
     }
     if (flight.liveMetrics.signalConfidence === 'Low') {
-        alerts.push(`📡 Signal quality degraded — terrain masking likely`);
+        alerts.push(`📡 Signal quality degraded: terrain masking likely`);
     }
     if ((flight.liveMetrics.windSpeed || 0) > 35) {
         alerts.push(`💨 Strong winds ${flight.liveMetrics.windSpeed}kt at altitude`);
@@ -293,7 +293,7 @@ export const getFeederStatus = (flight: Flight) => {
     const count = flight.liveMetrics.feederCount || 1;
     const strongest = flight.liveMetrics.rssi || -20;
     return {
-        text: `${count} Station${count > 1 ? 's' : ''} Tracking`,
+        text: `${count} Station${count > 1 ? 's' : ''} Observing`,
         quality: strongest > -15 ? 'Excellent' : strongest > -25 ? 'Good' : 'Marginal',
         source: 'ADS-B (1090MHz)',
     };

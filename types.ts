@@ -83,7 +83,7 @@ export interface NewsItem {
 }
 
 export interface Stats {
-  tracking: number;
+  observing: number;
   squawks: number;
   coverage: number;
 }

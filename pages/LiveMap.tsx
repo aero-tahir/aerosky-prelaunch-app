@@ -201,7 +201,7 @@ const LiveMap: React.FC = () => {
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1.5">
               <span className="text-sm">🇮🇳</span>
-              <span className="text-[10px] font-bold text-slate-700 dark:text-white/90">Indian Sky — Live</span>
+              <span className="text-[10px] font-bold text-slate-700 dark:text-white/90">Indian Sky: Live Visibility</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock size={9} className="text-slate-400 dark:text-white/30" />
@@ -209,7 +209,7 @@ const LiveMap: React.FC = () => {
             </div>
           </div>
           <p className="text-[9px] text-slate-500 dark:text-white/40 leading-relaxed">
-            Tracking <span className="text-cyan-600 dark:text-cyan-400 font-semibold">{filteredFlights.length}</span> flights across Indian airspace.
+            Observing <span className="text-cyan-600 dark:text-cyan-400 font-semibold">{filteredFlights.length}</span> flights across Indian airspace.
           </p>
         </div>
 
@@ -618,7 +618,7 @@ const LiveMap: React.FC = () => {
               <CollapsibleSection title="App Settings" defaultOpen>
                 <div className="space-y-1">
                   <ToggleSwitch label="Humanized Metrics" active={true} onClick={() => { }} icon={<Briefcase size={14} />} description="DGCA-compliant units" />
-                  <ToggleSwitch label="Auto-Tracking" active={true} onClick={() => { }} icon={<Eye size={14} />} description="Focus on selection" />
+                  <ToggleSwitch label="Auto-Focus" active={true} onClick={() => { }} icon={<Eye size={14} />} description="Focus on selection" />
                 </div>
               </CollapsibleSection>
             </div>

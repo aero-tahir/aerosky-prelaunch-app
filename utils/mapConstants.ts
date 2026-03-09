@@ -52,10 +52,10 @@ export const PLANE_SVG_PATH = 'M9.123 30.464l-1.33-6.268-6.318-1.397 1.291-2.475
 
 /* ─── Plane Color System ─── */
 export const PLANE_COLORS = {
-    default: '#FACC15',   // Yellow — normal flight
-    alert: '#FF9933',     // Orange — squawk / event  
-    selected: '#EF4444',  // Red — clicked / selected
-    lightMode: '#EA580C', // Orange-600 — high contrast for light backgrounds
+    default: '#FACC15',   // Yellow: normal flight
+    alert: '#FF9933',     // Orange: squawk / event  
+    selected: '#EF4444',  // Red: clicked / selected
+    lightMode: '#EA580C', // Orange-600: high contrast for light backgrounds
 } as const;
 
 /**
