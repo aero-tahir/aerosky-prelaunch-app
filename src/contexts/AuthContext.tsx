@@ -3,26 +3,14 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 interface AuthContextType {
   isLoggedIn: boolean;
   user: { name: string; email: string } | null;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   loginError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/* Parse credentials from env: "email:pass,email:pass" */
-const parseCredentials = (): Map<string, string> => {
-  const raw = import.meta.env.VITE_AUTH_USERS || '';
-  const map = new Map<string, string>();
-  if (!raw) return map;
-  raw.split(',').forEach((pair: string) => {
-    const [email, pass] = pair.trim().split(':');
-    if (email && pass) map.set(email.toLowerCase(), pass);
-  });
-  return map;
-};
-
-const VALID_USERS = parseCredentials();
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('aerosky_auth') === 'true');
@@ -32,22 +20,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  const login = useCallback((email: string, password: string): boolean => {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     setLoginError(null);
-    const key = email.toLowerCase().trim();
-    const expected = VALID_USERS.get(key);
+    
+    try {
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (!expected || expected !== password) {
-      setLoginError('Invalid email or password');
+      if (!response.ok) {
+        setLoginError('Invalid email or password');
+        return false;
+      }
+
+      const data = await response.json();
+      const userName = email.split('@')[0];
+      const u = { name: userName, email };
+      
+      setUser(u);
+      setIsLoggedIn(true);
+      localStorage.setItem('aerosky_auth', 'true');
+      localStorage.setItem('aerosky_user', JSON.stringify(u));
+      localStorage.setItem('authToken', data.token);
+      
+      return true;
+    } catch (err) {
+      setLoginError('Connection error. Please try again.');
       return false;
     }
-
-    const u = { name: key.split('@')[0], email: key };
-    setUser(u);
-    setIsLoggedIn(true);
-    localStorage.setItem('aerosky_auth', 'true');
-    localStorage.setItem('aerosky_user', JSON.stringify(u));
-    return true;
   }, []);
 
   const logout = useCallback(() => {
@@ -56,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoginError(null);
     localStorage.removeItem('aerosky_auth');
     localStorage.removeItem('aerosky_user');
+    localStorage.removeItem('authToken');
   }, []);
 
   return (

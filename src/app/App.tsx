@@ -67,8 +67,6 @@ const App: React.FC = () => {
             <Route path="blog" element={<GenericContent />} />
             <Route path="blog/*" element={<GenericContent />} />
 
-            <Route path="login" element={<Placeholder title="Login" />} />
-
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
