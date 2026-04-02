@@ -109,58 +109,63 @@ const LiveMap: React.FC = () => {
   const meta = PANEL_META[activeDockMode || 'FILTER'];
 
   return (
-    <div className="relative w-full h-[100dvh] bg-slate-50 dark:bg-[#0c1020] overflow-hidden flex flex-col font-sans selection:bg-cyan-500/30">
-      <div className="flex-1 relative">
-        <Suspense fallback={<div className="w-full h-full bg-slate-100 dark:bg-slate-900 animate-pulse flex items-center justify-center text-slate-400 dark:text-white/20 italic">Loading Aeronautical Charts...</div>}>
-          <MapComponent
-            flights={filteredFlights}
-            selectedFlightId={selectedFlightId}
-            onFlightClick={setSelectedFlightId}
-            showFIR={layerConfig.showFIR}
-            showTerrain={layerConfig.showTerrain}
-            showHolding={layerConfig.showHolding}
-            showAeroCharts={layerConfig.showAeroCharts}
-            showAirportPins={layerConfig.showAirportPins}
-            showAirportLabels={layerConfig.showAirportLabels}
-            showAircraftLabels={layerConfig.showAircraftLabels}
-            mapBrightness={layerConfig.mapBrightness}
-            activeMapStyle={activeMapStyle}
-            onStyleChange={setActiveMapStyle}
-          />
-        </Suspense>
+    <div className={`relative w-full h-[100dvh] bg-slate-50 dark:bg-[#0c1020] overflow-hidden flex font-sans selection:bg-cyan-500/30`}>
 
-        <IntelligenceDock activeMode={activeDockMode} onModeChange={setActiveDockMode} />
-
-        <DynamicWidgetPanel
-          isOpen={activeDockMode !== null}
-          onClose={() => setActiveDockMode(null)}
-          width={340}
-          title={activeDockMode === 'FLIGHT' ? (selectedFlight?.flightNumber || meta.title) : meta.title}
-          subtitle={activeDockMode === 'FLIGHT' ? (selectedFlight?.airline || meta.subtitle) : meta.subtitle}
-          icon={meta.icon}
-        >
-          {activeDockMode === 'FILTER' && (
-            <TrafficFilterPanel
-              flightCount={filteredFlights.length}
-              searchQuery={searchQuery} onSearchChange={setSearchQuery}
-              activeAirlines={activeAirlines} onAirlinesChange={setActiveAirlines}
-              activeFIRs={activeFIRs} onFIRsChange={setActiveFIRs}
-              activeTypes={activeTypes} onTypesChange={setActiveTypes}
-              activeStatuses={activeStatuses} onStatusesChange={setActiveStatuses}
-              altRange={altRange} onAltRangeChange={setAltRange}
-              speedRange={speedRange} onSpeedRangeChange={setSpeedRange}
+      {/* ═══ MAP AREA (takes remaining space) ═══ */}
+      <div className="flex-1 relative flex flex-col min-w-0">
+        <div className="flex-1 relative">
+          <Suspense fallback={<div className="w-full h-full bg-slate-100 dark:bg-slate-900 animate-pulse flex items-center justify-center text-slate-400 dark:text-white/20 italic">Loading Aeronautical Charts...</div>}>
+            <MapComponent
+              flights={filteredFlights}
+              selectedFlightId={selectedFlightId}
+              onFlightClick={setSelectedFlightId}
+              showFIR={layerConfig.showFIR}
+              showTerrain={layerConfig.showTerrain}
+              showHolding={layerConfig.showHolding}
+              showAeroCharts={layerConfig.showAeroCharts}
+              showAirportPins={layerConfig.showAirportPins}
+              showAirportLabels={layerConfig.showAirportLabels}
+              showAircraftLabels={layerConfig.showAircraftLabels}
+              mapBrightness={layerConfig.mapBrightness}
+              activeMapStyle={activeMapStyle}
+              onStyleChange={setActiveMapStyle}
             />
-          )}
-          {activeDockMode === 'LAYERS' && (
-            <LayersPanel layerConfig={layerConfig} onLayerChange={setLayerConfig} activeMapStyle={activeMapStyle} onStyleChange={setActiveMapStyle} />
-          )}
-          {activeDockMode === 'SETTINGS' && <SettingsPanel theme={theme} toggleTheme={toggleTheme} />}
-          {activeDockMode === 'WEATHER' && <WeatherPanel />}
-          {activeDockMode === 'WIDGETS' && <WidgetsPanel config={widgetConfig} onChange={setWidgetConfig} />}
-          {activeDockMode === 'PLAYBACK' && <PlaybackPanel />}
-          {activeDockMode === 'FLIGHT' && <FlightIntelligenceCard flight={selectedFlight} flightImage={flightImage} />}
-        </DynamicWidgetPanel>
+          </Suspense>
+
+          <IntelligenceDock activeMode={activeDockMode} onModeChange={setActiveDockMode} />
+
+          <DynamicWidgetPanel
+            isOpen={activeDockMode !== null}
+            onClose={() => setActiveDockMode(null)}
+            width={340}
+            title={activeDockMode === 'FLIGHT' ? (selectedFlight?.flightNumber || meta.title) : meta.title}
+            subtitle={activeDockMode === 'FLIGHT' ? (selectedFlight?.airline || meta.subtitle) : meta.subtitle}
+            icon={meta.icon}
+          >
+            {activeDockMode === 'FILTER' && (
+              <TrafficFilterPanel
+                flightCount={filteredFlights.length}
+                searchQuery={searchQuery} onSearchChange={setSearchQuery}
+                activeAirlines={activeAirlines} onAirlinesChange={setActiveAirlines}
+                activeFIRs={activeFIRs} onFIRsChange={setActiveFIRs}
+                activeTypes={activeTypes} onTypesChange={setActiveTypes}
+                activeStatuses={activeStatuses} onStatusesChange={setActiveStatuses}
+                altRange={altRange} onAltRangeChange={setAltRange}
+                speedRange={speedRange} onSpeedRangeChange={setSpeedRange}
+              />
+            )}
+            {activeDockMode === 'LAYERS' && (
+              <LayersPanel layerConfig={layerConfig} onLayerChange={setLayerConfig} activeMapStyle={activeMapStyle} onStyleChange={setActiveMapStyle} />
+            )}
+            {activeDockMode === 'SETTINGS' && <SettingsPanel theme={theme} toggleTheme={toggleTheme} />}
+            {activeDockMode === 'WEATHER' && <WeatherPanel />}
+            {activeDockMode === 'WIDGETS' && <WidgetsPanel config={widgetConfig} onChange={setWidgetConfig} />}
+            {activeDockMode === 'PLAYBACK' && <PlaybackPanel />}
+            {activeDockMode === 'FLIGHT' && <FlightIntelligenceCard flight={selectedFlight} flightImage={flightImage} />}
+          </DynamicWidgetPanel>
+        </div>
       </div>
+
     </div>
   );
 };
