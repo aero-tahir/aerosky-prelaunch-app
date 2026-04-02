@@ -7,7 +7,7 @@
  * gate/terminal info, and rich service metadata.
  */
 
-import { Flight } from '../types';
+import { Flight } from '@/types';
 
 // ──────────────────────────────────────────
 // INDIAN AIRLINE DATABASE
@@ -232,7 +232,6 @@ export const generateFallbackFlights = (): Flight[] => {
                 type: airline.type,
                 classes: airline.classes,
                 seats: airline.seats,
-                age: acType.age,
             },
             flightInfo: {
                 terminalOrigin: originAirport.terminals[i % originAirport.terminals.length],

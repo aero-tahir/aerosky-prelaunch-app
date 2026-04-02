@@ -11,15 +11,14 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      // Expose env vars that don't start with VITE_
       'import.meta.env.VITE_OLA_MAP_API_KEY': JSON.stringify(env.VITE_OLA_MAP_API_KEY),
       'import.meta.env.clientId': JSON.stringify(env.clientId),
-      'import.meta.env.clientSecret': JSON.stringify(env.clientSecret)
+      'import.meta.env.clientSecret': JSON.stringify(env.clientSecret),
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
-      }
-    }
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
   };
 });

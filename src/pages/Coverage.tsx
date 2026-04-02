@@ -1,15 +1,18 @@
 import React from 'react';
-import MapBackground from '../components/MapBackground';
+import MapBackground from '@/components/map/MapBackground';
 import { Shield, Radio } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const Coverage: React.FC = () => {
+  const { theme } = useTheme();
   return (
     <div className="relative w-full h-full min-h-screen bg-slate-50 dark:bg-sky-950 pt-20 transition-colors duration-300">
       <MapBackground
         interactive={true}
         showFlights={false}
-        showAirports={true} // Reusing airports as receiver locations for demo
+        showAirports={true}
         className="absolute inset-0 z-0 opacity-50"
+        theme={theme}
       />
 
       <div className="relative z-10 px-6 md:px-12 py-8 max-w-4xl">

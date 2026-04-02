@@ -1,4 +1,4 @@
-import { Flight, Airport, NewsItem, Stats } from './types';
+import { Flight, Airport, NewsItem, Stats } from '@/types';
 
 export const AIRPORTS: Record<string, Airport> = {
   DEL: {
@@ -62,10 +62,22 @@ export const FLIGHTS: Flight[] = [
     scheduledArr: "16:15",
     estArr: "16:10",
     aircraft: {
-      type: "A320neo",
+      type: "Airbus A320neo",
+      typeCode: "A20N",
       registration: "VT-IZM",
       age: "2.4 Years",
-      image: "https://images.unsplash.com/photo-1542296332-2e44a996aa0d?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1542296332-2e44a996aa0d?q=80&w=800&auto=format&fit=crop",
+      countryOfReg: "India",
+      serialNumber: "8921",
+      category: "Passenger",
+      engines: "2x CFM LEAP-1A",
+      firstFlight: "12/03/2022",
+      delivered: "28/03/2022",
+      lineNumber: "10421",
+      icao24: "800B2E",
+      constructionNumber: "8921",
+      registered: "15/04/2022",
+      rollOut: "01/03/2022",
     },
     liveMetrics: {
       altitude: 32000,
@@ -76,11 +88,41 @@ export const FLIGHTS: Flight[] = [
       lng: 74.5,
       vertRate: 0,
       track: 205,
+      selectedAltitude: 32000,
+      tas: 468,
+      ias: 272,
+      mach: 0.78,
+      roll: 0.2,
+      targetHeading: 200,
+      magneticHeading: 204,
+      oat: -44.5,
+      windSpeed: 42,
+      windDir: 280,
+      baro: 1013,
       signalConfidence: 'High',
       operationalStatus: 'En Route',
       feederCount: 8,
       rssi: -12,
       lastUpdate: Date.now() / 1000,
+    },
+    service: {
+      type: "Passenger",
+      classes: ["Economy", "Business"],
+      seats: 186,
+      capacity: "21.2 tonnes",
+      daysOfOperation: "MTWTFSS",
+      codeshares: ["AI4554"],
+    },
+    flightInfo: {
+      terminalOrigin: "T3",
+      gateOrigin: "G12",
+      terminalDest: "T2",
+      gateDest: "G5",
+      runway: "28L",
+      utcOffsetOrigin: "UTC+5:30",
+      utcOffsetDest: "UTC+5:30",
+      distanceMi: 708,
+      distanceKm: 1140,
     },
     history: [
       { time: "14:05", alt: 0 },
@@ -103,10 +145,22 @@ export const FLIGHTS: Flight[] = [
     scheduledArr: "10:15",
     estArr: "11:00",
     aircraft: {
-      type: "B787-8",
+      type: "Boeing 787-8 Dreamliner",
+      typeCode: "B788",
       registration: "VT-ANH",
       age: "8.1 Years",
-      image: "https://images.unsplash.com/photo-1569629743817-70d8db6c323b?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1569629743817-70d8db6c323b?q=80&w=800&auto=format&fit=crop",
+      countryOfReg: "India",
+      serialNumber: "36282",
+      category: "Passenger",
+      engines: "2x GEnx-1B",
+      firstFlight: "15/01/2017",
+      delivered: "22/02/2017",
+      lineNumber: "498",
+      icao24: "800A1F",
+      constructionNumber: "36282",
+      registered: "10/03/2017",
+      rollOut: "20/12/2016",
     },
     liveMetrics: {
       altitude: 38000,
@@ -117,11 +171,39 @@ export const FLIGHTS: Flight[] = [
       lng: 75.0,
       vertRate: 0,
       track: 25,
+      selectedAltitude: 38000,
+      tas: 512,
+      ias: 265,
+      mach: 0.84,
+      roll: -0.1,
+      targetHeading: 24,
+      magneticHeading: 25,
+      oat: -52.6,
+      windSpeed: 68,
+      windDir: 226,
+      baro: 1013,
       signalConfidence: 'High',
       operationalStatus: 'En Route',
       feederCount: 6,
       rssi: -18,
       lastUpdate: Date.now() / 1000,
+    },
+    service: {
+      type: "Passenger",
+      classes: ["Economy", "Business"],
+      seats: 256,
+      capacity: "38.5 tonnes",
+      daysOfOperation: "MTWTF..",
+    },
+    flightInfo: {
+      terminalOrigin: "T2",
+      gateOrigin: "G22",
+      terminalDest: "T3",
+      gateDest: "G8",
+      utcOffsetOrigin: "UTC+5:30",
+      utcOffsetDest: "UTC+5:30",
+      distanceMi: 710,
+      distanceKm: 1143,
     },
     history: [
       { time: "08:45", alt: 0 },
@@ -142,10 +224,16 @@ export const FLIGHTS: Flight[] = [
     scheduledArr: "18:10",
     estArr: "18:05",
     aircraft: {
-      type: "A321neo",
+      type: "Airbus A321neo",
+      typeCode: "A21N",
       registration: "VT-TVC",
       age: "1.2 Years",
-      image: "https://images.unsplash.com/photo-1559683935-71ce4117565c?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1559683935-71ce4117565c?q=80&w=800&auto=format&fit=crop",
+      countryOfReg: "India",
+      serialNumber: "11204",
+      category: "Passenger",
+      engines: "2x CFM LEAP-1A",
+      icao24: "800C4A",
     },
     liveMetrics: {
       altitude: 12500,
@@ -177,10 +265,16 @@ export const FLIGHTS: Flight[] = [
     scheduledArr: "18:30",
     estArr: "18:25",
     aircraft: {
-      type: "B777-300ER",
+      type: "Boeing 777-300ER",
+      typeCode: "B77W",
       registration: "A6-EGV",
       age: "5.5 Years",
-      image: "https://images.unsplash.com/photo-1583072558661-8079b764c052?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1583072558661-8079b764c052?q=80&w=800&auto=format&fit=crop",
+      countryOfReg: "UAE",
+      serialNumber: "41082",
+      category: "Passenger",
+      engines: "2x GE90-115B",
+      icao24: "896430",
     },
     liveMetrics: {
       altitude: 39000,
@@ -212,10 +306,16 @@ export const FLIGHTS: Flight[] = [
     scheduledArr: "17:00",
     estArr: "16:55",
     aircraft: {
-      type: "B737 MAX 8",
+      type: "Boeing 737 MAX 8",
+      typeCode: "B38M",
       registration: "VT-YAA",
       age: "0.8 Years",
-      image: "https://images.unsplash.com/photo-1474302770737-173ee21bab63?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1474302770737-173ee21bab63?q=80&w=800&auto=format&fit=crop",
+      countryOfReg: "India",
+      serialNumber: "65201",
+      category: "Passenger",
+      engines: "2x CFM LEAP-1B",
+      icao24: "800D12",
     },
     liveMetrics: {
       altitude: 4500,
@@ -247,10 +347,16 @@ export const FLIGHTS: Flight[] = [
     scheduledArr: "22:00",
     estArr: "",
     aircraft: {
-      type: "B737-800",
+      type: "Boeing 737-800",
+      typeCode: "B738",
       registration: "VT-SZK",
       age: "12.4 Years",
-      image: "https://images.unsplash.com/photo-1540962351504-03099e0a754b?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1540962351504-03099e0a754b?q=80&w=800&auto=format&fit=crop",
+      countryOfReg: "India",
+      serialNumber: "39068",
+      category: "Passenger",
+      engines: "2x CFM56-7B",
+      icao24: "800E55",
     },
     liveMetrics: {
       altitude: 0,
@@ -278,7 +384,7 @@ export const NEWS_TICKER: NewsItem[] = [
 ];
 
 export const GLOBAL_STATS: Stats = {
-  tracking: 4203,
+  observing: 4203,
   squawks: 12,
   coverage: 98
 };

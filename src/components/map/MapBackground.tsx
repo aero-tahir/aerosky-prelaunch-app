@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { AIRPORTS } from '../mockData';
-import { Flight } from '../types';
+import { AIRPORTS } from '@/data/mockData';
+import { Flight } from '@/types';
 import {
   OLA_API_KEY,
   OLA_MAP_STYLES,
@@ -10,7 +10,7 @@ import {
   getPlaneColor,
   normalizeHeading,
   olaTransformRequest,
-} from '../utils/mapConstants';
+} from '@/lib/mapConstants';
 
 interface MapProps {
   interactive?: boolean;

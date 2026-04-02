@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   Search, Map as MapIcon, ChevronRight, Activity, Globe, Radio,
   Shield, Flag, Database, Lock, Radar, Plane, TowerControl,
   BarChart3, Users, Zap, ArrowRight, CheckCircle2, MapPin,
   CloudLightning, Eye, Server, Fingerprint, IndianRupee
 } from 'lucide-react';
-import MapBackground from '../components/MapBackground';
-import { GLOBAL_STATS, NEWS_TICKER, AIRPORTS } from '../mockData';
-import { generateFallbackFlights } from '../utils/fallbackFlights';
-import type { Flight } from '../types';
+import MapBackground from '@/components/map/MapBackground';
+import { GLOBAL_STATS, NEWS_TICKER, AIRPORTS } from '@/data/mockData';
+import { generateFallbackFlights } from '@/data/fallbackFlights';
+import type { Flight } from '@/types';
 
 /* ─── Animated Counter Hook ─── */
 const useCounter = (end: number, duration: number = 2000, startOnView: boolean = true) => {

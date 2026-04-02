@@ -12,53 +12,67 @@ export interface Flight {
   estArr: string;
   aircraft: {
     type: string;
+    typeCode?: string;
     registration: string;
     age: string;
     image: string;
+    countryOfReg?: string;
+    serialNumber?: string;
+    category?: string;
+    engines?: string;
+    firstFlight?: string;
+    registered?: string;
+    delivered?: string;
+    rollOut?: string;
+    lineNumber?: string;
+    constructionNumber?: string;
+    icao24?: string;
   };
   liveMetrics: {
-    altitude: number; // ft
-    groundSpeed: number; // kts
+    altitude: number;
+    groundSpeed: number;
     squawk: string;
     heading: number;
     lat: number;
     lng: number;
-    // New Detailed Telemetry
-    vertRate: number; // fpm
-    track: number; // deg
-    sq?: string; // squawk alias
-    // Extended Physics (Mock/Calc)
+    vertRate: number;
+    track: number;
+    sq?: string;
     selectedAltitude?: number;
     tas?: number;
     ias?: number;
     mach?: number;
     roll?: number;
-    // Environment
-    oat?: number; // Outside Air Temp C
+    targetHeading?: number;
+    magneticHeading?: number;
+    oat?: number;
     windSpeed?: number;
     windDir?: number;
-    baro?: number; // hPa
-    // Operational
+    baro?: number;
     signalConfidence: 'High' | 'Medium' | 'Low';
     operationalStatus: string;
     feederCount: number;
     rssi: number;
     lastUpdate: number;
   };
-  // Service & Metadata
   service?: {
-    type: string; // Passenger, Cargo
+    type: string;
     classes: string[];
     seats?: number;
-    age?: string;
+    capacity?: string;
+    daysOfOperation?: string;
+    codeshares?: string[];
   };
-  // Gate Info
   flightInfo?: {
     terminalOrigin?: string;
     gateOrigin?: string;
     terminalDest?: string;
     gateDest?: string;
     runway?: string;
+    utcOffsetOrigin?: string;
+    utcOffsetDest?: string;
+    distanceMi?: number;
+    distanceKm?: number;
   };
   history: {
     time: string;
