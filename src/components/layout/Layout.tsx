@@ -435,8 +435,11 @@ const Layout: React.FC = () => {
             <form onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              const ok = login(fd.get('email') as string, fd.get('password') as string);
-              if (ok) setShowLoginModal(false);
+              const email = fd.get('email') as string;
+              const password = fd.get('password') as string;
+              login(email, password).then(ok => {
+                if (ok) setShowLoginModal(false);
+              });
             }} className="space-y-4">
               <div>
                 <label htmlFor="login-email" className="block text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider mb-1.5">Email</label>
