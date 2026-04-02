@@ -24,7 +24,7 @@ const Fold: React.FC<{
           : <span className={COLOR.inactiveText}>{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
         }
       </button>
-      {open && !locked && <div className={`${SPACE.px} pb-2.5 sm:pb-3`}>{children}</div>}
+      {open && !locked && <div className={`${SPACE.px} pt-1 pb-2.5 sm:pb-3`}>{children}</div>}
     </div>
   );
 };
@@ -162,7 +162,7 @@ const TrafficFilterPanel: React.FC<TrafficFilterPanelProps> = ({
       </div>
 
       {/* ── Scrollable sections ── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pt-1">
 
         {/* ═══ 1. AIRCRAFT TYPE (Quick pills) ═══ */}
         <Fold title="Aircraft Type" icon={<Plane size={12} />} open accent={ACCENT.aircraft} badge={activeTypes.length ? `${activeTypes.length}` : undefined}>

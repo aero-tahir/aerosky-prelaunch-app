@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import AdSidebar from '@/components/panels/AdSidebar';
 
 const Layout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -111,12 +112,11 @@ const Layout: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full relative">
 
-      {/* ═══ Skip Navigation (Accessibility: WCAG 2.4.1) ═══ */}
-      <a href="#main-content" className="skip-link hidden md:flex">
-        Skip to main content
-      </a>
+      {/* ═══ HORIZONTAL LAYOUT: Content + Ad Sidebar ═══ */}
+      <div className="flex-1 flex min-h-0">
 
       {/* ═══ Desktop Navigation Bar ═══ */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
       <header role="banner" className="hidden md:block absolute top-0 left-0 right-0 z-50 pointer-events-none">
         <nav
           aria-label="Main navigation"
@@ -298,6 +298,16 @@ const Layout: React.FC = () => {
       <main id="main-content" className={`flex-1 relative ${isMapPage ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`} role="main">
         <Outlet />
       </main>
+      </div>{/* end left column */}
+
+      {/* ═══ AD SIDEBAR (right column — non-auth, desktop only) ═══ */}
+      {!isLoggedIn && isMapPage && (
+        <aside className="hidden lg:flex w-[260px] xl:w-[300px] shrink-0 border-l border-slate-200 dark:border-white/[0.06] bg-white dark:bg-[#0a0e18] flex-col overflow-y-auto">
+          <AdSidebar onUpgrade={() => setShowLoginModal(true)} />
+        </aside>
+      )}
+
+      </div>{/* end horizontal layout */}
 
 
       {/* ═══ Mobile Slide-In Side Menu (Drawer) ═══ */}

@@ -22,7 +22,7 @@ const IntelligenceDock: React.FC<IntelligenceDockProps> = ({ activeMode, onModeC
     ];
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center">
             <div className="flex items-center gap-1 p-1.5 bg-white/90 dark:bg-[#0c1020]/80 backdrop-blur-2xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-lg dark:shadow-2xl dark:shadow-black/40 mb-2">
                 {dockItems.map((item) => (
                     <button

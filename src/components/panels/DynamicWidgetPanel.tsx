@@ -25,7 +25,7 @@ const DynamicWidgetPanel: React.FC<DynamicWidgetPanelProps> = ({
     return (
         <div
             style={{ width: `${width}px` }}
-            className="fixed left-6 top-1/2 -translate-y-1/2 z-40 max-h-[80vh] flex flex-col bg-white/95 dark:bg-[#0c1020]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/[0.07] rounded-2xl shadow-2xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)]"
+            className="absolute left-6 top-1/2 -translate-y-1/2 z-40 max-h-[80vh] flex flex-col bg-white/95 dark:bg-[#0c1020]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/[0.07] rounded-2xl shadow-2xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)]"
         >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-white/[0.05] shrink-0">
