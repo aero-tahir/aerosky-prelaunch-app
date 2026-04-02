@@ -1,4 +1,4 @@
-import { Flight } from '../types';
+import { Flight } from '@/types';
 
 export const SignalQuality = { HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' };
 

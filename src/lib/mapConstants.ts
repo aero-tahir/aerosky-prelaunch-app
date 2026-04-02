@@ -9,7 +9,7 @@
  * - Plane color determination logic
  */
 
-import { Flight } from '../types';
+import { Flight } from '@/types';
 
 export const OLA_API_KEY = import.meta.env.VITE_OLA_MAP_API_KEY ?? '';
 

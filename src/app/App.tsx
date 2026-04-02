@@ -1,16 +1,16 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import Layout from '@/components/layout/Layout';
 
 // Lazy loading components for Performance Enhancement
-const Home = lazy(() => import('./pages/Home'));
-const LiveMap = lazy(() => import('./pages/LiveMap'));
-const FlightDetails = lazy(() => import('./pages/FlightDetails'));
-const AirportHub = lazy(() => import('./pages/AirportHub'));
-const Coverage = lazy(() => import('./pages/Coverage'));
-const DataApi = lazy(() => import('./pages/DataApi'));
-const Intelligence = lazy(() => import('./pages/Intelligence'));
-const GenericContent = lazy(() => import('./pages/GenericContent'));
+const Home = lazy(() => import('@/pages/Home'));
+const LiveMap = lazy(() => import('@/pages/LiveMap'));
+const FlightDetails = lazy(() => import('@/pages/FlightDetails'));
+const AirportHub = lazy(() => import('@/pages/AirportHub'));
+const Coverage = lazy(() => import('@/pages/Coverage'));
+const DataApi = lazy(() => import('@/pages/DataApi'));
+const Intelligence = lazy(() => import('@/pages/Intelligence'));
+const GenericContent = lazy(() => import('@/pages/GenericContent'));
 
 // Dummy components for routes not yet fully detailed in prompt
 const Placeholder = ({ title }: { title: string }) => (

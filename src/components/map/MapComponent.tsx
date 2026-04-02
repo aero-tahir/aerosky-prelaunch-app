@@ -1,7 +1,10 @@
-import React, { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useMemo, useRef, useImperativeHandle, forwardRef, useState, useCallback } from 'react';
 import Map, { Source, Layer, Marker, MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Flight } from '../types';
+import { Flight } from '@/types';
+import {
+  Plus, Minus, Layers, LocateFixed, Moon, Globe, MapIcon, Navigation2
+} from 'lucide-react';
 import {
   OLA_API_KEY,
   OLA_MAP_STYLES,
@@ -12,8 +15,8 @@ import {
   getPlaneColor,
   normalizeHeading,
   olaTransformRequest,
-} from '../utils/mapConstants';
-import { FIR_BOUNDARIES, TERRAIN_BLIND_SPOTS, HOLDING_STACKS, AERO_CHARTS, AIRPORTS } from '../utils/navigationLayers';
+} from '@/lib/mapConstants';
+import { FIR_BOUNDARIES, TERRAIN_BLIND_SPOTS, HOLDING_STACKS, AERO_CHARTS, AIRPORTS } from '@/data/navigationLayers';
 
 export interface MapControls {
   zoomIn: () => void;
@@ -37,8 +40,9 @@ interface MapComponentProps {
   showAirportPins?: boolean;
   showAirportLabels?: boolean;
   showAircraftLabels?: boolean;
-  mapBrightness?: number; // 0 to 100
+  mapBrightness?: number;
   activeMapStyle?: 'dark' | 'satellite' | 'street' | 'vector';
+  onStyleChange?: (style: 'dark' | 'satellite' | 'street' | 'vector') => void;
 }
 
 /* ─── Plane SVG marker component ─── */
@@ -82,10 +86,13 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   showAircraftLabels = false,
   mapBrightness = 100,
   activeMapStyle = 'dark',
+  onStyleChange,
   mapStyleUrl,
   flightTrack
 }, ref) => {
   const mapRef = useRef<MapRef>(null);
+  const [showLayerPicker, setShowLayerPicker] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lng: number; lat: number } | null>(null);
 
   const finalMapStyle = useMemo(() => {
     if (mapStyleUrl) return mapStyleUrl;
@@ -96,15 +103,11 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   }, [mapStyleUrl, activeMapStyle]);
 
   useImperativeHandle(ref, () => ({
-    zoomIn: () => mapRef.current?.getMap()?.zoomIn({ duration: 300 }),
-    zoomOut: () => mapRef.current?.getMap()?.zoomOut({ duration: 300 }),
-    resetView: () => {
-      (mapRef.current as any)?.flyTo({ center: [INDIA_CENTER.lng, INDIA_CENTER.lat], zoom: INDIA_CENTER.zoom, duration: 1200, essential: true });
-    },
-    flyToFlight: (flight: Flight) => {
-      (mapRef.current as any)?.flyTo({ center: [flight.liveMetrics.lng, flight.liveMetrics.lat], zoom: 8, duration: 1000, essential: true });
-    },
-    getZoom: () => mapRef.current?.getMap()?.getZoom() ?? INDIA_CENTER.zoom,
+    zoomIn: () => { const m = mapRef.current; if (m) m.flyTo({ center: m.getCenter(), zoom: (m.getZoom() || 4) + 1, duration: 400 }); },
+    zoomOut: () => { const m = mapRef.current; if (m) m.flyTo({ center: m.getCenter(), zoom: Math.max((m.getZoom() || 4) - 1, 1), duration: 400 }); },
+    resetView: () => { mapRef.current?.flyTo({ center: [INDIA_CENTER.lng, INDIA_CENTER.lat], zoom: INDIA_CENTER.zoom, duration: 1200 }); },
+    flyToFlight: (flight: Flight) => { mapRef.current?.flyTo({ center: [flight.liveMetrics.lng, flight.liveMetrics.lat], zoom: 8, duration: 1000 }); },
+    getZoom: () => mapRef.current?.getZoom() ?? INDIA_CENTER.zoom,
   }));
 
 
@@ -327,7 +330,101 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
             </React.Fragment>
           );
         })}
+        {/* User Location Marker */}
+        {userLocation && (
+          <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="center">
+            <div className="relative flex items-center justify-center" aria-label="Your location">
+              <div className="absolute w-10 h-10 rounded-full bg-blue-500/20 animate-ping" />
+              <div className="absolute w-6 h-6 rounded-full bg-blue-500/25" />
+              <div className="relative w-3.5 h-3.5 rounded-full bg-blue-500 border-[2.5px] border-white shadow-[0_0_8px_rgba(59,130,246,0.7)]" />
+            </div>
+          </Marker>
+        )}
       </Map>
+
+      {/* ═══ MAP CONTROLS (bottom-right) ═══ */}
+      {interactive && (
+        <div className="absolute bottom-24 sm:bottom-20 right-3 sm:right-4 z-30 flex items-end gap-2">
+
+          {/* Layer picker — to the LEFT of control buttons */}
+          {showLayerPicker && (
+            <div className="bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-xl border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-xl p-1.5 w-[130px]">
+              {([
+                { id: 'dark' as const, label: 'Dark', icon: <Moon size={14} /> },
+                { id: 'satellite' as const, label: 'Satellite', icon: <Globe size={14} /> },
+                { id: 'street' as const, label: 'Streets', icon: <MapIcon size={14} /> },
+                { id: 'vector' as const, label: 'Terrain', icon: <Navigation2 size={14} /> },
+              ]).map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => { onStyleChange?.(s.id); setShowLayerPicker(false); }}
+                  className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                    activeMapStyle === s.id
+                      ? 'bg-cyan-50 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
+                      : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {s.icon} {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Control buttons */}
+          <div className="flex flex-col bg-white/90 dark:bg-[#0c1222]/80 backdrop-blur-xl border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-lg overflow-hidden">
+            <button
+              onClick={() => { const m = mapRef.current; if (m) m.flyTo({ center: m.getCenter(), zoom: (m.getZoom() || 4) + 1, duration: 400 }); }}
+              className="p-2.5 text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors border-b border-slate-100 dark:border-white/[0.04]"
+              aria-label="Zoom in"
+            >
+              <Plus size={18} />
+            </button>
+            <button
+              onClick={() => { const m = mapRef.current; if (m) m.flyTo({ center: m.getCenter(), zoom: Math.max((m.getZoom() || 4) - 1, 1), duration: 400 }); }}
+              className="p-2.5 text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors border-b border-slate-100 dark:border-white/[0.04]"
+              aria-label="Zoom out"
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              onClick={() => setShowLayerPicker(p => !p)}
+              className={`p-2.5 transition-colors border-b border-slate-100 dark:border-white/[0.04] ${
+                showLayerPicker
+                  ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10'
+                  : 'text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
+              }`}
+              aria-label="Base layers"
+            >
+              <Layers size={18} />
+            </button>
+            <button
+              onClick={() => {
+                if (!('geolocation' in navigator)) return;
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    const loc = { lng: pos.coords.longitude, lat: pos.coords.latitude };
+                    setUserLocation(loc);
+                    const m = mapRef.current;
+                    if (m) {
+                      m.flyTo({ center: [loc.lng, loc.lat], zoom: 12, duration: 2000 });
+                    }
+                  },
+                  (err) => { console.warn('Geolocation error:', err.message); },
+                  { enableHighAccuracy: true, timeout: 10000 }
+                );
+              }}
+              className={`p-2.5 transition-colors ${
+                userLocation
+                  ? 'text-blue-500 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
+              }`}
+              aria-label="My location"
+            >
+              <LocateFixed size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

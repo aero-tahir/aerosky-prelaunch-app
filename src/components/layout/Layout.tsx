@@ -4,23 +4,23 @@ import {
   Map, Plane, Menu, X, Radio,
   Shield, BarChart3, Users, Database,
   Zap, Globe, ChevronRight, Sun, Moon,
-  LayoutGrid, Activity, TowerControl, Wifi,
-  Play, AlertTriangle, FileText, Code, Award,
-  Settings, Bell, Search, History, Clock,
-  ChevronDown, Server, Briefcase, BookOpen, Newspaper, Lightbulb
+  LayoutGrid, Activity, TowerControl,
+  AlertTriangle, FileText, Code,
+  Bell, Search, History, Clock,
+  ChevronDown, Server, Briefcase, BookOpen, Newspaper, Lightbulb,
+  LogIn, LogOut, User
 } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Layout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isMapPage = location.pathname.includes('/explore/map');
   const { theme, toggleTheme } = useTheme();
-
-  /* ─── India Colors & Theme ─── */
-  const INDIA_ORANGE = '#FF9933';
-  const INDIA_GREEN = '#138808';
+  const { isLoggedIn, user, login, logout, loginError } = useAuth();
 
   /* ─── Navigation Structure ─── */
   const NAV_STRUCTURE = [
@@ -107,10 +107,6 @@ const Layout: React.FC = () => {
       ]
     }
   ];
-
-  /* ─── Styles ─── */
-  const mobileTabClass = ({ isActive }: { isActive: boolean }) =>
-    `flex flex-col items-center justify-center w-full py-2.5 space-y-0.5 transition-colors duration-200 ${isActive ? 'text-amber-500 dark:text-amber-400' : 'text-slate-500 dark:text-white/30'}`;
 
   return (
     <div className="flex flex-col h-screen w-full relative">
@@ -216,14 +212,38 @@ const Layout: React.FC = () => {
               </span>
             </div>
 
-            {/* Settings & Profile */}
+            {/* Login & Profile */}
             <div className="flex items-center gap-1">
               <button aria-label="Notifications" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
                 <Bell size={16} aria-hidden="true" />
               </button>
-              <button aria-label="Settings" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
-                <Settings size={16} aria-hidden="true" />
-              </button>
+
+              {isLoggedIn ? (
+                <div className="relative group">
+                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
+                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                      <User size={12} className="text-amber-500" />
+                    </div>
+                    <span className="text-[11px] font-semibold tracking-wide">{user?.name}</span>
+                  </button>
+                  <div className="absolute top-full right-0 mt-1 w-40 bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-xl border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden p-1">
+                    <button
+                      onClick={logout}
+                      className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut size={14} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold tracking-wide uppercase transition-colors focus-ring"
+                >
+                  <LogIn size={13} aria-hidden="true" />
+                  Login
+                </button>
+              )}
 
               {/* Theme Toggle */}
               <button
@@ -247,7 +267,16 @@ const Layout: React.FC = () => {
             Aero<span className="text-amber-500 dark:text-amber-400">Sky</span>
           </span>
         </NavLink>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {isLoggedIn ? (
+            <button onClick={logout} className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20" aria-label="Sign Out">
+              <LogOut size={18} />
+            </button>
+          ) : (
+            <button onClick={() => setShowLoginModal(true)} className="px-4 py-2 rounded-xl bg-amber-500 text-white text-sm font-bold" aria-label="Login">
+              Login
+            </button>
+          )}
           <button
             onClick={toggleTheme}
             className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-white/40 border border-slate-200/50 dark:border-white/[0.04]"
@@ -373,6 +402,47 @@ const Layout: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ═══ Login Modal ═══ */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Login">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowLoginModal(false)} />
+          <div className="relative w-full max-w-sm mx-4 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-white/[0.08] rounded-2xl shadow-2xl p-8">
+            <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white" aria-label="Close">
+              <X size={20} />
+            </button>
+            <div className="flex items-center gap-2 mb-6">
+              <Plane className="text-amber-500 rotate-[-45deg]" size={20} />
+              <span className="text-lg font-bold text-slate-900 dark:text-white">Aero<span className="text-amber-500">Sky</span></span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Welcome back</h2>
+            <p className="text-sm text-slate-500 dark:text-white/40 mb-6">Sign in to unlock full flight intelligence</p>
+            {loginError && (
+              <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold">
+                {loginError}
+              </div>
+            )}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const ok = login(fd.get('email') as string, fd.get('password') as string);
+              if (ok) setShowLoginModal(false);
+            }} className="space-y-4">
+              <div>
+                <label htmlFor="login-email" className="block text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider mb-1.5">Email</label>
+                <input id="login-email" name="email" type="email" required placeholder="pilot@aerosky.in" className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+              </div>
+              <div>
+                <label htmlFor="login-password" className="block text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider mb-1.5">Password</label>
+                <input id="login-password" name="password" type="password" required placeholder="••••••••" className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+              </div>
+              <button type="submit" className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm tracking-wide uppercase transition-colors">
+                Sign In
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

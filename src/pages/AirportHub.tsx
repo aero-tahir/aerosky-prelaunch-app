@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Cloud, Wind, Eye, PlaneTakeoff, PlaneLanding, AlertCircle, ArrowLeft } from 'lucide-react';
-import { AIRPORTS, FLIGHTS } from '../mockData';
-import MapBackground from '../components/MapBackground';
+import { AIRPORTS, FLIGHTS } from '@/data/mockData';
+import MapBackground from '@/components/map/MapBackground';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const AirportHub: React.FC = () => {
   const { code } = useParams<{ code: string }>();
   const airport = AIRPORTS[code || 'DEL'];
   const [tab, setTab] = useState<'arrivals' | 'departures'>('departures');
+  const { theme } = useTheme();
 
   if (!airport) {
     return (
@@ -175,6 +177,7 @@ const AirportHub: React.FC = () => {
             showAirports={false}
             zoom={12}
             center={{ lat: airport.lat, lng: airport.lng }}
+            theme={theme}
           />
           <div className="absolute top-4 left-4 bg-white/90 dark:bg-black/80 px-3 py-1 rounded text-xs font-mono border border-slate-200 dark:border-white/20 text-slate-700 dark:text-white">
             Live Ground Map

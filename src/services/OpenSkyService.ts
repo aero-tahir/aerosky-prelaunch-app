@@ -1,5 +1,5 @@
-import { Flight } from '../types';
-import { SignalQuality, deriveOperationalStatus, measureSignalConfidence, generateMockSignalData } from '../utils/OperationalIntelligence';
+import { Flight } from '@/types';
+import { SignalQuality, deriveOperationalStatus, measureSignalConfidence, generateMockSignalData } from '@/lib/OperationalIntelligence';
 
 const BASE_URL = 'https://opensky-network.org/api';
 
@@ -244,7 +244,6 @@ const transformToFlight = (state: any): Flight => {
             type: 'Passenger',
             classes: ['First', 'Business', 'Economy'],
             seats: 316,
-            age: '2.4 years'
         },
         history: []
     };
