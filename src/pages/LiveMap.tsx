@@ -1,10 +1,13 @@
-import React, { useState, useMemo, useEffect, Suspense, lazy } from 'react';
-import { Plane, Radar, Settings, Globe, CloudSun, History, LayoutDashboard } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Plane, Radar, Settings, Globe, CloudSun, History, LayoutDashboard, Eye } from 'lucide-react';
 import { FLIGHTS as MOCK_FLIGHTS } from '@/data/mockData';
 import { generateFallbackFlights } from '@/data/fallbackFlights';
 import { PlanespottersService } from '@/services/PlanespottersService';
+import { getFlightTrack } from '@/data/flightTracks';
 import IntelligenceDock, { DockMode } from '@/components/panels/IntelligenceDock';
 import DynamicWidgetPanel from '@/components/panels/DynamicWidgetPanel';
+import FlightSearch from '@/components/search/FlightSearch';
 import { useTheme } from '@/contexts/ThemeContext';
 import FlightIntelligenceCard from '@/components/panels/FlightIntelligenceCard';
 import TrafficFilterPanel from '@/components/panels/TrafficFilterPanel';
@@ -33,11 +36,42 @@ const PANEL_META: Record<string, { title: string; subtitle: string; icon: React.
 
 const LiveMap: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => { document.title = 'Live Map Intelligence | AeroSky'; }, []);
 
   /* ── Dock ── */
   const [activeDockMode, setActiveDockMode] = useState<DockMode>(null);
+
+  /* ── Focus / Immersive mode ── */
+  const [focusMode, setFocusMode] = useState(false);
+
+  const toggleFocusMode = useCallback(() => {
+    setFocusMode(prev => {
+      const next = !prev;
+      document.documentElement.setAttribute('data-map-focus', next ? 'true' : 'false');
+      return next;
+    });
+  }, []);
+
+  // 'H' key to toggle focus mode
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'h' || e.key === 'H') {
+        // Don't trigger if user is typing in an input
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        toggleFocusMode();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [toggleFocusMode]);
+
+  // Clean up data attribute on unmount
+  useEffect(() => {
+    return () => document.documentElement.removeAttribute('data-map-focus');
+  }, []);
 
   /* ── Map config ── */
   const [layerConfig, setLayerConfig] = useState<LayerConfig>({
@@ -62,6 +96,14 @@ const LiveMap: React.FC = () => {
   /* ── Flight selection ── */
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [flightImage, setFlightImage] = useState<string | null>(null);
+
+  // Auto-select flight from URL query param (e.g. ?flight=6E554)
+  useEffect(() => {
+    const flightParam = searchParams.get('flight');
+    if (flightParam && !selectedFlightId) {
+      setSelectedFlightId(flightParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (selectedFlightId) setActiveDockMode('FLIGHT');
@@ -119,6 +161,8 @@ const LiveMap: React.FC = () => {
               flights={filteredFlights}
               selectedFlightId={selectedFlightId}
               onFlightClick={setSelectedFlightId}
+              onMapClick={toggleFocusMode}
+              hideControls={focusMode}
               showFIR={layerConfig.showFIR}
               showTerrain={layerConfig.showTerrain}
               showHolding={layerConfig.showHolding}
@@ -129,13 +173,36 @@ const LiveMap: React.FC = () => {
               mapBrightness={layerConfig.mapBrightness}
               activeMapStyle={activeMapStyle}
               onStyleChange={setActiveMapStyle}
+              flightTrack={selectedFlightId ? getFlightTrack(selectedFlightId) : null}
             />
           </Suspense>
 
-          <IntelligenceDock activeMode={activeDockMode} onModeChange={setActiveDockMode} />
+          {/* ── Search bar (top-right) ── */}
+          <FlightSearch
+            flights={filteredFlights}
+            onSelect={setSelectedFlightId}
+            hidden={focusMode}
+          />
 
+          {/* ── Focus mode hint card ── */}
+          <button
+            onClick={toggleFocusMode}
+            className={`absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 dark:bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-[11px] font-medium tracking-wide shadow-lg hover:bg-black/60 dark:hover:bg-black/70 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer ${
+              focusMode
+                ? 'translate-y-0 opacity-100'
+                : 'translate-y-8 opacity-0 pointer-events-none'
+            }`}
+          >
+            <Eye size={14} strokeWidth={1.8} />
+            <span>Click map or press <kbd className="px-1.5 py-0.5 rounded bg-white/15 text-white font-bold text-[10px] mx-0.5">H</kbd> to show controls</span>
+          </button>
+
+          {/* ── Dock (slides down when hidden) ── */}
+          <IntelligenceDock activeMode={activeDockMode} onModeChange={setActiveDockMode} hidden={focusMode} />
+
+          {/* ── Panel (slides left when hidden) ── */}
           <DynamicWidgetPanel
-            isOpen={activeDockMode !== null}
+            isOpen={activeDockMode !== null && !focusMode}
             onClose={() => setActiveDockMode(null)}
             width={340}
             title={activeDockMode === 'FLIGHT' ? (selectedFlight?.flightNumber || meta.title) : meta.title}

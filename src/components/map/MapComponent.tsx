@@ -29,6 +29,7 @@ export interface MapControls {
 interface MapComponentProps {
   flights: Flight[];
   onFlightClick?: (flightId: string) => void;
+  onMapClick?: () => void;
   selectedFlightId?: string | null;
   interactive?: boolean;
   showFIR?: boolean;
@@ -43,6 +44,7 @@ interface MapComponentProps {
   mapBrightness?: number;
   activeMapStyle?: 'dark' | 'satellite' | 'street' | 'vector';
   onStyleChange?: (style: 'dark' | 'satellite' | 'street' | 'vector') => void;
+  hideControls?: boolean;
 }
 
 /* ─── Plane SVG marker component ─── */
@@ -75,6 +77,7 @@ const PlaneSVGMarker: React.FC<{
 const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   flights,
   onFlightClick,
+  onMapClick,
   selectedFlightId,
   interactive = true,
   showFIR = false,
@@ -87,6 +90,7 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   mapBrightness = 100,
   activeMapStyle = 'dark',
   onStyleChange,
+  hideControls = false,
   mapStyleUrl,
   flightTrack
 }, ref) => {
@@ -110,6 +114,54 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
     getZoom: () => mapRef.current?.getZoom() ?? INDIA_CENTER.zoom,
   }));
 
+  /* ── Flight path GeoJSON (always present, data updates reactively) ── */
+  const EMPTY_LINE: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+
+  const flightPathData = useMemo<GeoJSON.FeatureCollection>(() => {
+    const flight = flights.find(f => f.id === selectedFlightId);
+    if (!flight) return EMPTY_LINE;
+
+    const start: [number, number] = [flight.origin.lng, flight.origin.lat];
+    const current: [number, number] = [flight.liveMetrics.lng, flight.liveMetrics.lat];
+
+    let flownCoords: [number, number][];
+    if (flightTrack && flightTrack.length >= 2) {
+      flownCoords = flightTrack.map(p => [p[2], p[1]] as [number, number]);
+    } else {
+      flownCoords = [start, current];
+    }
+
+    return {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: { lineType: 'flown' },
+        geometry: { type: 'LineString', coordinates: flownCoords }
+      }]
+    };
+  }, [flights, selectedFlightId, flightTrack]);
+
+  const projectedPathData = useMemo<GeoJSON.FeatureCollection>(() => {
+    const flight = flights.find(f => f.id === selectedFlightId);
+    if (!flight) return EMPTY_LINE;
+
+    const current: [number, number] = [flight.liveMetrics.lng, flight.liveMetrics.lat];
+    const dest: [number, number] = [flight.destination.lng, flight.destination.lat];
+
+    return {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: { lineType: 'projected' },
+        geometry: { type: 'LineString', coordinates: [current, dest] }
+      }]
+    };
+  }, [flights, selectedFlightId]);
+
+  const hasTrack = !!(flightTrack && flightTrack.length >= 2);
+  const flownLineColor = hasTrack ? '#00f0ff' : '#ef4444';
+  const flownLineWidth = hasTrack ? 4 : 3;
+
 
   // Memoized plane markers using custom SVG
   const markers = useMemo(() => {
@@ -130,7 +182,11 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   }, [flights, selectedFlightId, onFlightClick]);
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative" onClick={(e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('button') || t.closest('[role="button"]') || t.closest('.maplibregl-ctrl')) return;
+      onMapClick?.();
+    }}>
       <Map
         ref={mapRef}
         initialViewState={{
@@ -272,64 +328,35 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
           />
         )}
 
+        {/* 7. Flight Path — always mounted, data updates reactively */}
+        <Source id="aero-flown-path" type="geojson" data={flightPathData}>
+          <Layer
+            id="aero-flown-line"
+            type="line"
+            layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+            paint={{
+              'line-color': flownLineColor,
+              'line-width': flownLineWidth,
+              'line-opacity': 0.9,
+            }}
+          />
+        </Source>
+        <Source id="aero-proj-path" type="geojson" data={projectedPathData}>
+          <Layer
+            id="aero-proj-line"
+            type="line"
+            layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+            paint={{
+              'line-color': '#ffffff',
+              'line-width': 2,
+              'line-dasharray': [2, 4],
+              'line-opacity': 0.5,
+            }}
+          />
+        </Source>
+
         {markers}
 
-        {/* Selected Flight Paths */}
-        {selectedFlightId && flights.map(flight => {
-          if (flight.id !== selectedFlightId) return null;
-
-          const start = [flight.origin.lng, flight.origin.lat];
-          const current = [flight.liveMetrics.lng, flight.liveMetrics.lat];
-          const dest = [flight.destination.lng, flight.destination.lat];
-
-          const isWeakSignal = flight.liveMetrics.signalConfidence !== 'High';
-          const isLostSignal = flight.liveMetrics.signalConfidence === 'Low';
-
-          const flownGeoJson = flightTrack ? {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: flightTrack.map(p => [p[2], p[1]]) }
-          } : {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: [start, current] }
-          };
-
-          const projectedGeoJson = {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: [current, dest] }
-          };
-
-          return (
-            <React.Fragment key={`path-${flight.id}`}>
-              {/* Flown Path / Track */}
-              <Source id={`source-flown-${flight.id}`} type="geojson" data={flownGeoJson as any}>
-                <Layer
-                  id={`layer-flown-${flight.id}`}
-                  type="line"
-                  paint={{
-                    'line-color': flightTrack ? '#00f0ff' : PLANE_COLORS.selected,
-                    'line-width': flightTrack ? 4 : 3,
-                    'line-opacity': isLostSignal ? 0.4 : 0.8,
-                    'line-dasharray': isWeakSignal && !flightTrack ? [2, 2] : [1, 0]
-                  }}
-                />
-              </Source>
-
-              {/* Projected Path */}
-              <Source id={`source-projected-${flight.id}`} type="geojson" data={projectedGeoJson as any}>
-                <Layer
-                  id={`layer-projected-${flight.id}`}
-                  type="line"
-                  paint={{
-                    'line-color': '#ffffff',
-                    'line-width': 2,
-                    'line-dasharray': [2, 4],
-                    'line-opacity': 0.5
-                  }}
-                />
-              </Source>
-            </React.Fragment>
-          );
-        })}
         {/* User Location Marker */}
         {userLocation && (
           <Marker longitude={userLocation.lng} latitude={userLocation.lat} anchor="center">
@@ -344,11 +371,16 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
 
       {/* ═══ MAP CONTROLS (bottom-right) ═══ */}
       {interactive && (
-        <div className="absolute bottom-24 sm:bottom-20 right-3 sm:right-4 z-30 flex items-end gap-2">
+        <div className={`hidden sm:flex absolute bottom-20 right-4 z-30 items-end gap-2 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          hideControls
+            ? 'translate-x-20 opacity-0 pointer-events-none'
+            : 'translate-x-0 opacity-100'
+        }`}>
 
           {/* Layer picker — to the LEFT of control buttons */}
           {showLayerPicker && (
-            <div className="bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-xl border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-xl p-1.5 w-[130px]">
+            <div className="relative dock-noise bg-white/65 dark:bg-[rgb(20,25,35)]/80 backdrop-blur-[16px] dark:backdrop-blur-[20px] border border-white/40 dark:border-white/[0.08] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),0_12px_40px_rgba(0,0,0,0.35)] p-1.5 w-[130px]">
+              <div className="absolute inset-0 rounded-[20px] pointer-events-none bg-gradient-to-b from-white/30 via-blue-50/20 to-white/30 dark:from-blue-900/20 dark:via-slate-800/10 dark:to-blue-900/20" />
               {([
                 { id: 'dark' as const, label: 'Dark', icon: <Moon size={14} /> },
                 { id: 'satellite' as const, label: 'Satellite', icon: <Globe size={14} /> },
@@ -358,10 +390,10 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
                 <button
                   key={s.id}
                   onClick={() => { onStyleChange?.(s.id); setShowLayerPicker(false); }}
-                  className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                  className={`relative z-10 w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[10px] font-bold transition-all duration-[180ms] ease-out ${
                     activeMapStyle === s.id
-                      ? 'bg-cyan-50 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
-                      : 'text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
+                      ? 'bg-cyan-500/15 dark:bg-cyan-400/15 text-cyan-600 dark:text-cyan-400'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/40 dark:hover:bg-white/[0.06]'
                   }`}
                 >
                   {s.icon} {s.label}
@@ -371,31 +403,32 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
           )}
 
           {/* Control buttons */}
-          <div className="flex flex-col bg-white/90 dark:bg-[#0c1222]/80 backdrop-blur-xl border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-lg overflow-hidden">
+          <div className="relative dock-noise flex flex-col bg-white/65 dark:bg-[rgb(20,25,35)]/80 backdrop-blur-[16px] dark:backdrop-blur-[20px] border border-white/40 dark:border-white/[0.08] rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.2),0_12px_40px_rgba(0,0,0,0.35)] overflow-hidden">
+            <div className="absolute inset-0 rounded-[20px] pointer-events-none bg-gradient-to-b from-white/30 via-blue-50/20 to-white/30 dark:from-blue-900/20 dark:via-slate-800/10 dark:to-blue-900/20" />
             <button
               onClick={() => { const m = mapRef.current; if (m) m.flyTo({ center: m.getCenter(), zoom: (m.getZoom() || 4) + 1, duration: 400 }); }}
-              className="p-2.5 text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors border-b border-slate-100 dark:border-white/[0.04]"
+              className="relative z-10 p-2.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/[0.06] transition-all duration-[180ms] ease-out border-b border-white/30 dark:border-white/[0.06]"
               aria-label="Zoom in"
             >
-              <Plus size={18} />
+              <Plus size={18} strokeWidth={1.8} />
             </button>
             <button
               onClick={() => { const m = mapRef.current; if (m) m.flyTo({ center: m.getCenter(), zoom: Math.max((m.getZoom() || 4) - 1, 1), duration: 400 }); }}
-              className="p-2.5 text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors border-b border-slate-100 dark:border-white/[0.04]"
+              className="relative z-10 p-2.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/[0.06] transition-all duration-[180ms] ease-out border-b border-white/30 dark:border-white/[0.06]"
               aria-label="Zoom out"
             >
-              <Minus size={18} />
+              <Minus size={18} strokeWidth={1.8} />
             </button>
             <button
               onClick={() => setShowLayerPicker(p => !p)}
-              className={`p-2.5 transition-colors border-b border-slate-100 dark:border-white/[0.04] ${
+              className={`relative z-10 p-2.5 transition-all duration-[180ms] ease-out border-b border-white/30 dark:border-white/[0.06] ${
                 showLayerPicker
-                  ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10'
-                  : 'text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
+                  ? 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/15 dark:bg-cyan-400/15'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/[0.06]'
               }`}
               aria-label="Base layers"
             >
-              <Layers size={18} />
+              <Layers size={18} strokeWidth={1.8} />
             </button>
             <button
               onClick={() => {
@@ -413,14 +446,14 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
                   { enableHighAccuracy: true, timeout: 10000 }
                 );
               }}
-              className={`p-2.5 transition-colors ${
+              className={`relative z-10 p-2.5 transition-all duration-[180ms] ease-out ${
                 userLocation
                   ? 'text-blue-500 dark:text-blue-400'
-                  : 'text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/[0.06]'
               }`}
               aria-label="My location"
             >
-              <LocateFixed size={18} />
+              <LocateFixed size={18} strokeWidth={1.8} />
             </button>
           </div>
         </div>

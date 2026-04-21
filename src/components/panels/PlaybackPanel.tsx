@@ -52,7 +52,7 @@ const PlaybackPanel: React.FC = () => {
       <div className={`${SPACE.pad} ${COLOR.subtleBg} border-b ${COLOR.divider} shrink-0`}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm">🕒</span>
-          <span className={`${TEXT.label} font-bold text-slate-700 dark:text-white/70`}>Airspace Time Machine</span>
+          <span className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Airspace Time Machine</span>
         </div>
         <p className={`${TEXT.sub} ${COLOR.labelText} leading-relaxed`}>
           See what happened — and understand why. Replay Indian airspace up to 24 hours.
@@ -95,7 +95,7 @@ const PlaybackPanel: React.FC = () => {
             ].map(j => (
               <button key={j.label} onClick={() => setTimeOffset(j.offset)}
                 className={`flex-1 py-1.5 rounded-md border ${TEXT.badge} font-bold transition-all ${
-                  timeOffset === j.offset ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-white/30 ${COLOR.hoverBg}`
+                  timeOffset === j.offset ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-slate-400 ${COLOR.hoverBg}`
                 }`}>
                 {j.label}
               </button>
@@ -105,14 +105,14 @@ const PlaybackPanel: React.FC = () => {
           {/* Playback controls */}
           <div className="flex items-center gap-2">
             <button onClick={() => setPlaying(!playing)}
-              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${playing ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-white/30`}`}>
+              className={`flex items-center justify-center w-9 h-9 rounded-lg border transition-all ${playing ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-slate-400`}`}>
               {playing ? <Pause size={16} /> : <Play size={16} />}
             </button>
             <div className="flex-1 flex gap-1">
               {([1, 5, 10] as const).map(s => (
                 <button key={s} onClick={() => setSpeed(s)}
                   className={`flex-1 py-1.5 rounded-md border ${TEXT.sub} font-bold transition-all ${
-                    speed === s ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-white/30 ${COLOR.hoverBg}`
+                    speed === s ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-slate-400 ${COLOR.hoverBg}`
                   }`}>
                   {s}x
                 </button>
@@ -124,7 +124,7 @@ const PlaybackPanel: React.FC = () => {
         {/* ═══ 2. WHAT WAS HAPPENING (Insight) ═══ */}
         <Fold title="What Was Happening" icon={<Clock size={12} />} open accent={ACCENT.aircraft}>
           <div className="bg-cyan-50 dark:bg-cyan-500/[0.04] border border-cyan-200 dark:border-cyan-500/10 rounded-md px-2.5 py-2">
-            <p className={`${TEXT.label} text-slate-600 dark:text-white/50 leading-relaxed italic`}>
+            <p className={`${TEXT.label} text-slate-600 dark:text-slate-400 leading-relaxed italic`}>
               {timeOffset === 0
                 ? '"Live operations normal. Delhi FIR experiencing moderate arrival congestion."'
                 : timeOffset < 120

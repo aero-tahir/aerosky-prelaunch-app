@@ -59,23 +59,23 @@ export const COLOR = {
     activeBorder: 'border-cyan-200 dark:border-cyan-500/20',
     activeText: 'text-cyan-600 dark:text-cyan-400',
     /** Inactive / default state */
-    inactiveText: 'text-slate-500 dark:text-white/30',
+    inactiveText: 'text-slate-500 dark:text-slate-400',
     inactiveBg: 'bg-slate-50 dark:bg-white/[0.03]',
     inactiveBorder: 'border-slate-200 dark:border-white/[0.05]',
     /** Label text */
-    labelText: 'text-slate-400 dark:text-white/25',
+    labelText: 'text-slate-500 dark:text-slate-400',
     /** Value text */
-    valueText: 'text-slate-700 dark:text-white/70',
+    valueText: 'text-slate-700 dark:text-slate-300',
     /** Section title text (default) */
-    titleText: 'text-slate-500 dark:text-white/25',
+    titleText: 'text-slate-600 dark:text-slate-400',
     /** Section title text (expanded) */
-    titleActiveText: 'text-slate-700 dark:text-white/50',
+    titleActiveText: 'text-slate-800 dark:text-slate-200',
     /** Hover background */
     hoverBg: 'hover:bg-slate-50 dark:hover:bg-white/[0.03]',
     /** Divider */
     divider: 'border-slate-100 dark:border-white/[0.04]',
     /** Locked / disabled */
-    lockedText: 'text-slate-300 dark:text-white/[0.08]',
+    lockedText: 'text-slate-300 dark:text-slate-500',
     /** Error / clear */
     errorText: 'text-red-500 hover:text-red-600',
 } as const;

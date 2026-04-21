@@ -93,6 +93,18 @@ aerosky-ui-app/
 └── vite.config.ts      # Vite configuration
 ```
 
+## Demo Flights (with track data)
+
+These 5 flights have pre-built track waypoints for demo. Select them on the map or search to see the flight path polyline.
+
+| Flight | Airline | Route | Registration | Aircraft | Status |
+|--------|---------|-------|--------------|----------|--------|
+| 6E 554 | IndiGo | DEL → BOM | VT-IZM | Airbus A320neo | On Time |
+| AI 101 | Air India | BOM → DEL | VT-ANH | Boeing 787-8 Dreamliner | Delayed |
+| UK 992 | Vistara | DEL → BLR | VT-TVC | Airbus A321neo | In Air |
+| EK 500 | Emirates | DXB → BOM | A6-EGV | Boeing 777-300ER | On Time |
+| QP 132 | Akasa Air | BLR → MAA | VT-YAA | Boeing 737 MAX 8 | Landing |
+
 ## License
 
 Private: AeroLytics © 2025

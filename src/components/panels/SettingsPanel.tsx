@@ -37,7 +37,7 @@ const Fold: React.FC<{
 const Toggle: React.FC<{ label: string; desc?: string; active: boolean; onClick: () => void }> = ({ label, desc, active, onClick }) => (
   <button onClick={onClick} className={`w-full flex items-center justify-between px-2 py-1.5 sm:py-2 rounded-md transition-all ${active ? 'bg-cyan-50/80 dark:bg-cyan-500/[0.06]' : ''}`}>
     <div className="text-left">
-      <span className={`${TEXT.label} font-bold block ${active ? COLOR.activeText : 'text-slate-600 dark:text-white/50'}`}>{label}</span>
+      <span className={`${TEXT.label} font-bold block ${active ? COLOR.activeText : 'text-slate-600 dark:text-slate-400'}`}>{label}</span>
       {desc && <span className={`${TEXT.sub} ${COLOR.labelText} block`}>{desc}</span>}
     </div>
     <div className={`w-7 h-[16px] rounded-full relative transition-all shrink-0 ${active ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-white/10'}`}>
@@ -52,7 +52,7 @@ const Option: React.FC<{ options: { id: string; label: string; icon?: React.Reac
     {options.map(o => (
       <button key={o.id} onClick={() => onChange(o.id)}
         className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-md border transition-all ${
-          active === o.id ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-white/30 ${COLOR.hoverBg}`
+          active === o.id ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-slate-400 ${COLOR.hoverBg}`
         }`}>
         {o.icon}{o.label && <span className={`${TEXT.badge} font-bold`}>{o.label}</span>}
       </button>
@@ -83,7 +83,7 @@ const SettingsPanel: React.FC<Props> = ({ theme, toggleTheme }) => {
       <div className={`${SPACE.pad} ${COLOR.subtleBg} border-b ${COLOR.divider} shrink-0`}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm">⚙️</span>
-          <span className={`${TEXT.label} font-bold text-slate-700 dark:text-white/70`}>Control Center</span>
+          <span className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Control Center</span>
         </div>
         <p className={`${TEXT.sub} ${COLOR.labelText} leading-relaxed`}>
           Personalize your AeroSky experience. Passenger-first defaults, advanced controls for enthusiasts.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -9,7 +9,9 @@ import {
 } from 'lucide-react';
 import MapBackground from '@/components/map/MapBackground';
 import { GLOBAL_STATS, NEWS_TICKER, AIRPORTS } from '@/data/mockData';
+import { FLIGHTS as MOCK_FLIGHTS } from '@/data/mockData';
 import { generateFallbackFlights } from '@/data/fallbackFlights';
+import { rankedSearch, FlightResultRow } from '@/components/search/FlightSearch';
 import type { Flight } from '@/types';
 
 /* ─── Animated Counter Hook ─── */
@@ -47,60 +49,7 @@ const useCounter = (end: number, duration: number = 2000, startOnView: boolean =
 /* ─── India Flag Colors: Orange → White → Green ─── */
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
-
-/* ─── India bounding box for OpenSky API ─── */
-const INDIA_BOUNDS = { lamin: 6.5, lomin: 68.0, lamax: 35.5, lomax: 97.5 };
-/* Map center is WEST of India (~64°E) so India's full outline appears in the right
-   55% of the viewport, clear of the hero text overlay on the left. */
 const INDIA_CENTER = { lat: 22, lng: 64 };
-
-/* ─── OpenSky → Flight type adapter ─── */
-const openSkyToFlights = (states: any[]): Flight[] => {
-  if (!states || !Array.isArray(states)) return [];
-  return states
-    .filter((s: any) => s[5] != null && s[6] != null) // must have lat/lng
-    .slice(0, 300) // show up to 300 live flights
-    .map((s: any, i: number) => {
-      const callsign = (s[1] || '').trim() || `FL${i}`;
-      const lat = s[6] as number;
-      const lng = s[5] as number;
-      const alt = Math.round((s[7] || 0) * 3.281); // meters → feet
-      const speed = Math.round((s[9] || 0) * 1.944); // m/s → knots
-      const heading = s[10] || 0;
-      const origin = s[2] || 'IN';
-
-      return {
-        id: callsign,
-        flightNumber: callsign,
-        airline: origin === 'India' ? 'Indian Carrier' : origin,
-        airlineCode: callsign.slice(0, 3),
-        origin: { name: 'Origin', iata: '???', icao: '????', city: 'Unknown', lat: lat - 2, lng: lng - 2 },
-        destination: { name: 'Destination', iata: '???', icao: '????', city: 'Unknown', lat: lat + 2, lng: lng + 2 },
-        status: 'In Air' as const,
-        scheduledDep: '',
-        actualDep: '',
-        scheduledArr: '',
-        estArr: '',
-        aircraft: { type: 'Unknown', registration: 'VT-XXX', age: 'N/A', image: '' },
-        liveMetrics: {
-          altitude: alt,
-          groundSpeed: speed,
-          squawk: '1200',
-          heading,
-          lat,
-          lng,
-          signalConfidence: 'High',
-          operationalStatus: 'En Route',
-          feederCount: 5,
-          rssi: -20,
-          lastUpdate: Date.now() / 1000,
-          vertRate: 0,
-          track: heading,
-        },
-        history: [],
-      } satisfies Flight;
-    });
-};
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -108,56 +57,62 @@ const Home: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
-  /* ─── Live OpenSky data for India ─── */
+  /* ─── Flight data (mock only) ─── */
   const [liveFlights, setLiveFlights] = useState<Flight[]>([]);
   const [liveCount, setLiveCount] = useState<number>(0);
   const [dataStatus, setDataStatus] = useState<'loading' | 'live' | 'fallback'>('loading');
 
-  const fetchOpenSky = useCallback(async () => {
-    try {
-      const url = `https://opensky-network.org/api/states/all?lamin=${INDIA_BOUNDS.lamin}&lomin=${INDIA_BOUNDS.lomin}&lamax=${INDIA_BOUNDS.lamax}&lomax=${INDIA_BOUNDS.lomax}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const flights = openSkyToFlights(data.states);
-      if (flights.length > 0) {
-        setLiveFlights(flights);
-        setLiveCount(data.states?.length || 0);
-        setDataStatus('live');
-      } else {
-        throw new Error('No flights returned');
-      }
-    } catch (err) {
-      console.warn('OpenSky API unavailable, using rich fallback:', err);
-      const fallback = generateFallbackFlights();
-      setLiveFlights(fallback);
-      setLiveCount(fallback.length);
-      setDataStatus('fallback');
-    }
+  useEffect(() => {
+    const fallback = generateFallbackFlights();
+    setLiveFlights(fallback);
+    setLiveCount(fallback.length);
+    setDataStatus('fallback');
   }, []);
 
-  useEffect(() => {
-    fetchOpenSky();
-    const interval = setInterval(fetchOpenSky, 15000); // refresh every 15s
-    return () => clearInterval(interval);
-  }, [fetchOpenSky]);
+  /* ─── All flights for search autocomplete ─── */
+  const allSearchFlights = useMemo(() => [...MOCK_FLIGHTS, ...liveFlights], [liveFlights]);
+  const searchResults = useMemo(() => rankedSearch(searchTerm, allSearchFlights), [searchTerm, allSearchFlights]);
+  const [searchActiveIdx, setSearchActiveIdx] = useState(-1);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = searchTerm.trim().toUpperCase();
-    if (q === 'DEL') navigate('/airports/DEL');
-    else if (q === 'BOM') navigate('/airports/BOM');
-    else if (q === 'BLR') navigate('/airports/BLR');
-    else if (q === '6E554' || q === '6E 554') navigate('/flights/6E554');
-    else if (q === 'AI101' || q === 'AI 101') navigate('/flights/AI101');
-    else navigate('/explore/map');
+  const handleFlightSelect = useCallback((flightId: string) => {
+    navigate(`/explore/map?flight=${encodeURIComponent(flightId)}`);
+  }, [navigate]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSearchActiveIdx(prev => Math.min(prev + 1, searchResults.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSearchActiveIdx(prev => Math.max(prev - 1, -1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (searchActiveIdx >= 0 && searchResults[searchActiveIdx]) {
+        handleFlightSelect(searchResults[searchActiveIdx].id);
+      } else if (searchTerm.trim()) {
+        navigate('/explore/map');
+      }
+    }
   };
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    if (!isFocused) return;
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isFocused]);
 
   const quickLinks = [
     { label: 'DEL', path: '/airports/DEL', full: 'New Delhi' },
     { label: 'BOM', path: '/airports/BOM', full: 'Mumbai' },
     { label: 'BLR', path: '/airports/BLR', full: 'Bengaluru' },
-    { label: '6E 554', path: '/flights/6E554', full: 'IndiGo' },
+    { label: '6E 554', path: '/explore/map?flight=6E554', full: 'IndiGo' },
   ];
 
   const flightsCounter = useCounter(liveCount || 4203, 2000);
@@ -217,7 +172,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* ── Live data badge (top-right, over map) ── */}
-        <div className="absolute top-8 right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10">
+        <div className="absolute top-16 sm:top-8 right-3 sm:right-4 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10">
           <div className={`w-2 h-2 rounded-full ${dataStatus === 'live' ? 'bg-green-400 animate-pulse' : dataStatus === 'loading' ? 'bg-yellow-400 animate-pulse' : 'bg-blue-400'}`} />
           <span className="text-[10px] font-mono font-bold text-gray-300 uppercase tracking-widest">
             {dataStatus === 'live' ? `${liveCount} LIVE FLIGHTS` : dataStatus === 'loading' ? 'CONNECTING...' : 'DEMO DATA'}
@@ -225,7 +180,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* ── Hero Content (left side, vertically centered within viewport) ── */}
-        <div className="relative z-20 h-full flex flex-col justify-center px-6 md:px-10 lg:px-20 pt-4 pb-4">
+        <div className="relative z-20 h-full flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-20 pt-16 sm:pt-4 pb-4">
           <div className="w-full max-w-xl">
 
             {/* Sovereign Badge */}
@@ -238,31 +193,31 @@ const Home: React.FC = () => {
             </div>
 
             {/* H1 */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-[0.88] tracking-tighter mb-3 animate-slide-up delay-100">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold leading-[0.88] tracking-tighter mb-3 animate-slide-up delay-100">
               <span style={{ color: INDIA_ORANGE }}>India's Own</span><br />
               <span className="text-slate-900 dark:text-white">Airspace</span>{' '}
               <span style={{ color: INDIA_GREEN }}>Intelligence</span>
             </h1>
 
             {/* SEO Subheading */}
-            <p className="text-sm md:text-base text-slate-600 dark:text-gray-400 mb-2 max-w-lg leading-relaxed animate-slide-up delay-200">
+            <p className="text-xs sm:text-sm md:text-base text-slate-600 dark:text-gray-400 mb-2 max-w-lg leading-relaxed animate-slide-up delay-200">
               India's first sovereign flight visibility &amp; aviation analytics platform.
               Real-time ADS-B coverage across <strong className="text-slate-900 dark:text-white">137+ Indian airports</strong>,
               powered by indigenous data infrastructure.
             </p>
 
             {/* Trust Badges: unique signals (sovereign/DGCA/infra covered above & in pillars) */}
-            <div className="flex flex-wrap items-center gap-3 mb-4 animate-slide-up delay-200">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 animate-slide-up delay-200">
               <TrustBadge icon={<Fingerprint size={11} />} color={INDIA_GREEN} text="DPDPA Compliant" />
-              <span className="text-slate-400 dark:text-gray-600 text-[8px]">●</span>
+              <span className="hidden sm:inline text-slate-400 dark:text-gray-600 text-[8px]">●</span>
               <TrustBadge icon={<Activity size={11} />} color="#60A5FA" text="99.9% Uptime SLA" />
-              <span className="text-slate-400 dark:text-gray-600 text-[8px]">●</span>
+              <span className="hidden sm:inline text-slate-400 dark:text-gray-600 text-[8px]">●</span>
               <TrustBadge icon={<Zap size={11} />} color={INDIA_ORANGE} text="Sub-Second Latency" />
             </div>
 
             {/* Search */}
-            <div className="relative mb-4 animate-slide-up delay-300">
-              <form onSubmit={handleSearch} className={`relative group transition-all duration-500 ease-out ${isFocused ? 'scale-[1.02]' : ''}`}>
+            <div ref={searchContainerRef} className="relative mb-4 animate-slide-up delay-300 z-30">
+              <div className={`relative group transition-all duration-500 ease-out ${isFocused ? 'scale-[1.02]' : ''}`}>
                 <div
                   className={`absolute -inset-1 blur-xl rounded-2xl transition-opacity duration-500 ${isFocused ? 'opacity-100' : 'opacity-0'}`}
                   style={{ background: `linear-gradient(90deg, ${INDIA_ORANGE}40, #FFFFFF30, ${INDIA_GREEN}40)` }}
@@ -272,17 +227,16 @@ const Home: React.FC = () => {
                   <input
                     id="flight-search-input"
                     type="text"
-                    placeholder="Explore any Indian flight, airport, or reg..."
+                    placeholder="Search flight, airline, registration, airport..."
                     className="flex-1 bg-transparent border-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:ring-0 text-sm py-2 font-medium outline-none"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => { setSearchTerm(e.target.value); setSearchActiveIdx(-1); }}
                     onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
+                    onKeyDown={handleSearchKeyDown}
                     aria-label="Search flights, airports, or aircraft registrations across Indian airspace"
                   />
                   <button
-                    id="flight-search-submit"
-                    type="submit"
+                    onClick={() => { if (searchTerm.trim()) navigate('/explore/map'); }}
                     className="text-black p-2.5 rounded-lg hover:opacity-90 transition-all shadow-lg font-bold"
                     style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
                     aria-label="Search"
@@ -290,13 +244,34 @@ const Home: React.FC = () => {
                     <ChevronRight size={18} />
                   </button>
                 </div>
-              </form>
+
+                {/* Autocomplete dropdown */}
+                {isFocused && searchTerm.trim() && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#0c1222]/95 backdrop-blur-xl border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50 max-h-[240px] sm:max-h-[320px] overflow-y-auto">
+                    {searchResults.length === 0 ? (
+                      <div className="px-4 py-5 text-center">
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">No flights found for "{searchTerm}"</p>
+                      </div>
+                    ) : (
+                      searchResults.map((flight, idx) => (
+                        <FlightResultRow
+                          key={flight.id}
+                          flight={flight}
+                          query={searchTerm}
+                          active={idx === searchActiveIdx}
+                          onClick={() => handleFlightSelect(flight.id)}
+                          onHover={() => setSearchActiveIdx(idx)}
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2 mt-2 ml-1">
                 <span className="text-[10px] text-slate-600 dark:text-gray-400 font-mono py-0.5 uppercase tracking-wider">Trending:</span>
                 {quickLinks.map((link) => (
                   <button
                     key={link.label}
-                    id={`quick-link-${link.label.replace(/\s/g, '')}`}
                     onClick={() => navigate(link.path)}
                     className="text-[10px] font-mono font-bold text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 px-2 py-0.5 rounded transition-colors border border-slate-200 dark:border-white/5 hover:border-orange-400/30"
                   >
@@ -307,7 +282,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Live Metrics: compact */}
-            <div className="grid grid-cols-4 gap-px rounded-xl overflow-hidden backdrop-blur-md animate-slide-up delay-400 shadow-xl border border-slate-200 dark:border-white/10 bg-slate-200 dark:bg-white/5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-xl overflow-hidden backdrop-blur-md animate-slide-up delay-400 shadow-xl border border-slate-200 dark:border-white/10 bg-slate-200 dark:bg-white/5">
               <div ref={flightsCounter.ref}>
                 <StatBlock icon={<Plane size={14} />} label="Flights" value={flightsCounter.count.toLocaleString()} color="text-white" accentColor={INDIA_ORANGE} />
               </div>
@@ -323,7 +298,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* CTA Row: compact */}
-            <div className="mt-4 flex flex-row gap-3 animate-slide-up delay-500">
+            <div className="mt-4 flex flex-col sm:flex-row gap-3 animate-slide-up delay-500">
               <button
                 id="cta-open-live-map"
                 onClick={() => navigate('/explore/map')}
@@ -353,22 +328,22 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           SECTION 2: SOVEREIGN DATA PILLARS
       ══════════════════════════════════════════════════════════ */}
-      <section id="sovereign-pillars" className="relative z-10 py-8 md:py-12 px-6 md:px-12 lg:px-24" aria-label="Why India Needs Sovereign Aviation Data">
+      <section id="sovereign-pillars" className="relative z-10 py-8 md:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="Why India Needs Sovereign Aviation Data">
         <article className="max-w-6xl mx-auto">
           <header className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 text-[11px] font-mono font-bold tracking-widest text-slate-600 dark:text-gray-300 uppercase mb-4">
               <Flag size={12} style={{ color: INDIA_ORANGE }} /> Why Sovereign Aviation Data Matters
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
               Built in India. <span style={{ color: INDIA_ORANGE }}>For India.</span>
             </h2>
-            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-slate-600 dark:text-gray-400 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
               AeroSky is India's indigenous airspace intelligence platform, protecting critical Indian aviation data.
               stays on Indian soil, processed by Indian infrastructure, governed by Indian laws.
             </p>
           </header>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5">
             <SovereignPillar icon={<Lock size={28} />} title="100% Data Sovereignty" description="Every byte of flight data (including ADS-B, MLAT, and radar feeds) is processed and stored exclusively in Indian data centers. Zero foreign cloud dependency." accentColor={INDIA_ORANGE} stats={[{ label: 'Data Centers', value: 'IN-Only' }, { label: 'GDPR+DPDPA', value: 'Compliant' }]} />
             <SovereignPillar icon={<Shield size={28} />} title="DGCA & MoCA Aligned" description="Purpose-built for DGCA regulations and Ministry of Civil Aviation directives. ICAO standards with Indian regulatory frameworks." accentColor="#FFFFFF" stats={[{ label: 'Standards', value: 'ICAO/DGCA' }, { label: 'Audit', value: 'Certified' }]} />
             <SovereignPillar icon={<Zap size={28} />} title="Indigenous Tech Stack" description="From ADS-B receiver firmware to AI-powered flight prediction, our entire stack is conceived, developed, and maintained by Indian engineers." accentColor={INDIA_GREEN} stats={[{ label: 'Engineers', value: '100% Indian' }, { label: 'R&D', value: 'Bengaluru' }]} />
@@ -379,21 +354,21 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           SECTION 3: INDIA'S AIRSPACE IN NUMBERS
       ══════════════════════════════════════════════════════════ */}
-      <section id="india-airspace-stats" className="relative z-10 py-8 md:py-12 px-6 md:px-12 lg:px-24" aria-label="Indian Aviation Statistics">
+      <section id="india-airspace-stats" className="relative z-10 py-8 md:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="Indian Aviation Statistics">
         <div className="max-w-6xl mx-auto">
           <header className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 text-[11px] font-mono font-bold tracking-widest text-slate-600 dark:text-gray-300 uppercase mb-4">
               <BarChart3 size={12} className="text-blue-400" /> Indian Aviation at a Glance
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
               The Pulse of <span style={{ color: INDIA_ORANGE }}>Indian Aviation</span>
             </h2>
-            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-600 dark:text-gray-400 text-sm sm:text-lg max-w-2xl mx-auto">
               Real-time intelligence from the world's third-largest and fastest-growing domestic aviation market.
             </p>
           </header>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
             <BigStat value="7,000+" label="Daily Domestic Flights" icon={<Plane size={20} />} color={INDIA_ORANGE} />
             <BigStat value="137+" label="Airports Connected" icon={<TowerControl size={20} />} color="#FFFFFF" />
             <BigStat value="14+" label="Indian Airlines Observed" icon={<Globe size={20} />} color="#60A5FA" />
@@ -417,21 +392,21 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           SECTION 4: MAJOR INDIAN AIRPORTS
       ══════════════════════════════════════════════════════════ */}
-      <section id="indian-airports" className="relative z-10 py-8 md:py-12 px-6 md:px-12 lg:px-24" aria-label="Major Indian Airports: Live Visibility">
+      <section id="indian-airports" className="relative z-10 py-8 md:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="Major Indian Airports: Live Visibility">
         <div className="max-w-6xl mx-auto">
           <header className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 text-[11px] font-mono font-bold tracking-widest text-slate-600 dark:text-gray-300 uppercase mb-4">
               <MapPin size={12} style={{ color: INDIA_GREEN }} /> Airport Intelligence
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
               India's Busiest <span style={{ color: INDIA_GREEN }}>Airports</span>
             </h2>
-            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-600 dark:text-gray-400 text-sm sm:text-lg max-w-2xl mx-auto">
               Access live visibility, METAR weather, runway status, and flight schedules for every major Indian airport.
             </p>
           </header>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
               { code: 'DEL', name: 'Indira Gandhi Intl', city: 'New Delhi', flights: '1,200+', icao: 'VIDP' },
               { code: 'BOM', name: 'CSM International', city: 'Mumbai', flights: '950+', icao: 'VABB' },
@@ -467,21 +442,21 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           SECTION 5: CAPABILITIES
       ══════════════════════════════════════════════════════════ */}
-      <section id="capabilities" className="relative z-10 py-8 md:py-12 px-6 md:px-12 lg:px-24" aria-label="AeroSky Platform Capabilities">
+      <section id="capabilities" className="relative z-10 py-8 md:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="AeroSky Platform Capabilities">
         <div className="max-w-6xl mx-auto">
           <header className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 text-[11px] font-mono font-bold tracking-widest text-slate-600 dark:text-gray-300 uppercase mb-4">
               <Eye size={12} style={{ color: INDIA_ORANGE }} /> Platform Capabilities
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
               Intelligence. <span style={{ color: INDIA_ORANGE }}>Reimagined.</span>
             </h2>
-            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-600 dark:text-gray-400 text-sm sm:text-lg max-w-2xl mx-auto">
               Precision tracking technology configured for civil aviation transparency, built from Indian soil.
             </p>
           </header>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             <FeatureCard icon={<Radar size={24} />} title="Real-Time ADS-B Visibility" desc="Sub-second position updates from 850+ indigenous ADS-B receivers deployed across India, covering every FIR." accent={INDIA_ORANGE} />
             <FeatureCard icon={<CloudLightning size={24} />} title="Indian METAR & Weather" desc="Live weather feeds from IMD integrated with runway-level conditions for every operational Indian airport." accent="#60A5FA" />
             <FeatureCard icon={<BarChart3 size={24} />} title="Delay Analytics (DGCA)" desc="OTP metrics aligned with DGCA reporting standards. Compare airlines across Indian routes." accent={INDIA_GREEN} />
@@ -495,17 +470,17 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           SECTION 6: TRUST / SOCIAL PROOF
       ══════════════════════════════════════════════════════════ */}
-      <section id="trusted-by" className="relative z-10 py-8 md:py-12 px-6 md:px-12 lg:px-24" aria-label="Trusted by Indian Aviation Community">
+      <section id="trusted-by" className="relative z-10 py-8 md:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="Trusted by Indian Aviation Community">
         <div className="max-w-6xl mx-auto">
           <header className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
               Trusted Across <span style={{ color: INDIA_ORANGE }}>Indian Aviation</span>
             </h2>
-            <p className="text-slate-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
+            <p className="text-slate-600 dark:text-gray-400 text-sm sm:text-lg max-w-xl mx-auto">
               From aviation enthusiasts to enterprise stakeholders, AeroSky provides comprehensive airspace awareness for India.
             </p>
           </header>
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
             <TrustCard title="Aviation Enthusiasts" icon={<Users size={24} />} stat="50,000+" desc="Indian avgeeks observe flights daily on AeroSky." accent={INDIA_ORANGE} />
             <TrustCard title="Enterprise & MRO" icon={<Zap size={24} />} stat="120+" desc="MRO, cargo, and aviation companies use AeroSky APIs." accent="#60A5FA" />
             <TrustCard title="Ground Stations" icon={<Radio size={24} />} stat="850+" desc="Community-powered receivers from Srinagar to Kanyakumari." accent={INDIA_GREEN} />
@@ -516,19 +491,19 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           SECTION 7: CTA
       ══════════════════════════════════════════════════════════ */}
-      <section id="cta-section" className="relative z-10 py-8 md:py-12 px-6 md:px-12 lg:px-24" aria-label="Join India's Sovereign Airspace Movement">
+      <section id="cta-section" className="relative z-10 py-8 md:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="Join India's Sovereign Airspace Movement">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-400/20 text-[11px] font-mono font-bold tracking-widest uppercase mb-5" style={{ color: INDIA_ORANGE }}>
             <Flag size={12} /> Join the Sovereign Airspace Movement
           </div>
 
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-5 leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-5 leading-tight">
             <span style={{ color: INDIA_ORANGE }}>India's Airspace.</span><br />
             <span className="text-slate-900 dark:text-white">India's Data.</span><br />
             <span style={{ color: INDIA_GREEN }}>India's Intelligence.</span>
           </h2>
 
-          <p className="text-slate-600 dark:text-gray-400 text-lg max-w-xl mx-auto mb-8 leading-relaxed">
+          <p className="text-slate-600 dark:text-gray-400 text-sm sm:text-lg max-w-xl mx-auto mb-8 leading-relaxed">
             Be part of India's largest community-driven aviation intelligence network.
           </p>
 
@@ -563,10 +538,10 @@ const Home: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════
           FOOTER
       ══════════════════════════════════════════════════════════ */}
-      <footer id="footer" className="relative z-10 border-t border-slate-200 dark:border-white/5 bg-slate-100/80 dark:bg-black/40 backdrop-blur-xl py-12 px-6 md:px-12 lg:px-24" aria-label="AeroSky Footer">
+      <footer id="footer" className="relative z-10 border-t border-slate-200 dark:border-white/5 bg-slate-100/80 dark:bg-black/40 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="AeroSky Footer">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-10">
-            <div className="md:col-span-1">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-10">
+            <div className="col-span-2 sm:col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-3">
                 <Plane size={22} style={{ color: INDIA_ORANGE }} className="rotate-[-45deg]" />
                 <span className="text-xl font-bold tracking-tighter text-slate-900 dark:text-white">AeroSky</span>
@@ -703,10 +678,10 @@ const SovereignPillar = ({ icon, title, description, accentColor, stats }: {
 const BigStat = ({ value, label, icon, color }: {
   value: string; label: string; icon: React.ReactNode; color: string;
 }) => (
-  <div className="text-center p-6 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all hover:shadow-md dark:hover:bg-white/[0.04] shadow-sm dark:shadow-none">
+  <div className="text-center p-4 sm:p-6 rounded-2xl bg-white dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-all hover:shadow-md dark:hover:bg-white/[0.04] shadow-sm dark:shadow-none">
     <div className="mb-2 flex justify-center" style={{ color }}>{icon}</div>
-    <div className="text-3xl md:text-4xl font-mono font-bold text-slate-900 dark:text-white mb-1">{value}</div>
-    <div className="text-xs text-slate-600 dark:text-gray-400 uppercase tracking-wider font-medium">{label}</div>
+    <div className="text-2xl sm:text-3xl md:text-4xl font-mono font-bold text-slate-900 dark:text-white mb-1">{value}</div>
+    <div className="text-[10px] sm:text-xs text-slate-600 dark:text-gray-400 uppercase tracking-wider font-medium">{label}</div>
   </div>
 );
 

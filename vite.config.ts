@@ -14,6 +14,12 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_OLA_MAP_API_KEY': JSON.stringify(env.VITE_OLA_MAP_API_KEY),
       'import.meta.env.clientId': JSON.stringify(env.clientId),
       'import.meta.env.clientSecret': JSON.stringify(env.clientSecret),
+      // Only inject dev auth credentials in development — stripped from production builds
+      ...(mode === 'development' ? {
+        '__DEV_AUTH_USERS__': JSON.stringify(env.DEV_AUTH_USERS || ''),
+      } : {
+        '__DEV_AUTH_USERS__': JSON.stringify(''),
+      }),
     },
     resolve: {
       alias: {

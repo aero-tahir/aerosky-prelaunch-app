@@ -32,7 +32,7 @@ const Fold: React.FC<{
 /* ── Pill toggle ── */
 const Pill: React.FC<{ label: string; icon?: string; active: boolean; onClick: () => void }> = ({ label, icon, active, onClick }) => (
   <button onClick={onClick} className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border ${TEXT.badge} font-bold transition-all ${
-    active ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.inactiveBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-white/40 ${COLOR.hoverBg}`
+    active ? `${COLOR.activeBg} ${COLOR.activeBorder} ${COLOR.activeText}` : `${COLOR.inactiveBg} ${COLOR.inactiveBorder} text-slate-500 dark:text-slate-400 ${COLOR.hoverBg}`
   }`}>
     {icon && <span className="text-xs">{icon}</span>}{label}
   </button>
@@ -45,7 +45,7 @@ const AirlineRow: React.FC<{ emoji: string; name: string; code: string; hub: str
       {checked && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
     </div>
     <div className="flex-1 min-w-0 text-left">
-      <span className={`${TEXT.label} font-bold block truncate ${checked ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-white/50'}`}>{emoji} {name}</span>
+      <span className={`${TEXT.label} font-bold block truncate ${checked ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{emoji} {name}</span>
       <span className={`${TEXT.sub} ${COLOR.labelText}`}>{code} · {hub}</span>
     </div>
   </button>
@@ -129,7 +129,7 @@ const TrafficFilterPanel: React.FC<TrafficFilterPanelProps> = ({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <span className="text-sm">🇮🇳</span>
-            <span className={`${TEXT.label} font-bold text-slate-700 dark:text-white/70`}>Indian Sky</span>
+            <span className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Indian Sky</span>
             <span className={`${TEXT.sub} ${COLOR.labelText} font-mono`}>{timeNow} IST</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -209,7 +209,7 @@ const TrafficFilterPanel: React.FC<TrafficFilterPanelProps> = ({
               return (
                 <button key={f.code} onClick={() => onFIRsChange(toggle(activeFIRs, f.code))}
                   className={`p-2 rounded-md border text-left transition-all ${on ? `${f.bg}` : `${COLOR.subtleBg} ${COLOR.inactiveBorder} ${COLOR.hoverBg}`}`}>
-                  <div className={`${TEXT.label} font-bold ${on ? f.color : 'text-slate-600 dark:text-white/50'}`}>{f.name}</div>
+                  <div className={`${TEXT.label} font-bold ${on ? f.color : 'text-slate-600 dark:text-slate-400'}`}>{f.name}</div>
                   <div className={`${TEXT.sub} ${on ? 'opacity-70' : COLOR.labelText}`}>{f.region} India</div>
                   <div className={`${TEXT.sub} font-mono mt-0.5 ${on ? 'opacity-60' : 'text-slate-300 dark:text-white/15'}`}>{f.code}</div>
                 </button>
