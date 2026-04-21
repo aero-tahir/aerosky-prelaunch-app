@@ -48,7 +48,7 @@ const Fold: React.FC<{
 const Toggle: React.FC<{ label: string; desc?: string; active: boolean; onClick: () => void }> = ({ label, desc, active, onClick }) => (
   <button onClick={onClick} className={`w-full flex items-center justify-between px-2 py-1.5 sm:py-2 rounded-md transition-all ${active ? 'bg-cyan-50/80 dark:bg-cyan-500/[0.06]' : ''}`}>
     <div>
-      <span className={`${TEXT.label} font-bold block ${active ? COLOR.activeText : 'text-slate-600 dark:text-white/50'}`}>{label}</span>
+      <span className={`${TEXT.label} font-bold block ${active ? COLOR.activeText : 'text-slate-600 dark:text-slate-400'}`}>{label}</span>
       {desc && <span className={`${TEXT.sub} ${COLOR.labelText} block`}>{desc}</span>}
     </div>
     <div className={`w-7 h-[16px] rounded-full relative transition-all shrink-0 ${active ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-white/10'}`}>
@@ -77,7 +77,7 @@ const LayersPanel: React.FC<Props> = ({ layerConfig: c, onLayerChange, activeMap
       <div className={`${SPACE.pad} ${COLOR.subtleBg} border-b ${COLOR.divider} shrink-0`}>
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm">🇮🇳</span>
-          <span className={`${TEXT.label} font-bold text-slate-700 dark:text-white/70`}>Indian Airspace Control</span>
+          <span className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Indian Airspace Control</span>
         </div>
         <p className={`${TEXT.sub} ${COLOR.labelText} leading-relaxed`}>
           Configure what you see on the map. Passenger-first defaults, advanced layers for enthusiasts.

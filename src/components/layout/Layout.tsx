@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Map, Plane, Menu, X, Radio,
@@ -22,6 +22,16 @@ const Layout: React.FC = () => {
   const isMapPage = location.pathname.includes('/explore/map');
   const { theme, toggleTheme } = useTheme();
   const { isLoggedIn, user, login, logout, loginError } = useAuth();
+
+  /* ── Listen for map focus mode (set by LiveMap via data attribute) ── */
+  const [mapFocusMode, setMapFocusMode] = useState(false);
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setMapFocusMode(document.documentElement.getAttribute('data-map-focus') === 'true');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-map-focus'] });
+    return () => observer.disconnect();
+  }, []);
 
   /* ─── Navigation Structure ─── */
   const NAV_STRUCTURE = [
@@ -120,13 +130,16 @@ const Layout: React.FC = () => {
       <header role="banner" className="hidden md:block absolute top-0 left-0 right-0 z-50 pointer-events-none">
         <nav
           aria-label="Main navigation"
-          className={`flex items-center justify-between px-5 py-2.5 pointer-events-auto transition-all duration-500 ${isMapPage
-            ? 'bg-white/90 dark:bg-[#060a18]/90 backdrop-blur-md border-b border-slate-200/50 dark:border-white/[0.02]'
-            : 'bg-white/90 dark:bg-[#060a18]/90 backdrop-blur-2xl border-b border-slate-200 dark:border-white/[0.04]'
+          className={`flex items-center justify-between px-5 py-2.5 pointer-events-auto transition-all duration-500 ${
+            mapFocusMode
+              ? 'bg-transparent border-b border-transparent'
+              : isMapPage
+                ? 'bg-white/90 dark:bg-[#060a18]/90 backdrop-blur-md border-b border-slate-200/50 dark:border-white/[0.02]'
+                : 'bg-white/90 dark:bg-[#060a18]/90 backdrop-blur-2xl border-b border-slate-200 dark:border-white/[0.04]'
             }`}
         >
           {/* Left: Brand */}
-          <div className="flex items-center gap-6">
+          <div className={`flex items-center gap-6 transition-opacity duration-500 ${mapFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             <NavLink to="/" className="flex items-center gap-2 group" aria-label="AeroSky: India's Airspace Intelligence">
               <div className="relative w-7 h-7 flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/10 rounded-lg" />
@@ -136,7 +149,7 @@ const Layout: React.FC = () => {
                 <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white leading-none">
                   Aero<span className="text-amber-500 dark:text-amber-400">Sky</span>
                 </span>
-                <span className="text-[7px] text-slate-500 dark:text-white/20 tracking-[0.15em] uppercase leading-none mt-0.5">
+                <span className="text-[7px] text-slate-500 dark:text-slate-500 tracking-[0.15em] uppercase leading-none mt-0.5">
                   Bharat Airspace
                 </span>
               </div>
@@ -152,7 +165,7 @@ const Layout: React.FC = () => {
                   {item.to ? (
                     <NavLink
                       to={item.to}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-300 focus-ring"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-300 focus-ring"
                     >
                       <span className={`opacity-70 group-hover:opacity-100 transition-opacity ${item.accent}`}>{item.icon}</span>
                       {item.label}
@@ -162,7 +175,7 @@ const Layout: React.FC = () => {
                       <button
                         aria-haspopup="true"
                         aria-expanded="false"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-300 focus-ring"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all duration-300 focus-ring"
                       >
                         <span className={`opacity-70 group-hover:opacity-100 transition-opacity ${item.accent}`}>{item.icon}</span>
                         {item.label}
@@ -174,14 +187,14 @@ const Layout: React.FC = () => {
                         <div className="p-1">
                           {item.submenu?.map((group, idx) => (
                             <div key={idx} className="mb-2 last:mb-0">
-                              <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400 border-b border-slate-100 dark:border-white/[0.04] mb-1">
+                              <div className="px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-white/[0.04] mb-1">
                                 {group.title}
                               </div>
                               {group.items.map((subItem) => (
                                 <NavLink
                                   key={subItem.label}
                                   to={subItem.to}
-                                  className={({ isActive }) => `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${isActive ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-white' : 'text-slate-600 dark:text-gray-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-white'}`}
+                                  className={({ isActive }) => `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${isActive ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] hover:text-slate-900 dark:hover:text-slate-200'}`}
                                 >
                                   <span className="opacity-60">{subItem.icon}</span>
                                   {subItem.label}
@@ -199,7 +212,7 @@ const Layout: React.FC = () => {
           </div>
 
           {/* Right: Status + Actions */}
-          <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-3 transition-opacity duration-500 ${mapFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             {/* Live Status Indicator */}
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.04] rounded-lg px-3 py-1.5">
               <div className="flex items-center gap-1.5">
@@ -207,20 +220,20 @@ const Layout: React.FC = () => {
                 <span className="text-[9px] text-emerald-600 dark:text-emerald-400/80 font-medium tracking-wide uppercase">Live</span>
               </div>
               <div className="w-px h-3 bg-slate-200 dark:bg-white/[0.06]" />
-              <span className="text-[9px] text-slate-400 dark:text-white/25 font-mono">
+              <span className="text-[9px] text-slate-500 dark:text-slate-500 font-mono">
                 {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })} IST
               </span>
             </div>
 
             {/* Login & Profile */}
             <div className="flex items-center gap-1">
-              <button aria-label="Notifications" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
+              <button aria-label="Notifications" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors focus-ring">
                 <Bell size={16} aria-hidden="true" />
               </button>
 
               {isLoggedIn ? (
                 <div className="relative group">
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-white/60 hover:text-slate-900 dark:hover:text-white transition-colors focus-ring">
+                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors focus-ring">
                     <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
                       <User size={12} className="text-amber-500" />
                     </div>
@@ -248,7 +261,7 @@ const Layout: React.FC = () => {
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-white/40 hover:text-amber-500 dark:hover:text-amber-400 transition-colors focus-ring"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors focus-ring"
                 aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
                 title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               >
@@ -260,14 +273,18 @@ const Layout: React.FC = () => {
       </header>
 
       {/* ═══ Mobile Header (Logo + Hamburger) ═══ */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-[#060a18]/95 backdrop-blur-md border-b border-slate-200 dark:border-white/[0.05] px-5 py-3 flex items-center justify-between pointer-events-auto">
-        <NavLink to="/" className="flex items-center gap-2 group" aria-label="AeroSky: India's Airspace Intelligence">
+      <header className={`md:hidden fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b px-5 py-3 flex items-center justify-between pointer-events-auto transition-all duration-500 ${
+        mapFocusMode
+          ? 'bg-transparent border-transparent'
+          : 'bg-white/90 dark:bg-[#060a18]/95 border-slate-200 dark:border-white/[0.05]'
+      }`}>
+        <NavLink to="/" className={`flex items-center gap-2 group transition-opacity duration-500 ${mapFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} aria-label="AeroSky: India's Airspace Intelligence">
           <Plane className="text-amber-500 dark:text-amber-400 rotate-[-45deg]" size={20} />
           <span className="text-lg font-bold tracking-tighter text-slate-900 dark:text-white">
             Aero<span className="text-amber-500 dark:text-amber-400">Sky</span>
           </span>
         </NavLink>
-        <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-3 transition-opacity duration-500 ${mapFocusMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           {isLoggedIn ? (
             <button onClick={logout} className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20" aria-label="Sign Out">
               <LogOut size={18} />
@@ -279,14 +296,14 @@ const Layout: React.FC = () => {
           )}
           <button
             onClick={toggleTheme}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-white/40 border border-slate-200/50 dark:border-white/[0.04]"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400 border border-slate-200/50 dark:border-white/[0.04]"
             aria-label="Toggle Theme"
           >
             {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-sm"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-slate-200 border border-slate-200 dark:border-white/[0.08] shadow-sm"
             aria-label="Open Menu"
           >
             <Menu size={20} />
@@ -338,7 +355,7 @@ const Layout: React.FC = () => {
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-white/40 hover:text-slate-900 dark:hover:text-white transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
               aria-label="Close menu"
             >
               <X size={20} />
@@ -355,8 +372,8 @@ const Layout: React.FC = () => {
                     onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 border ${isActive
-                        ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-white border-slate-200 dark:border-white/10 shadow-sm'
-                        : 'text-slate-500 dark:text-white/50 border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03] hover:text-slate-900 dark:hover:text-white/80'
+                        ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-slate-200 border-slate-200 dark:border-white/10 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03] hover:text-slate-900 dark:hover:text-slate-300'
                       }`
                     }
                   >
@@ -366,7 +383,7 @@ const Layout: React.FC = () => {
                   </NavLink>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-white/20">
+                    <div className="flex items-center gap-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">
                       {group.label}
                     </div>
                     <div className="space-y-2">
@@ -377,8 +394,8 @@ const Layout: React.FC = () => {
                           onClick={() => setMobileMenuOpen(false)}
                           className={({ isActive }) =>
                             `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 border ${isActive
-                              ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-white border-slate-200 dark:border-white/10'
-                              : 'text-slate-600 dark:text-white/60 border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'
+                              ? 'bg-slate-100 dark:bg-white/[0.08] text-slate-900 dark:text-slate-200 border-slate-200 dark:border-white/10'
+                              : 'text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-50 dark:hover:bg-white/[0.03]'
                             }`
                           }
                         >
@@ -398,15 +415,15 @@ const Layout: React.FC = () => {
           <div className="p-6 border-t border-slate-100 dark:border-white/[0.04] bg-slate-50/50 dark:bg-white/[0.01]">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="text-[10px] font-bold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-1">Operational Status</div>
+                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest mb-1">Operational Status</div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400/80">Systems Normal</span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-bold text-slate-400 dark:text-white/30 uppercase tracking-widest mb-1">Current Time</div>
-                <div className="text-xs font-mono font-bold text-slate-700 dark:text-white/60">IST {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })}</div>
+                <div className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest mb-1">Current Time</div>
+                <div className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">IST {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })}</div>
               </div>
             </div>
           </div>
@@ -418,7 +435,7 @@ const Layout: React.FC = () => {
         <div className="fixed inset-0 z-[200] flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Login">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowLoginModal(false)} />
           <div className="relative w-full max-w-sm mx-4 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-white/[0.08] rounded-2xl shadow-2xl p-8">
-            <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white" aria-label="Close">
+            <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-slate-200" aria-label="Close">
               <X size={20} />
             </button>
             <div className="flex items-center gap-2 mb-6">
@@ -426,7 +443,7 @@ const Layout: React.FC = () => {
               <span className="text-lg font-bold text-slate-900 dark:text-white">Aero<span className="text-amber-500">Sky</span></span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Welcome back</h2>
-            <p className="text-sm text-slate-500 dark:text-white/40 mb-6">Sign in to unlock full flight intelligence</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Sign in to unlock full flight intelligence</p>
             {loginError && (
               <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold">
                 {loginError}
@@ -442,11 +459,11 @@ const Layout: React.FC = () => {
               });
             }} className="space-y-4">
               <div>
-                <label htmlFor="login-email" className="block text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider mb-1.5">Email</label>
+                <label htmlFor="login-email" className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">Email</label>
                 <input id="login-email" name="email" type="email" required placeholder="pilot@aerosky.in" className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
               </div>
               <div>
-                <label htmlFor="login-password" className="block text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-wider mb-1.5">Password</label>
+                <label htmlFor="login-password" className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                 <input id="login-password" name="password" type="password" required placeholder="••••••••" className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
               </div>
               <button type="submit" className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm tracking-wide uppercase transition-colors">

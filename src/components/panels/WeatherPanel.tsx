@@ -32,7 +32,7 @@ const Fold: React.FC<{
 const Toggle: React.FC<{ label: string; desc?: string; active: boolean; onClick: () => void }> = ({ label, desc, active, onClick }) => (
   <button onClick={onClick} className={`w-full flex items-center justify-between px-2 py-1.5 sm:py-2 rounded-md transition-all ${active ? 'bg-cyan-50/80 dark:bg-cyan-500/[0.06]' : ''}`}>
     <div className="text-left">
-      <span className={`${TEXT.label} font-bold block ${active ? COLOR.activeText : 'text-slate-600 dark:text-white/50'}`}>{label}</span>
+      <span className={`${TEXT.label} font-bold block ${active ? COLOR.activeText : 'text-slate-600 dark:text-slate-400'}`}>{label}</span>
       {desc && <span className={`${TEXT.sub} ${COLOR.labelText} block`}>{desc}</span>}
     </div>
     <div className={`w-7 h-[16px] rounded-full relative transition-all shrink-0 ${active ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-white/10'}`}>
@@ -84,7 +84,7 @@ const WeatherPanel: React.FC = () => {
         {/* Current conditions */}
         <div className="flex items-center justify-between mb-2">
           <div>
-            <div className={`${TEXT.label} font-bold text-slate-700 dark:text-white/70`}>Mumbai, India</div>
+            <div className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Mumbai, India</div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-none">27°</span>
               <span className={`${TEXT.sub} ${COLOR.labelText}`}>C</span>
@@ -138,7 +138,7 @@ const WeatherPanel: React.FC = () => {
             <span className={`${TEXT.sub} ${COLOR.labelText}`}>Updated 2 min ago</span>
           </div>
         </div>
-        <p className={`${TEXT.label} text-slate-600 dark:text-white/50 leading-relaxed italic`}>
+        <p className={`${TEXT.label} text-slate-600 dark:text-slate-400 leading-relaxed italic`}>
           "Stable skies over most regions. Reduced visibility (~3 km) near Delhi. Minor delays possible for northern arrivals."
         </p>
       </div>

@@ -94,8 +94,8 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
           <div>
             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
               <h1 className={`${TEXT.heroTitle} text-slate-900 dark:text-white leading-none`}>{flight.flightNumber}</h1>
-              <span className={`${TEXT.sub} font-bold font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-white/30`}>{flight.airlineCode}</span>
-              {ac.typeCode && <span className={`${TEXT.sub} font-bold font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-white/30`}>{ac.typeCode}</span>}
+              <span className={`${TEXT.sub} font-bold font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-slate-400`}>{flight.airlineCode}</span>
+              {ac.typeCode && <span className={`${TEXT.sub} font-bold font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.05] text-slate-500 dark:text-slate-400`}>{ac.typeCode}</span>}
             </div>
             <p className={`${TEXT.sub} ${COLOR.labelText}`}>{flight.airline}</p>
           </div>
@@ -181,7 +181,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
               <div className="text-[8px] sm:text-[9px] text-slate-400 dark:text-white/25 mt-0.5">{flight.destination.city}</div>
             </div>
           </div>
-          <div className="flex justify-between text-[9px] sm:text-[10px] font-mono text-slate-500 dark:text-white/30">
+          <div className="flex justify-between text-[9px] sm:text-[10px] font-mono text-slate-500 dark:text-slate-400">
             <span>DEP {flight.actualDep || flight.scheduledDep} IST</span>
             <span className="text-[8px] sm:text-[9px] text-slate-400 dark:text-white/15">📍 {intel.fir.name}</span>
             <span>ETA {flight.estArr || flight.scheduledArr} IST</span>
@@ -207,7 +207,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
             <span className="text-[9px] sm:text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">Passenger Intelligence</span>
             <span className="w-1 h-1 bg-cyan-400 rounded-full animate-ping" />
           </div>
-          <p className="text-[10px] sm:text-[11px] text-slate-600 dark:text-white/50 leading-relaxed italic mb-2">"{briefing}"</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed italic mb-2">"{briefing}"</p>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1">
             {[
               { icon: <Wind size={10} className="text-blue-400" />, text: `Wind: ${ri(m.windSpeed) ?? '—'} kts` },
@@ -217,7 +217,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
             ].map((s, i) => (
               <div key={i} className="flex items-center gap-1.5">
                 {s.icon}
-                <span className="text-[8px] sm:text-[9px] text-slate-500 dark:text-white/30">{s.text}</span>
+                <span className="text-[8px] sm:text-[9px] text-slate-500 dark:text-slate-400">{s.text}</span>
               </div>
             ))}
           </div>
@@ -370,7 +370,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
                   <button key={r.label} className={`w-full flex items-center justify-between py-2 border-b ${COLOR.divider} text-left ${COLOR.hoverBg} transition-colors rounded-sm`}>
                     <div className="min-w-0 flex-1">
                       <div className={`${TEXT.sub} ${COLOR.labelText} uppercase tracking-wider font-bold leading-tight`}>{r.label}</div>
-                      <div className={`${TEXT.label} font-bold text-slate-800 dark:text-white/70 mt-0.5`}>{r.value}</div>
+                      <div className={`${TEXT.label} font-bold text-slate-800 dark:text-slate-300 mt-0.5`}>{r.value}</div>
                     </div>
                     <ChevronRight size={13} className={`${COLOR.labelText} shrink-0 ml-2`} />
                   </button>
@@ -379,7 +379,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
                 <button className={`w-full flex items-center justify-between py-2.5 border-b ${COLOR.divider} text-left ${COLOR.hoverBg} transition-colors rounded-sm`}>
                   <div className="flex items-center gap-2.5">
                     <PlayCircle size={16} className={COLOR.labelText} />
-                    <span className={`${TEXT.label} font-bold text-slate-700 dark:text-white/60`}>Playback</span>
+                    <span className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Playback</span>
                   </div>
                   <ChevronRight size={13} className={`${COLOR.labelText} shrink-0`} />
                 </button>
@@ -387,7 +387,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
                 <div className="flex items-center justify-between py-2.5">
                   <div className="flex items-center gap-2.5">
                     <EyeOff size={16} className={COLOR.labelText} />
-                    <span className={`${TEXT.label} font-bold text-slate-700 dark:text-white/60`}>Hide other aircraft</span>
+                    <span className={`${TEXT.label} font-bold text-slate-700 dark:text-slate-300`}>Hide other aircraft</span>
                   </div>
                   <button onClick={() => setHideOthers(p => !p)} className={`w-7 h-[16px] rounded-full relative transition-all shrink-0 ${hideOthers ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-white/10'}`}>
                     <div className={`absolute top-[2px] w-3 h-3 bg-white rounded-full shadow-sm transition-all ${hideOthers ? 'left-[12px]' : 'left-[2px]'}`} />
@@ -411,7 +411,7 @@ const FlightIntelligenceCard: React.FC<Props> = ({ flight, flightImage }) => {
           ].map(a => (
             <button key={a.label} onClick={a.onClick}
               className={`flex flex-col items-center gap-0.5 py-1 rounded-md transition-colors ${
-                a.active ? `${COLOR.activeText}` : `text-slate-400 dark:text-white/30 ${COLOR.hoverBg} hover:text-slate-700 dark:hover:text-white/60`
+                a.active ? `${COLOR.activeText}` : `text-slate-500 dark:text-slate-400 ${COLOR.hoverBg} hover:text-slate-700 dark:hover:text-slate-200`
               }`}>
               {a.icon}
               <span className={`${TEXT.sub} font-bold`}>{a.label}</span>
