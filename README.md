@@ -107,4 +107,4 @@ These 5 flights have pre-built track waypoints for demo. Select them on the map 
 
 ## License
 
-Private: AeroLytics © 2025
+Private: AeroLytics © 2026

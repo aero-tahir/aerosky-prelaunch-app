@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Map, Plane, Menu, X, Radio,
   Shield, BarChart3, Users, Database,
@@ -18,7 +18,6 @@ const Layout: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const isMapPage = location.pathname.includes('/explore/map');
   const { theme, toggleTheme } = useTheme();
   const { isLoggedIn, user, login, logout, loginError } = useAuth();
@@ -45,9 +44,9 @@ const Layout: React.FC = () => {
         {
           title: 'Aviation Data', items: [
             { label: 'Intelligence Hub', icon: <Search size={14} />, to: '/intelligence' },
-            { label: 'Aircraft Database', icon: <Plane size={14} />, to: '/intelligence/aircraft' },
-            { label: 'Airline Directory', icon: <LayoutGrid size={14} />, to: '/intelligence/airlines' },
-            { label: 'Airport Operations', icon: <TowerControl size={14} />, to: '/intelligence/airports' },
+            { label: 'Aircraft', icon: <Plane size={14} />, to: '/intelligence/aircraft' },
+            { label: 'Airline', icon: <LayoutGrid size={14} />, to: '/intelligence/airlines' },
+            { label: 'Airport', icon: <TowerControl size={14} />, to: '/intelligence/airports' },
           ]
         }
       ]

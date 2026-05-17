@@ -109,9 +109,9 @@ const Home: React.FC = () => {
   }, [isFocused]);
 
   const quickLinks = [
-    { label: 'DEL', path: '/airports/DEL', full: 'New Delhi' },
-    { label: 'BOM', path: '/airports/BOM', full: 'Mumbai' },
-    { label: 'BLR', path: '/airports/BLR', full: 'Bengaluru' },
+    { label: 'DEL', path: '/intelligence/airports/DEL', full: 'New Delhi' },
+    { label: 'BOM', path: '/intelligence/airports/BOM', full: 'Mumbai' },
+    { label: 'BLR', path: '/intelligence/airports/BLR', full: 'Bengaluru' },
     { label: '6E 554', path: '/explore/map?flight=6E554', full: 'IndiGo' },
   ];
 
@@ -421,7 +421,7 @@ const Home: React.FC = () => {
             ].map((airport) => (
               <button
                 key={airport.code}
-                onClick={() => navigate(`/airports/${airport.code}`)}
+                onClick={() => navigate(`/intelligence/airports/${airport.code}`)}
                 id={`airport-card-${airport.code}`}
                 className="group relative p-4 rounded-xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/15 transition-all duration-300 hover:shadow-lg dark:hover:bg-white/[0.06] hover:-translate-y-1 text-left shadow-sm dark:shadow-none"
               >

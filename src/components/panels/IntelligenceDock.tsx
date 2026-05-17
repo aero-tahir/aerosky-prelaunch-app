@@ -4,7 +4,7 @@ import {
   LayoutDashboard, History,
 } from 'lucide-react';
 
-export type DockMode = 'FILTER' | 'LAYERS' | 'SETTINGS' | 'WEATHER' | 'WIDGETS' | 'PLAYBACK' | 'FLIGHT' | null;
+export type DockMode = 'FILTER' | 'LAYERS' | 'SETTINGS' | 'WEATHER' | 'WIDGETS' | 'PLAYBACK' | 'FLIGHT' | 'AIRPORT' | null;
 
 interface IntelligenceDockProps {
   activeMode: DockMode;
