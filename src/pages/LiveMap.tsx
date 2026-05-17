@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plane, Radar, Settings, Globe, CloudSun, History, LayoutDashboard, Eye } from 'lucide-react';
+import { Plane, Radar, Settings, Globe, CloudSun, History, LayoutDashboard, Eye, TowerControl } from 'lucide-react';
 import { FLIGHTS as MOCK_FLIGHTS } from '@/data/mockData';
 import { generateFallbackFlights } from '@/data/fallbackFlights';
 import { PlanespottersService } from '@/services/PlanespottersService';
@@ -10,6 +10,7 @@ import DynamicWidgetPanel from '@/components/panels/DynamicWidgetPanel';
 import FlightSearch from '@/components/search/FlightSearch';
 import { useTheme } from '@/contexts/ThemeContext';
 import FlightIntelligenceCard from '@/components/panels/FlightIntelligenceCard';
+import AirportIntelligenceCard from '@/components/panels/AirportIntelligenceCard';
 import TrafficFilterPanel from '@/components/panels/TrafficFilterPanel';
 import LayersPanel from '@/components/panels/LayersPanel';
 import SettingsPanel from '@/components/panels/SettingsPanel';
@@ -32,6 +33,7 @@ const PANEL_META: Record<string, { title: string; subtitle: string; icon: React.
   WIDGETS: { title: 'Flight Deck Instruments', subtitle: 'Control what you see — right now', icon: <LayoutDashboard size={18} /> },
   PLAYBACK: { title: 'Airspace Time Machine', subtitle: 'Rewind & replay Indian airspace', icon: <History size={18} /> },
   FLIGHT: { title: 'Flight Intelligence', subtitle: 'Target Analysis', icon: <Plane size={18} /> },
+  AIRPORT: { title: 'Airport Intelligence', subtitle: 'Live Operations Command', icon: <TowerControl size={18} /> },
 };
 
 const LiveMap: React.FC = () => {
@@ -97,6 +99,15 @@ const LiveMap: React.FC = () => {
   const [selectedFlightId, setSelectedFlightId] = useState<string | null>(null);
   const [flightImage, setFlightImage] = useState<string | null>(null);
 
+  /* ── Airport selection ── */
+  const [selectedAirportCode, setSelectedAirportCode] = useState<string | null>(null);
+
+  const handleAirportClick = useCallback((code: string) => {
+    setSelectedAirportCode(code);
+    setSelectedFlightId(null);
+    setActiveDockMode('AIRPORT');
+  }, []);
+
   // Auto-select flight from URL query param (e.g. ?flight=6E554)
   useEffect(() => {
     const flightParam = searchParams.get('flight');
@@ -106,8 +117,10 @@ const LiveMap: React.FC = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    if (selectedFlightId) setActiveDockMode('FLIGHT');
-    else if (activeDockMode === 'FLIGHT') setActiveDockMode(null);
+    if (selectedFlightId) {
+      setActiveDockMode('FLIGHT');
+      setSelectedAirportCode(null);
+    } else if (activeDockMode === 'FLIGHT') setActiveDockMode(null);
   }, [selectedFlightId]);
 
   /* ── Filters ── */
@@ -161,6 +174,7 @@ const LiveMap: React.FC = () => {
               flights={filteredFlights}
               selectedFlightId={selectedFlightId}
               onFlightClick={setSelectedFlightId}
+              onAirportClick={handleAirportClick}
               onMapClick={toggleFocusMode}
               hideControls={focusMode}
               showFIR={layerConfig.showFIR}
@@ -205,8 +219,8 @@ const LiveMap: React.FC = () => {
             isOpen={activeDockMode !== null && !focusMode}
             onClose={() => setActiveDockMode(null)}
             width={340}
-            title={activeDockMode === 'FLIGHT' ? (selectedFlight?.flightNumber || meta.title) : meta.title}
-            subtitle={activeDockMode === 'FLIGHT' ? (selectedFlight?.airline || meta.subtitle) : meta.subtitle}
+            title={activeDockMode === 'FLIGHT' ? (selectedFlight?.flightNumber || meta.title) : activeDockMode === 'AIRPORT' ? 'Airport Intelligence' : meta.title}
+            subtitle={activeDockMode === 'FLIGHT' ? (selectedFlight?.airline || meta.subtitle) : activeDockMode === 'AIRPORT' ? (selectedAirportCode || 'Select Airport') : meta.subtitle}
             icon={meta.icon}
           >
             {activeDockMode === 'FILTER' && (
@@ -229,6 +243,7 @@ const LiveMap: React.FC = () => {
             {activeDockMode === 'WIDGETS' && <WidgetsPanel config={widgetConfig} onChange={setWidgetConfig} />}
             {activeDockMode === 'PLAYBACK' && <PlaybackPanel />}
             {activeDockMode === 'FLIGHT' && <FlightIntelligenceCard flight={selectedFlight} flightImage={flightImage} />}
+            {activeDockMode === 'AIRPORT' && <AirportIntelligenceCard airportCode={selectedAirportCode} />}
           </DynamicWidgetPanel>
         </div>
       </div>

@@ -26,7 +26,7 @@ const DEV_USERS: { email: string; password: string }[] = (() => {
   }
 })();
 
-console.log('[Auth] DEV_USERS loaded:', DEV_USERS.length, DEV_USERS.map(u => u.email));
+console.log('[Auth] DEV_USERS loaded:', DEV_USERS.length);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('aerosky_auth') === 'true');
@@ -41,12 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Helper: authenticate via local dev credentials
     const tryDevFallback = (): boolean => {
-      console.log('[Auth] Trying dev fallback...');
-      console.log('[Auth] DEV_USERS count:', DEV_USERS.length);
-      console.log('[Auth] DEV_USERS:', DEV_USERS.map(u => u.email));
-      console.log('[Auth] Input email:', email, 'password length:', password.length);
       const devUser = DEV_USERS.find(u => u.email === email && u.password === password);
-      console.log('[Auth] Dev user match:', !!devUser);
       if (devUser) {
         const u = { name: email.split('@')[0], email };
         setUser(u);

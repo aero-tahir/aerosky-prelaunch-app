@@ -10,14 +10,8 @@ const AirportHub = lazy(() => import('@/pages/AirportHub'));
 const Coverage = lazy(() => import('@/pages/Coverage'));
 const DataApi = lazy(() => import('@/pages/DataApi'));
 const Intelligence = lazy(() => import('@/pages/Intelligence'));
+const AirportIntelligence = lazy(() => import('@/pages/AirportIntelligence'));
 const GenericContent = lazy(() => import('@/pages/GenericContent'));
-
-// Dummy components for routes not yet fully detailed in prompt
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex items-center justify-center h-full min-h-screen pt-20 text-white text-2xl font-mono">
-    {title} - Coming Soon
-  </div>
-);
 
 const LoadingPage = () => (
   <div className="flex items-center justify-center h-full min-h-screen bg-slate-50 dark:bg-sky-950 text-slate-900 dark:text-white font-mono flex-col gap-4">
@@ -42,12 +36,13 @@ const App: React.FC = () => {
             <Route path="airports/congestion" element={<GenericContent />} />
 
             <Route path="flights/:id" element={<FlightDetails />} />
-            <Route path="airports/:code" element={<AirportHub />} />
             <Route path="coverage" element={<Coverage />} />
             <Route path="data" element={<DataApi />} />
 
             {/* Detailed Pages */}
             <Route path="intelligence" element={<Intelligence />} />
+            <Route path="intelligence/airports" element={<AirportIntelligence />} />
+            <Route path="intelligence/airports/:code" element={<AirportHub />} />
 
             {/* Placeholders for secondary links */}
             {/* New Sections using Generic Template */}

@@ -154,6 +154,76 @@ export const AIRPORTS = {
             type: 'Feature',
             properties: { iata: 'MAA', name: 'Chennai Intl', type: 'Intl' },
             geometry: { type: 'Point', coordinates: [80.1709, 12.9941] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'HYD', name: 'Rajiv Gandhi Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [78.4294, 17.2403] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'CCU', name: 'Netaji Subhas Chandra Bose Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [88.4467, 22.6547] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'AMD', name: 'Sardar Vallabhbhai Patel Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [72.6347, 23.0772] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'GOX', name: 'Manohar Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [73.8314, 15.3808] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'COK', name: 'Cochin Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [76.4019, 10.1520] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'PNQ', name: 'Pune Intl', type: 'Domestic' },
+            geometry: { type: 'Point', coordinates: [73.9197, 18.5822] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'JAI', name: 'Jaipur Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [75.8092, 26.8242] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'LKO', name: 'Chaudhary Charan Singh Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [80.8893, 26.7606] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'GAU', name: 'Lokpriya Gopinath Bordoloi Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [91.5856, 26.1061] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'IXC', name: 'Chandigarh Intl', type: 'Domestic' },
+            geometry: { type: 'Point', coordinates: [76.7885, 30.6735] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'TRV', name: 'Trivandrum Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [76.9201, 8.4821] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'PAT', name: 'Jay Prakash Narayan Intl', type: 'Domestic' },
+            geometry: { type: 'Point', coordinates: [85.0880, 25.5913] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'NAG', name: 'Dr. Babasaheb Ambedkar Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [79.0472, 21.0922] }
+        },
+        {
+            type: 'Feature',
+            properties: { iata: 'BBI', name: 'Biju Patnaik Intl', type: 'Intl' },
+            geometry: { type: 'Point', coordinates: [85.8178, 20.2444] }
         }
     ]
 };

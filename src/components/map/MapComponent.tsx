@@ -3,7 +3,7 @@ import Map, { Source, Layer, Marker, MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Flight } from '@/types';
 import {
-  Plus, Minus, Layers, LocateFixed, Moon, Globe, MapIcon, Navigation2
+  Plus, Minus, Layers, LocateFixed, Moon, Globe, MapIcon, Navigation2, TowerControl
 } from 'lucide-react';
 import {
   OLA_API_KEY,
@@ -29,6 +29,7 @@ export interface MapControls {
 interface MapComponentProps {
   flights: Flight[];
   onFlightClick?: (flightId: string) => void;
+  onAirportClick?: (airportCode: string) => void;
   onMapClick?: () => void;
   selectedFlightId?: string | null;
   interactive?: boolean;
@@ -77,6 +78,7 @@ const PlaneSVGMarker: React.FC<{
 const MapComponent = forwardRef<MapControls, MapComponentProps>(({
   flights,
   onFlightClick,
+  onAirportClick,
   onMapClick,
   selectedFlightId,
   interactive = true,
@@ -181,6 +183,41 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
     ));
   }, [flights, selectedFlightId, onFlightClick]);
 
+  // Airport markers as HTML overlays (visible only at zoom >= 6)
+  const [currentZoom, setCurrentZoom] = useState<number>(INDIA_CENTER.zoom);
+
+  const airportMarkers = useMemo(() => {
+    if (!showAirportPins || currentZoom < 5) return null;
+    return (AIRPORTS as any).features.map((feature: any) => (
+      <Marker
+        key={feature.properties.iata}
+        longitude={feature.geometry.coordinates[0]}
+        latitude={feature.geometry.coordinates[1]}
+        anchor="center"
+      >
+        <div
+          className="group cursor-pointer flex flex-col items-center"
+          onClick={(e) => { e.stopPropagation(); onAirportClick?.(feature.properties.iata); }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Airport ${feature.properties.iata}`}
+          onKeyDown={(e) => { if (e.key === 'Enter') onAirportClick?.(feature.properties.iata); }}
+        >
+          {/* Airport icon in circle */}
+          <div className="w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow-[0_0_6px_rgba(59,130,246,0.4)] group-hover:scale-125 transition-transform flex items-center justify-center">
+            <TowerControl size={12} className="text-white" strokeWidth={2.5} />
+          </div>
+          {/* Label */}
+          {showAirportLabels && (
+            <span className="mt-0.5 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-mono font-bold text-blue-300 leading-none whitespace-nowrap shadow-lg border border-white/10">
+              {feature.properties.iata}
+            </span>
+          )}
+        </div>
+      </Marker>
+    ));
+  }, [showAirportPins, showAirportLabels, onAirportClick, currentZoom]);
+
   return (
     <div className="w-full h-full relative" onClick={(e) => {
       const t = e.target as HTMLElement;
@@ -202,6 +239,10 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
         attributionControl={false}
         interactive={interactive}
         transformRequest={olaTransformRequest}
+        onClick={(e) => {
+          // Only handle if no features clicked (airport clicks handled by Marker onClick)
+        }}
+        onZoom={(e) => setCurrentZoom(e.viewState.zoom)}
         onError={(e) => {
           console.error("[MapComponent] Map Error:", e);
         }}
@@ -279,43 +320,7 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
           </Source>
         )}
 
-        {/* 5. Airport Pins & Labels */}
-        {(showAirportPins || showAirportLabels) && (
-          <Source id="airports-source" type="geojson" data={AIRPORTS as any}>
-            {showAirportPins && (
-              <Layer
-                id="airport-dots"
-                type="circle"
-                paint={{
-                  'circle-radius': 4,
-                  'circle-color': '#ffffff',
-                  'circle-stroke-width': 1.5,
-                  'circle-stroke-color': '#0f172a'
-                }}
-              />
-            )}
-            {showAirportLabels && (
-              <Layer
-                id="airport-labels"
-                type="symbol"
-                layout={{
-                  'text-field': ['get', 'iata'],
-                  'text-font': ['Open Sans Bold'],
-                  'text-size': 10,
-                  'text-offset': [0, 1.2],
-                  'text-anchor': 'top'
-                }}
-                paint={{
-                  'text-color': '#ffffff',
-                  'text-halo-color': '#0f172a',
-                  'text-halo-width': 1
-                }}
-              />
-            )}
-          </Source>
-        )}
-
-        {/* 6. Brightness / Day-Night Mask */}
+        {/* 5. Brightness / Day-Night Mask */}
         {mapBrightness < 100 && (
           <Layer
             id="brightness-mask"
@@ -324,9 +329,10 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
               'background-color': '#000000',
               'background-opacity': (100 - mapBrightness) / 100
             }}
-            beforeId="fir-lines" // Ensure it stays behind flight data/FIRs if possible, or just as a base
           />
         )}
+
+        {/* 6. Airport Pins & Labels — rendered as HTML Markers above */}
 
         {/* 7. Flight Path — always mounted, data updates reactively */}
         <Source id="aero-flown-path" type="geojson" data={flightPathData}>
@@ -355,6 +361,10 @@ const MapComponent = forwardRef<MapControls, MapComponentProps>(({
           />
         </Source>
 
+        {/* Airport markers (HTML overlays - below aircraft) */}
+        {airportMarkers}
+
+        {/* Aircraft markers (HTML overlays - always on top) */}
         {markers}
 
         {/* User Location Marker */}
