@@ -1,282 +1,52 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* ─── India Tricolor Palette ─── */
+  --color-saffron: #FF9933;
+  --color-india-green: #138808;
+  --color-gold: #FFD700;
+
+  /* ─── Surface / Background ─── */
+  --color-sky-950: #020617;
+  --color-sky-900: #0c1222;
+  --color-sky-800: #0f172a;
+  --color-sky-700: #1e293b;
+  --color-sky-600: #334155;
+  --color-sky-500: #475569;
+  --color-sky-400: #64748b;
+  --color-sky-300: #94a3b8;
+  --color-sky-200: #cbd5e1;
+  --color-sky-100: #e2e8f0;
+  --color-sky-50: #f8fafc;
+
+  /* ─── Fonts ─── */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
 
 /* ═══════════════════════════════════════════
-   AeroSky Design Token System
-   Version: 1.0
-   ═══════════════════════════════════════════ */
-
-@layer base {
-  :root {
-    /* ─── Primitive Color Tokens ─── */
-    --color-india-saffron: #FF9933;
-    --color-india-green: #138808;
-    --color-india-navy: #000080;
-    --color-india-white: #FFFFFF;
-
-    /* ─── Semantic Color Tokens ─── */
-    --color-brand-primary: var(--color-india-saffron);
-    --color-brand-secondary: var(--color-india-green);
-    --color-brand-accent: #FFD700;
-    --color-brand-amber: #F59E0B;
-
-    /* Status Colors */
-    --color-status-live: #22C55E;
-    --color-status-delayed: #EF4444;
-    --color-status-alert: var(--color-india-saffron);
-    --color-status-info: #3B82F6;
-
-    /* Flight Marker Colors */
-    --color-plane-default: #FACC15;
-    --color-plane-alert: var(--color-india-saffron);
-    --color-plane-selected: #EF4444;
-
-    /* Surface Colors (Light Mode) */
-    --color-surface-primary: #FFFFFF;
-    --color-surface-secondary: #F8FAFC;
-    --color-surface-elevated: rgba(255, 255, 255, 0.95);
-    --color-surface-glass: rgba(255, 255, 255, 0.8);
-    --color-surface-overlay: rgba(0, 0, 0, 0.5);
-
-    /* Text Colors (Light Mode) */
-    --color-text-primary: #0F172A;
-    --color-text-secondary: #475569;
-    --color-text-muted: #64748B;
-    --color-text-disabled: #94A3B8;
-
-    /* Border Colors (Light Mode) */
-    --color-border-default: #E2E8F0;
-    --color-border-subtle: #F1F5F9;
-    --color-border-strong: #CBD5E1;
-
-    /* ─── Fluid Typography Scale ─── */
-    --text-hero: clamp(2.25rem, 5vw + 1rem, 4.5rem);
-    --text-h1: clamp(2rem, 4vw + 0.5rem, 3.5rem);
-    --text-h2: clamp(1.5rem, 3vw + 0.5rem, 2.5rem);
-    --text-h3: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
-    --text-h4: clamp(1rem, 1.5vw + 0.5rem, 1.25rem);
-    --text-body: clamp(0.875rem, 1vw + 0.5rem, 1rem);
-    --text-caption: clamp(0.75rem, 0.5vw + 0.5rem, 0.875rem);
-    --text-min: 0.6875rem;
-    /* 11px: absolute minimum text size */
-
-    /* ─── Spacing Scale (8-point grid) ─── */
-    --space-1: 0.25rem;
-    /* 4px */
-    --space-2: 0.5rem;
-    /* 8px */
-    --space-3: 0.75rem;
-    /* 12px */
-    --space-4: 1rem;
-    /* 16px */
-    --space-5: 1.25rem;
-    /* 20px */
-    --space-6: 1.5rem;
-    /* 24px */
-    --space-8: 2rem;
-    /* 32px */
-    --space-10: 2.5rem;
-    /* 40px */
-    --space-12: 3rem;
-    /* 48px */
-    --space-16: 4rem;
-    /* 64px */
-    --space-20: 5rem;
-    /* 80px */
-
-    /* ─── Border Radius ─── */
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
-    --radius-2xl: 1.5rem;
-    --radius-full: 9999px;
-
-    /* ─── Shadows ─── */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    --shadow-glow-brand: 0 0 20px rgba(255, 153, 51, 0.3);
-    --shadow-glow-status: 0 0 15px rgba(34, 197, 94, 0.3);
-
-    /* ─── Transitions ─── */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: 500ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  /* ─── Dark Mode Token Overrides ─── */
-  .dark {
-    --color-surface-primary: #020617;
-    --color-surface-secondary: #0F172A;
-    --color-surface-elevated: rgba(6, 10, 24, 0.95);
-    --color-surface-glass: rgba(0, 0, 0, 0.65);
-    --color-surface-overlay: rgba(0, 0, 0, 0.8);
-
-    --color-text-primary: #FFFFFF;
-    --color-text-secondary: #94A3B8;
-    --color-text-muted: #64748B;
-    --color-text-disabled: #475569;
-
-    --color-border-default: rgba(255, 255, 255, 0.06);
-    --color-border-subtle: rgba(255, 255, 255, 0.03);
-    --color-border-strong: rgba(255, 255, 255, 0.12);
-
-    --shadow-glow-brand: 0 0 20px rgba(255, 153, 51, 0.2);
-    --shadow-glow-status: 0 0 15px rgba(34, 197, 94, 0.2);
-  }
-}
-
-@layer components {
-
-  /* ─── Glassmorphism Utilities ─── */
-  .glass-panel {
-    background: var(--color-surface-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--color-border-strong);
-    color: var(--color-text-primary);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .glass-panel-heavy {
-    @apply bg-slate-950/80 backdrop-blur-xl border border-white/10 text-white shadow-2xl;
-  }
-
-  /* ─── Skip Navigation (Accessibility) ─── */
-  .skip-link {
-    @apply sr-only;
-  }
-
-  .skip-link:focus {
-    @apply not-sr-only fixed top-4 left-4 z-[100] bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-6 py-3 rounded-lg shadow-xl ring-2 ring-amber-500 font-semibold text-sm;
-  }
-
-  /* ─── Focus Visible Ring (Accessibility) ─── */
-  .focus-ring {
-    @apply outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900;
-  }
-
-  /* ─── Custom Scrollbar ─── */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
-  }
-}
-
-@layer utilities {
-
-  /* ─── Fluid Typography Utility Classes ─── */
-  .text-fluid-hero {
-    font-size: var(--text-hero);
-  }
-
-  .text-fluid-h1 {
-    font-size: var(--text-h1);
-  }
-
-  .text-fluid-h2 {
-    font-size: var(--text-h2);
-  }
-
-  .text-fluid-h3 {
-    font-size: var(--text-h3);
-  }
-
-  .text-fluid-h4 {
-    font-size: var(--text-h4);
-  }
-
-  .text-fluid-body {
-    font-size: var(--text-body);
-  }
-
-  .text-fluid-caption {
-    font-size: var(--text-caption);
-  }
-}
-
-/* ═══ Intelligence Dock — Glassmorphic Floating Dock ═══ */
-
-/* Noise texture overlay for realism */
-.dock-noise::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0.035;
-  pointer-events: none;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 128px 128px;
-}
-
-.dark .dock-noise::before {
-  opacity: 0.05;
-}
-
-/* Dock icon glow on active */
-.dock-icon-active {
-  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.5));
-}
-
-.dark .dock-icon-active {
-  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.6));
-}
-
-/* Dock entry animation */
-@keyframes dockFloat {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 16px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-.animate-dock-float {
-  animation: dockFloat 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* ═══ Global Styles (outside layers) ═══ */
-
-/* Smooth scroll */
+   BASE STYLES
+═══════════════════════════════════════════ */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom selection color */
+body {
+  background: var(--color-sky-950);
+  color: var(--color-sky-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 ::selection {
   background: rgba(255, 153, 51, 0.3);
   color: white;
 }
 
-/* ─── Reduced Motion Support (Accessibility) ─── */
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ─── Global Scrollbar ─── */
+/* ═══════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════ */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -287,46 +57,54 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-}
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
-/* ─── Ticker Animation ─── */
-.ticker-wrap {
-  width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
-.ticker {
-  display: inline-block;
-  animation: ticker 30s linear infinite;
-}
-
-@keyframes ticker {
+@keyframes radar-sweep {
   0% {
-    transform: translate3d(100%, 0, 0);
+    transform: rotate(0deg);
   }
 
   100% {
-    transform: translate3d(-100%, 0, 0);
+    transform: rotate(360deg);
   }
 }
 
-/* ─── Entry Animations ─── */
-@keyframes slideUp {
+@keyframes fade-in-up {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -338,9 +116,86 @@ html {
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes signal-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-radar {
+  animation: radar-sweep 8s linear infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease forwards;
+}
+
+.animate-signal-ring {
+  animation: signal-ring 2s ease-out infinite;
+}
+
 .animate-slide-up {
-  animation: slideUp 0.8s var(--transition-spring) forwards;
+  animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
+}
+
+.animate-gradient {
+  animation: gradient-shift 8s ease infinite;
+  background-size: 200% 200%;
 }
 
 .delay-100 {
@@ -363,8 +218,57 @@ html {
   animation-delay: 0.5s;
 }
 
-/* ─── Minimum Font Size Policy ─── */
-/* Enforce 11px minimum for readability (WCAG) */
-.text-safe-xs {
-  font-size: max(0.6875rem, var(--text-min));
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+/* ═══════════════════════════════════════════
+   GLASSMORPHISM
+═══════════════════════════════════════════ */
+.glass {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ═══════════════════════════════════════════
+   GLOW EFFECTS (Amber/Saffron)
+═══════════════════════════════════════════ */
+.glow-brand {
+  box-shadow: 0 0 20px rgba(255, 153, 51, 0.2), 0 0 60px rgba(255, 153, 51, 0.05);
+}
+
+.glow-green {
+  box-shadow: 0 0 20px rgba(19, 136, 8, 0.15), 0 0 60px rgba(19, 136, 8, 0.05);
+}
+
+/* ═══════════════════════════════════════════
+   ACCESSIBILITY
+═══════════════════════════════════════════ */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-sky-950), 0 0 0 4px #F59E0B;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
