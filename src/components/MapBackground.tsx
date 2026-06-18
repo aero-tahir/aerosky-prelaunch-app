@@ -9,16 +9,24 @@ const OLA_STYLE_URL = `https://api.olamaps.io/tiles/vector/v1/styles/default-dar
 
 interface Props {
   className?: string;
+  longitude?: number;
+  latitude?: number;
+  zoom?: number;
 }
 
-const MapBackground: React.FC<Props> = ({ className = 'w-full h-full absolute inset-0 z-0' }) => {
+const MapBackground: React.FC<Props> = ({
+  className = 'w-full h-full absolute inset-0 z-0',
+  longitude = 65,
+  latitude = 22,
+  zoom = 4.0,
+}) => {
   return (
     <div className={className}>
       <Map
         initialViewState={{
-          longitude: 65,
-          latitude: 22,
-          zoom: 4.0,
+          longitude,
+          latitude,
+          zoom,
         }}
         style={{ width: '100%', height: '100%' }}
         mapStyle={OLA_STYLE_URL}

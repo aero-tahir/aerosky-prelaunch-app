@@ -7,10 +7,10 @@ const INDIA_GREEN = '#138808';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
-  { to: '/feeders', label: 'Feeders' },
+  { to: '/community', label: 'Community' },
+  { to: '/aerocaptains', label: 'AeroCaptains', badge: 'Founding Open' },
   { to: '/coverage', label: 'Coverage' },
   { to: '/blog', label: 'Blog' },
-  { to: '/community', label: 'Community' },
   { to: '/about', label: 'About' },
 ];
 
@@ -70,14 +70,19 @@ const Navbar: React.FC = () => {
                   to={link.to}
                   end={link.to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase transition-all duration-300 ${
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase transition-all duration-300 relative ${
                       isActive
                         ? 'text-amber-400 bg-amber-500/10'
                         : 'text-sky-100/70 hover:text-white hover:bg-white/[0.06]'
                     }`
                   }
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.badge && (
+                    <span className="absolute -top-1.5 -right-2 px-1 py-0.5 text-[5px] font-extrabold bg-amber-500 text-black rounded uppercase tracking-wider scale-90 origin-bottom-left animate-pulse">
+                      {link.badge}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -97,32 +102,32 @@ const Navbar: React.FC = () => {
               </span>
             </div>
 
-            {/* Feeder CTA */}
+            {/* AeroCaptain CTA */}
             <Link
-              to="/feeders"
+              to="/aerocaptains"
               className="flex items-center gap-1.5 text-[11px] font-semibold text-sky-100/70 hover:text-amber-400 transition-colors uppercase tracking-wide"
             >
-              <Radio size={12} /> Apply for Hosting Ground Station
+              <Radio size={12} /> Become an AeroCaptain
             </Link>
 
-            {/* Signup Waitlist CTA */}
+            {/* Join Founding Members CTA */}
             <a
-              href="#waitlist"
+              href="/#newsletter"
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)]"
               style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
             >
-              Signup Waitlist
+              Join Founding Members
             </a>
           </div>
 
           {/* Mobile: buttons */}
           <div className="flex md:hidden items-center gap-2">
             <a
-              href="#waitlist"
+              href="/#newsletter"
               className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-black"
               style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
             >
-              Signup Waitlist
+              Join Founding Members
             </a>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -184,25 +189,32 @@ const Navbar: React.FC = () => {
                   }`
                 }
               >
-                <span className="text-sm font-semibold">{link.label}</span>
+                <span className="text-sm font-semibold flex items-center gap-2">
+                  {link.label}
+                  {link.badge && (
+                    <span className="px-1.5 py-0.5 text-[7px] font-extrabold bg-amber-500 text-black rounded uppercase tracking-wider animate-pulse">
+                      {link.badge}
+                    </span>
+                  )}
+                </span>
               </NavLink>
             ))}
 
             <div className="pt-4 mt-4 border-t border-white/[0.04] space-y-3">
               <Link
-                to="/feeders"
+                to="/aerocaptains"
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-sky-200 hover:text-amber-400 transition-colors"
               >
-                <Radio size={16} /> Apply for Hosting Ground Station
+                <Radio size={16} /> Become an AeroCaptain
               </Link>
               <a
-                href="#waitlist"
+                href="/#newsletter"
                 onClick={() => setMobileOpen(false)}
                 className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black"
                 style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
               >
-                Signup Waitlist
+                Join Founding Members
               </a>
             </div>
           </div>
