@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Activity, Globe, Radio, Shield, Flag, Database, Lock, Radar, Plane,
   BarChart3, Users, Zap, ArrowRight, MapPin, CheckCircle2,
-  CloudLightning, Eye, Fingerprint, IndianRupee, Map as MapIcon, ChevronRight, BookOpen, Send, Mail, Antenna, Award, Target
+  CloudLightning, Eye, Fingerprint, IndianRupee, Map as MapIcon, ChevronRight, BookOpen, Send, Mail, Antenna, Award, Target, Clock, HelpCircle, ChevronDown
 } from 'lucide-react';
 import MapBackground from '../components/MapBackground';
 import SEO from '../components/SEO';
@@ -12,6 +12,9 @@ import DiscordCTA from '../components/DiscordCTA';
 import { trackEvent } from '../utils/analytics';
 import { getLaunchMetrics, addNewsletterSubscription, LaunchMetrics } from '../utils/db';
 import { sanitizeInput, validateEmail, isBotSubmission, isRateLimited } from '../utils/security';
+import { useSiteSettings } from '../context/CMSContext';
+import { getArticles, getUpcomingEvents, getFAQs, formatImageUrl } from '../services/strapi';
+import { StrapiArticle, StrapiEvent, StrapiFAQ } from '../types/strapi';
 
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
@@ -38,6 +41,11 @@ const Home: React.FC = () => {
     communityMembers: 142
   });
 
+  const [articles, setArticles] = useState<StrapiArticle[]>([]);
+  const [upcomingEvent, setUpcomingEvent] = useState<StrapiEvent | null>(null);
+  const [faqs, setFaqs] = useState<StrapiFAQ[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     async function loadMetrics() {
       try {
@@ -47,15 +55,31 @@ const Home: React.FC = () => {
         console.error('Failed to load home metrics:', err);
       }
     }
+
+    async function loadCmsContent() {
+      try {
+        const [articlesList, eventsList, faqsList] = await Promise.all([
+          getArticles(),
+          getUpcomingEvents(),
+          getFAQs()
+        ]);
+        setArticles(articlesList.slice(0, 3));
+        setUpcomingEvent(eventsList[0] || null);
+        setFaqs(faqsList.filter(f => f.active === true).slice(0, 5));
+      } catch (e) {
+        console.error('[Home CMS] Failed to resolve homepage data:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     loadMetrics();
+    loadCmsContent();
   }, []);
 
   return (
     <div className="relative w-full overflow-x-hidden">
-      <SEO
-        title="India's Airspace Intelligence Network | AeroSky"
-        description="AeroSky is India's community-powered airspace intelligence and flight tracking network. Host a receiver ground station or join our airspace data forums."
-      />
+      <SEO />
       <Schema
         type="Organization"
         data={{
@@ -72,9 +96,11 @@ const Home: React.FC = () => {
       <MissionSection />
       <AeroCaptainProgramSection />
       <CommunityJourneySection />
-      <CommunitySection />
+      <CommunitySection upcomingEvent={upcomingEvent} />
+      <LatestArticlesSection articles={articles} loading={loading} />
       <CoveragePreviewSection />
       <RoadmapSection />
+      <FAQSection faqs={faqs} loading={loading} />
       <AboutSection />
       <NewsletterSection />
     </div>
@@ -91,6 +117,17 @@ interface HeroSectionProps {
 }
 
 function HeroSection({ metrics }: HeroSectionProps) {
+  const siteSettings = useSiteSettings();
+
+  const titleText = siteSettings.heroTitle || "India's Own|Airspace|Intelligence";
+  const subtitleText = siteSettings.heroSubtitle || "Help build India's independent aviation intelligence network. Join our founding community to host ground receiver nodes, decode transponder feeds, and map Indian airspace together.";
+  const bannerText = siteSettings.announcementBanner || "SOVEREIGN DATA • INDEPENDENT INDIAN AIRSPACE NETWORK";
+  
+  const cta1Link = siteSettings.primaryCtaLink || "/aerocaptains";
+  const cta1Text = siteSettings.primaryCtaText || "Become a Founding AeroCaptain";
+  const cta2Link = siteSettings.secondaryCtaLink || "#community";
+  const cta2Text = siteSettings.secondaryCtaText || "Join the Founding Community";
+
   return (
     <section className="relative h-screen w-full overflow-hidden" aria-label="AeroSky Hero">
       {/* Background: Static Map */}
@@ -107,7 +144,7 @@ function HeroSection({ metrics }: HeroSectionProps) {
       <div className="absolute top-24 right-4 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
         <span className="text-[10px] font-mono font-bold text-sky-200/80 uppercase tracking-widest">
-          Pre-Launch Community Open
+          {siteSettings.announcementBanner || "Pre-Launch Community Open"}
         </span>
       </div>
 
@@ -119,17 +156,23 @@ function HeroSection({ metrics }: HeroSectionProps) {
             style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}
           >
             <Shield size={12} className="animate-pulse" />
-            SOVEREIGN DATA • INDEPENDENT Indian AIRSPACE NETWORK
+            {bannerText}
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tighter mb-4 animate-slide-up delay-100">
-            <span style={{ color: INDIA_ORANGE }}>India's Own</span><br />
-            <span className="text-white">Airspace</span>{' '}
-            <span style={{ color: INDIA_GREEN }}>Intelligence</span>
+            {titleText.includes('|') ? (
+              <>
+                <span style={{ color: INDIA_ORANGE }}>{titleText.split('|')[0]}</span><br />
+                <span className="text-white">{titleText.split('|')[1]}</span>{' '}
+                <span style={{ color: INDIA_GREEN }}>{titleText.split('|')[2] || ''}</span>
+              </>
+            ) : (
+              <span className="text-white">{titleText}</span>
+            )}
           </h1>
 
           <p className="text-xs sm:text-sm md:text-base text-sky-200/70 mb-6 max-w-lg leading-relaxed animate-slide-up delay-200">
-            Help build India's independent aviation intelligence network. Join our founding community to host ground receiver nodes, decode transponder feeds, and map Indian airspace together.
+            {subtitleText}
           </p>
 
           {/* Status Cards */}
@@ -154,7 +197,7 @@ function HeroSection({ metrics }: HeroSectionProps) {
               <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">India Airspace Report</div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">Subscribe for Monthly Updates</span>
+                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">Subscribe for Updates</span>
               </div>
             </div>
 
@@ -184,21 +227,47 @@ function HeroSection({ metrics }: HeroSectionProps) {
 
           {/* CTA Row */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-lg animate-slide-up delay-400">
-            <Link
-              to="/aerocaptains"
-              onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
-              className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
-            >
-              <Radio size={16} className="animate-pulse" /> Become a Founding AeroCaptain
-            </Link>
-            <a
-              href="#community"
-              onClick={() => trackEvent('hero_join_community_clicked', { page: '/' })}
-              className="flex-1 px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-            >
-              <Users size={16} /> Join the Founding Community
-            </a>
+            {cta1Link.startsWith('http') ? (
+              <a
+                href={cta1Link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
+                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                <Radio size={16} className="animate-pulse" /> {cta1Text}
+              </a>
+            ) : (
+              <Link
+                to={cta1Link}
+                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
+                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                <Radio size={16} className="animate-pulse" /> {cta1Text}
+              </Link>
+            )}
+
+            {cta2Link.startsWith('http') ? (
+              <a
+                href={cta2Link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackEvent('hero_join_community_clicked', { page: '/' })}
+                className="flex-1 px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Users size={16} /> {cta2Text}
+              </a>
+            ) : (
+              <a
+                href={cta2Link}
+                onClick={() => trackEvent('hero_join_community_clicked', { page: '/' })}
+                className="flex-1 px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Users size={16} /> {cta2Text}
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -402,7 +471,11 @@ function CommunityJourneySection() {
 /* ═══════════════════════════════════════════════════════════════
    SECTION 5: COMMUNITY SECTION
  ═══════════════════════════════════════════════════════════════ */
-function CommunitySection() {
+interface CommunitySectionProps {
+  upcomingEvent: StrapiEvent | null;
+}
+
+function CommunitySection({ upcomingEvent }: CommunitySectionProps) {
   const topics = [
     'ADS-B & Ground Stations',
     'Hardware & SDR Setup',
@@ -436,22 +509,28 @@ function CommunitySection() {
               />
 
               {/* Event teaser */}
-              <div className="p-4 rounded-2xl bg-amber-500/[0.02] border border-amber-500/10">
-                <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider mb-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  Upcoming: AeroSky Community Kickoff
+              {upcomingEvent && (
+                <div className="p-4 rounded-2xl bg-amber-500/[0.02] border border-amber-500/10 animate-fade-in">
+                  <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Upcoming: {upcomingEvent.title}
+                  </div>
+                  <div className="text-xs text-sky-200/80 mb-2">
+                    {upcomingEvent.description}
+                  </div>
+                  {upcomingEvent.registrationUrl && (
+                    <a
+                      href={upcomingEvent.registrationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackEvent('community_event_registered', { page: '/', kickoff: upcomingEvent.title })}
+                      className="text-[10px] font-mono font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1"
+                    >
+                      Register for Event <ChevronRight size={10} />
+                    </a>
+                  )}
                 </div>
-                <div className="text-xs text-sky-200/80 mb-2">
-                  Meet the team online on July 25, 2026 at 19:00 IST. Learn how to setup your SDR receiver.
-                </div>
-                <Link
-                  to="/community"
-                  onClick={() => trackEvent('community_event_registered', { page: '/', kickoff: 'Webinar July 25' })}
-                  className="text-[10px] font-mono font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1"
-                >
-                  Register for Kickoff Event <ChevronRight size={10} />
-                </Link>
-              </div>
+              )}
             </div>
 
             <div className="glass rounded-2xl p-5 border border-white/[0.04]">
@@ -747,3 +826,163 @@ function NewsletterSection() {
     </section>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 10: LATEST ARTICLES SECTION
+ ═══════════════════════════════════════════════════════════════ */
+interface LatestArticlesSectionProps {
+  articles: StrapiArticle[];
+  loading: boolean;
+}
+
+function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps) {
+  if (loading) {
+    return (
+      <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24 max-w-5xl mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-6 w-48 bg-white/5 rounded mx-auto" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="h-48 bg-white/5 rounded-2xl" />
+            <div className="h-48 bg-white/5 rounded-2xl" />
+            <div className="h-48 bg-white/5 rounded-2xl" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (articles.length === 0) return null;
+
+  return (
+    <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24 bg-black/10">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-3">
+            <BookOpen size={12} /> Academy Publications
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Latest Insights</h2>
+          <p className="text-xs sm:text-sm text-sky-200/60 max-w-md mx-auto">
+            RF guides, receiver configuration tutorials and operational telemetry analysis.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+          {articles.map((post) => {
+            const readTime = calculateReadingTime(post.content);
+            return (
+              <article
+                key={post.slug}
+                className="glass rounded-2xl overflow-hidden border border-white/[0.04] hover:border-amber-500/15 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col justify-between group"
+              >
+                {post.featuredImage && (
+                  <div className="w-full h-32 relative overflow-hidden bg-white/[0.01]">
+                    <img
+                      src={formatImageUrl(post.featuredImage) || ''}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                )}
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1.5 group-hover:text-amber-400 transition-colors leading-snug line-clamp-2">
+                      {post.title}
+                    </h3>
+                    <p className="text-[11px] text-sky-200/50 leading-relaxed mb-4 line-clamp-3">
+                      {post.excerpt}
+                    </p>
+                  </div>
+
+                  <div className="border-t border-white/5 pt-3 flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-[9px] font-mono text-sky-200/40">
+                      <Clock size={10} /> {readTime}
+                    </span>
+                    <Link
+                      to={`/insights/${post.slug}`}
+                      className="text-[9px] font-mono font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1"
+                    >
+                      Read Guide <ArrowRight size={8} />
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <div className="text-center">
+          <Link
+            to="/insights"
+            className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-widest"
+          >
+            Explore Academy Hub <ArrowRight size={12} />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Simple helper to calculate reading time inside LatestArticlesSection
+function calculateReadingTime(text: string): string {
+  if (!text) return '1 min';
+  const words = text.trim().split(/\s+/).length;
+  const minutes = Math.ceil(words / 200);
+  return `${minutes} min`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 11: HOMEPAGE FAQ SECTION
+ ═══════════════════════════════════════════════════════════════ */
+interface FAQSectionProps {
+  faqs: StrapiFAQ[];
+  loading: boolean;
+}
+
+function FAQSection({ faqs, loading }: FAQSectionProps) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  if (loading) {
+    return (
+      <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24 max-w-3xl mx-auto animate-pulse space-y-3">
+        <div className="h-6 w-32 bg-white/5 rounded mx-auto mb-6" />
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-12 bg-white/5 rounded-xl" />
+        ))}
+      </section>
+    );
+  }
+
+  if (faqs.length === 0) return null;
+
+  return (
+    <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center gap-2 justify-center mb-6">
+          <HelpCircle size={14} className="text-amber-400" />
+          <h2 className="text-lg font-bold text-white uppercase tracking-wider">Frequently Asked Questions</h2>
+        </div>
+        <div className="space-y-2.5">
+          {faqs.map((faq, i) => (
+            <div key={faq.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden">
+              <button
+                onClick={() => setOpenIdx(openIdx === i ? null : i)}
+                aria-expanded={openIdx === i}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
+              >
+                <span className="text-sm font-medium text-white pr-4">{faq.question}</span>
+                <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
+              </button>
+              {openIdx === i && (
+                <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed pt-2 border-t border-white/5">
+                  {faq.answer}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { trackEvent } from '../utils/analytics';
+import { useSiteSettings } from '../context/CMSContext';
 
 interface DiscordCTAProps {
   location: string;
@@ -17,6 +18,7 @@ const DiscordCTA: React.FC<DiscordCTAProps> = ({
   className = '',
   children
 }) => {
+  const siteSettings = useSiteSettings();
   const handleDiscordClick = () => {
     trackEvent('discord_join_clicked', {
       location,
@@ -25,7 +27,7 @@ const DiscordCTA: React.FC<DiscordCTAProps> = ({
     });
   };
 
-  const discordInviteUrl = 'https://discord.gg/aerosky';
+  const discordInviteUrl = siteSettings.discordInviteUrl || 'https://discord.gg/aerosky';
 
   if (variant === 'primary') {
     return (

@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Plane } from 'lucide-react';
+import { useSiteSettings } from '../context/CMSContext';
 
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
 
 const Footer: React.FC = () => {
+  const siteSettings = useSiteSettings();
   return (
     <footer className="relative z-10 border-t border-white/5 bg-black/40 backdrop-blur-xl py-8 sm:py-12 px-4 sm:px-6 md:px-12 lg:px-24" aria-label="AeroSky Footer">
       <div className="max-w-6xl mx-auto">
@@ -51,10 +53,8 @@ const Footer: React.FC = () => {
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Community</h3>
             <ul className="space-y-1.5">
               {[
-                { label: 'Blog', to: '/blog' },
-                { label: 'Community', to: '/community' },
-                { label: 'Discord', to: '/community' },
-                { label: 'GitHub', to: '/community' },
+                { label: 'Insights', to: '/insights' },
+                { label: 'Community Hub', to: '/community' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link to={item.to} className="text-sm text-sky-200/60 hover:text-amber-400 transition-colors">
@@ -65,20 +65,31 @@ const Footer: React.FC = () => {
             </ul>
           </nav>
 
-          {/* Legal */}
-          <nav aria-label="Legal">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Legal</h3>
+          {/* Legal & Support */}
+          <nav aria-label="Legal and Support">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-3">Legal & Support</h3>
             <ul className="space-y-1.5">
-              <li><span className="text-sm text-sky-200/60 cursor-default">Privacy Policy</span></li>
-              <li><span className="text-sm text-sky-200/60 cursor-default">Terms of Service</span></li>
-              <li><span className="text-sm text-sky-200/60 cursor-default">Contact</span></li>
+              {[
+                { label: 'Privacy Policy', to: '/privacy' },
+                { label: 'Terms of Service', to: '/terms' },
+                { label: 'Cookie Policy', to: '/cookie-policy' },
+                { label: 'Support Directory', to: '/support' },
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link to={item.to} className="text-sm text-sky-200/60 hover:text-amber-400 transition-colors">
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
         </div>
 
         {/* Bottom Bar */}
         <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
-          <p className="text-xs text-sky-200/60">© 2026 AeroSky - AeroLytics Intelligence Pvt. Ltd. | Made in India</p>
+          <p className="text-xs text-sky-200/60">
+            {siteSettings.footerCopyright || "© 2026 AeroSky - AeroLytics Intelligence Pvt. Ltd. | Made in India"}
+          </p>
           <span className="text-[10px] text-sky-200/50 font-mono">Pre-Launch • Pune, India</span>
         </div>
       </div>

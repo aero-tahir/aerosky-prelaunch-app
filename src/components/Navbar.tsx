@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { Menu, X, Plane, Radio, ChevronDown } from 'lucide-react';
+import { useSiteSettings } from '../context/CMSContext';
 
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
@@ -10,19 +11,23 @@ const NAV_LINKS = [
   { to: '/community', label: 'Community' },
   { to: '/aerocaptains', label: 'AeroCaptains', badge: 'Founding Open' },
   { to: '/coverage', label: 'Coverage' },
-  { to: '/blog', label: 'Blog' },
+  { to: '/insights', label: 'Insights' },
   { to: '/about', label: 'About' },
 ];
 
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const siteSettings = useSiteSettings();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const ctaLink = siteSettings.primaryCtaLink || "/#newsletter";
+  const ctaText = siteSettings.primaryCtaText || "Join Founding Members";
 
   return (
     <>
@@ -51,7 +56,7 @@ const Navbar: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-bold tracking-tight text-white leading-none">
-                  Aero<span className="text-amber-400">Sky</span>
+                  {siteSettings.siteName || 'Aero'}<span className="text-amber-400">{siteSettings.siteName ? '' : 'Sky'}</span>
                 </span>
                 <span className="text-[7px] text-sky-200/60 tracking-[0.15em] uppercase leading-none mt-0.5">
                   Bharat Airspace
@@ -60,10 +65,10 @@ const Navbar: React.FC = () => {
             </Link>
 
             {/* Divider */}
-            <div className="hidden md:block w-px h-6 bg-white/[0.06]" />
+            <div className="hidden lg:block w-px h-6 bg-white/[0.06]" />
 
             {/* Desktop Nav Links */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-1">
               {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.to}
@@ -89,12 +94,14 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Right: Status + CTAs */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             {/* Live Status */}
-            <div className="flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-1.5">
+            <div className="hidden xl:flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-1.5">
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] text-amber-400/80 font-medium tracking-wide uppercase">Pre-Launch</span>
+                <span className="text-[9px] text-amber-400/80 font-medium tracking-wide uppercase">
+                  {siteSettings.announcementBanner || "Pre-Launch"}
+                </span>
               </div>
               <div className="w-px h-3 bg-white/[0.06]" />
               <span className="text-[9px] text-sky-200/60 font-mono">
@@ -102,33 +109,49 @@ const Navbar: React.FC = () => {
               </span>
             </div>
 
-            {/* AeroCaptain CTA */}
-            <Link
-              to="/aerocaptains"
-              className="flex items-center gap-1.5 text-[11px] font-semibold text-sky-100/70 hover:text-amber-400 transition-colors uppercase tracking-wide"
-            >
-              <Radio size={12} /> Become an AeroCaptain
-            </Link>
-
             {/* Join Founding Members CTA */}
-            <a
-              href="/#newsletter"
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)]"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
-            >
-              Join Founding Members
-            </a>
+            {ctaLink.startsWith('http') ? (
+              <a
+                href={ctaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)]"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                {ctaText}
+              </a>
+            ) : (
+              <a
+                href={ctaLink}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)]"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                {ctaText}
+              </a>
+            )}
           </div>
 
           {/* Mobile: buttons */}
-          <div className="flex md:hidden items-center gap-2">
-            <a
-              href="/#newsletter"
-              className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-black"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
-            >
-              Join Founding Members
-            </a>
+          <div className="flex lg:hidden items-center gap-2">
+            {ctaLink.startsWith('http') ? (
+              <a
+                href={ctaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-black"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                {ctaText}
+              </a>
+            ) : (
+              <a
+                href={ctaLink}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-black"
+                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              >
+                {ctaText}
+              </a>
+            )}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="w-10 h-10 flex items-center justify-center rounded-lg text-sky-200 hover:text-white hover:bg-white/[0.06] transition-colors border border-white/[0.06]"
@@ -143,7 +166,7 @@ const Navbar: React.FC = () => {
 
       {/* ── Mobile Slide-In Drawer ── */}
       <div
-        className={`fixed inset-0 z-[100] md:hidden transition-all duration-300 ${mobileOpen ? 'visible' : 'invisible'}`}
+        className={`fixed inset-0 z-[100] lg:hidden transition-all duration-300 ${mobileOpen ? 'visible' : 'invisible'}`}
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
@@ -161,7 +184,7 @@ const Navbar: React.FC = () => {
             <div className="flex items-center gap-2">
               <Plane className="text-amber-400 rotate-[-45deg]" size={20} />
               <span className="text-lg font-bold text-white">
-                Aero<span className="text-amber-400">Sky</span>
+                {siteSettings.siteName || 'Aero'}<span className="text-amber-400">{siteSettings.siteName ? '' : 'Sky'}</span>
               </span>
             </div>
             <button
@@ -201,21 +224,27 @@ const Navbar: React.FC = () => {
             ))}
 
             <div className="pt-4 mt-4 border-t border-white/[0.04] space-y-3">
-              <Link
-                to="/aerocaptains"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-sky-200 hover:text-amber-400 transition-colors"
-              >
-                <Radio size={16} /> Become an AeroCaptain
-              </Link>
-              <a
-                href="/#newsletter"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
-              >
-                Join Founding Members
-              </a>
+              {ctaLink.startsWith('http') ? (
+                <a
+                  href={ctaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black"
+                  style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                >
+                  {ctaText}
+                </a>
+              ) : (
+                <a
+                  href={ctaLink}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black"
+                  style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                >
+                  {ctaText}
+                </a>
+              )}
             </div>
           </div>
 
@@ -226,7 +255,9 @@ const Navbar: React.FC = () => {
                 <div className="text-[10px] font-bold text-sky-200/60 uppercase tracking-widest mb-1">Status</div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span className="text-xs font-bold text-amber-400/80">Pre-Launch</span>
+                  <span className="text-xs font-bold text-amber-400/80">
+                    {siteSettings.announcementBanner || "Pre-Launch"}
+                  </span>
                 </div>
               </div>
               <div className="text-right">

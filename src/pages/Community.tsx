@@ -186,6 +186,12 @@ const Community: React.FC = () => {
                 <li>Interactive community Q&A</li>
               </ul>
             </div>
+            <div className="col-span-1 sm:col-span-2 border-t border-white/5 pt-3 flex items-center justify-between">
+              <span className="text-[10px] font-mono text-sky-200/40 uppercase">Community Milestones</span>
+              <Link to="/launch" className="text-[10px] font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                View Pre-Launch Tracker <ArrowRight size={10} />
+              </Link>
+            </div>
           </div>
 
           {registered ? (

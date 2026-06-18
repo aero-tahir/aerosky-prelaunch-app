@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 interface SchemaProps {
-  type: 'Article' | 'BreadcrumbList' | 'Organization';
+  type: 'Article' | 'BreadcrumbList' | 'Organization' | 'FAQPage';
   data: Record<string, any>;
 }
 
