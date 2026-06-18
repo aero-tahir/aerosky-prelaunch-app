@@ -33,7 +33,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-1.5">
               {[
                 { label: 'Home', to: '/' },
-                { label: 'Feeders', to: '/feeders' },
+                { label: 'AeroCaptains', to: '/aerocaptains' },
                 { label: 'Coverage', to: '/coverage' },
                 { label: 'About', to: '/about' },
               ].map((item) => (
@@ -78,7 +78,7 @@ const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
-          <p className="text-xs text-sky-200/60">© 2025 AeroSky - AeroLytics Intelligence Pvt. Ltd. | Made in India</p>
+          <p className="text-xs text-sky-200/60">© 2026 AeroSky - AeroLytics Intelligence Pvt. Ltd. | Made in India</p>
           <span className="text-[10px] text-sky-200/50 font-mono">Pre-Launch • Pune, India</span>
         </div>
       </div>

@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Map, { Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { TowerControl, Radio, Radar, Signal, ArrowRight, Cpu, Zap, Globe, ChevronDown, HelpCircle, MapPin, AlertTriangle } from 'lucide-react';
+import { TowerControl, Radio, Radar, Signal, ArrowRight, Cpu, Zap, Globe, ChevronDown, HelpCircle, MapPin, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import SEO from '../components/SEO';
+import Schema from '../components/Schema';
+import { trackEvent } from '../utils/analytics';
+import { getLaunchMetrics, LaunchMetrics } from '../utils/db';
 
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
 const OLA_API_KEY = import.meta.env.VITE_OLA_MAP_API_KEY || '';
 const OLA_STYLE_URL = `https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json`;
 
-/* Active feeders (blue) */
+/* Active ground stations (blue) */
 const ACTIVE_AIRPORTS = [
   { name: 'DEL', lat: 28.556, lng: 77.100 },
   { name: 'BOM', lat: 19.089, lng: 72.865 },
@@ -19,7 +23,7 @@ const ACTIVE_AIRPORTS = [
   { name: 'GBI', lat: 17.520, lng: 76.820 }, // Gulbarga
 ];
 
-/* Needed feeders (red) - major Indian airports without coverage */
+/* Needed ground stations (red) - major Indian airports without coverage */
 const NEEDED_AIRPORTS = [
   { name: 'HYD', lat: 17.231, lng: 78.429 },
   { name: 'MAA', lat: 12.994, lng: 80.170 },
@@ -73,16 +77,52 @@ const NEEDED_AIRPORTS = [
   { name: 'CDP', lat: 10.936, lng: 79.253 },
 ];
 
-const Coverage: React.FC = () => (
-  <div className="relative pt-16">
-    <HeroSection />
-    <CoverageMap />
-    <StatusStrip />
-    <GapSection />
-    <FeederCTA />
-    <FAQSection />
-  </div>
-);
+const Coverage: React.FC = () => {
+  const [metrics, setMetrics] = useState<LaunchMetrics>({
+    foundingCaptains: 31,
+    citiesRegistered: 14,
+    statesRepresented: 8,
+    newsletterSubscribers: 57,
+    communityMembers: 142
+  });
+
+  useEffect(() => {
+    async function loadMetrics() {
+      try {
+        const data = await getLaunchMetrics();
+        setMetrics(data);
+      } catch (e) {
+        console.error('Failed to load coverage metrics:', e);
+      }
+    }
+    loadMetrics();
+  }, []);
+
+  return (
+    <div className="relative pt-16">
+      <SEO
+        title="ADS-B Coverage Vision | AeroSky"
+        description="Learn about our airspace coverage vision, target ground station locations, and how to help close radar blind spots in India."
+      />
+      <Schema
+        type="BreadcrumbList"
+        data={{
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.in/' },
+            { '@type': 'ListItem', position: 2, name: 'Coverage', item: 'https://aerosky.in/coverage' }
+          ]
+        }}
+      />
+
+      <HeroSection />
+      <CoverageMap />
+      <StatusStrip />
+      <GapSection />
+      <AeroCaptainCTA />
+      <FAQSection />
+    </div>
+  );
+};
 
 export default Coverage;
 
@@ -90,6 +130,13 @@ export default Coverage;
    HERO
 ═══════════════════════════════════════════ */
 function HeroSection() {
+  const statuses = [
+    'Coverage Vision Established',
+    'Targeting Underserved Corridors',
+    'Community Driven Network',
+    'Founding AeroCaptains Joining'
+  ];
+
   return (
     <section className="relative py-16 sm:py-24 px-4 sm:px-6 md:px-12 lg:px-24 overflow-hidden">
       <div className="absolute inset-0 opacity-[0.02]" style={{
@@ -104,40 +151,35 @@ function HeroSection() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.05] mb-4">
-            <span className="text-white">We Need Feeders to Expand</span><br />
-            <span style={{ color: INDIA_ORANGE }}>India's Flight Tracking Coverage</span>
+            <span className="text-white">Our Sovereign</span><br />
+            <span style={{ color: INDIA_ORANGE }}>Coverage Vision</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-sky-200/60 max-w-lg mb-4 leading-relaxed">
-            AeroSky currently has active feeders in only 6 locations (Delhi, Mumbai, Bengaluru, Pune, Solapur, Gulbarga) out of 118 DGCA-listed airports (109 public + 9 private).
-            We need community feeders across the country to achieve comprehensive coverage.
+          <p className="text-sm sm:text-base text-sky-200/70 max-w-xl mb-6 leading-relaxed">
+            Our goal is to build India's independent, community-powered aviation data network. We are mapping critical target zones to place our first ground stations and eliminate airspace tracking blind spots.
           </p>
 
-          <p className="text-xs text-sky-200/50 max-w-md mb-8">
-            Help us eliminate blind spots. Host a feeder near your local airport and contribute to India's independent flight tracking network.
-          </p>
-
-          {/* Live Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-            {[
-              { value: '~30%', label: 'Current Coverage' },
-              { value: '6', label: 'Active Feeders' },
-              { value: '118', label: 'Total Airports' },
-              { value: '70%', label: 'Gap to Fill' },
-            ].map((s) => (
-              <div key={s.label} className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-                <div className="text-lg sm:text-xl font-mono font-bold text-white">{s.value}</div>
-                <div className="text-[9px] font-mono text-sky-200/50 uppercase tracking-wider">{s.label}</div>
+          {/* Status Indicators list */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+            {statuses.map((s) => (
+              <div key={s} className="flex items-center gap-2.5 p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:border-amber-500/10 transition-colors">
+                <CheckCircle2 size={14} className="text-amber-400 shrink-0" />
+                <span className="text-xs font-semibold text-white">{s}</span>
               </div>
             ))}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link to="/feeders" className="px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 text-center" style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}>
-              Apply for Hosting Ground Station
+            <Link
+              to="/aerocaptains"
+              onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'coverage_hero' })}
+              className="px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 text-center cursor-pointer"
+              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+            >
+              Become a Founding AeroCaptain
             </Link>
             <a href="#map" className="px-6 py-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-white font-bold text-sm transition-all text-center">
-              View Coverage Gaps
+              View Vision Map
             </a>
           </div>
         </div>
@@ -147,15 +189,15 @@ function HeroSection() {
 }
 
 /* ═══════════════════════════════════════════
-   COVERAGE MAP — Ola Maps with React GL
+   INTEREST MAP: Ola Maps with React GL
 ═══════════════════════════════════════════ */
 function CoverageMap() {
   return (
     <section id="map" className="py-8 px-4 sm:px-6 md:px-12 lg:px-24">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-1">India ADS-B Coverage Gap Map</h2>
-          <p className="text-xs text-sky-200/50 font-mono uppercase tracking-wider">{ACTIVE_AIRPORTS.length} active • {NEEDED_AIRPORTS.length}+ airports need feeders</p>
+          <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Target Airspace Coverage Vision</h2>
+          <p className="text-xs text-sky-200/50 font-mono uppercase tracking-wider">Proposed Founding AeroCaptain Nodes & Target Regions Map</p>
         </div>
 
         {/* Map */}
@@ -174,27 +216,27 @@ function CoverageMap() {
               return { url };
             }}
           >
-            {/* Active airports - Blue TowerControl */}
+            {/* Primary Targets - Orange TowerControl */}
             {ACTIVE_AIRPORTS.map((airport) => (
               <Marker key={airport.name} longitude={airport.lng} latitude={airport.lat} anchor="center">
                 <div className="relative flex items-center justify-center group">
-                  <div className="absolute w-6 h-6 rounded-full border border-blue-400/30 animate-signal-ring" />
-                  <div className="relative w-5 h-5 rounded-full bg-blue-500 border border-white/80 shadow-[0_0_8px_rgba(59,130,246,0.6)] flex items-center justify-center">
+                  <div className="absolute w-6 h-6 rounded-full border border-amber-400/30 animate-signal-ring" />
+                  <div className="relative w-5 h-5 rounded-full bg-amber-500 border border-white/80 shadow-[0_0_8px_rgba(245,158,11,0.6)] flex items-center justify-center">
                     <TowerControl size={10} color="#ffffff" />
                   </div>
-                  <span className="absolute top-6 left-1/2 -translate-x-1/2 text-[7px] font-mono font-bold text-blue-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">{airport.name}</span>
+                  <span className="absolute top-6 left-1/2 -translate-x-1/2 text-[7px] font-mono font-bold text-amber-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">{airport.name}</span>
                 </div>
               </Marker>
             ))}
 
-            {/* Needed airports - Red TowerControl */}
+            {/* Secondary Targets - Light Amber TowerControl */}
             {NEEDED_AIRPORTS.map((airport) => (
               <Marker key={airport.name} longitude={airport.lng} latitude={airport.lat} anchor="center">
                 <div className="relative flex items-center justify-center group">
-                  <div className="relative w-4 h-4 rounded-full bg-red-500/70 border border-red-300/50 shadow-[0_0_6px_rgba(239,68,68,0.4)] flex items-center justify-center">
-                    <TowerControl size={8} color="#fecaca" />
+                  <div className="relative w-4 h-4 rounded-full bg-amber-500/40 border border-amber-300/20 flex items-center justify-center">
+                    <TowerControl size={8} color="#fef3c7" />
                   </div>
-                  <span className="absolute top-5 left-1/2 -translate-x-1/2 text-[7px] font-mono font-bold text-red-400/70 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">{airport.name}</span>
+                  <span className="absolute top-5 left-1/2 -translate-x-1/2 text-[7px] font-mono font-bold text-amber-400/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">{airport.name}</span>
                 </div>
               </Marker>
             ))}
@@ -204,12 +246,12 @@ function CoverageMap() {
         {/* Legend */}
         <div className="flex flex-wrap justify-center gap-6 mt-4">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-blue-500 border border-white/80 flex items-center justify-center"><TowerControl size={8} color="#fff" /></div>
-            <span className="text-[10px] text-sky-200/60 font-mono">Active Feeder ({ACTIVE_AIRPORTS.length} airports)</span>
+            <div className="w-4 h-4 rounded-full bg-amber-500 border border-white/80 flex items-center justify-center"><TowerControl size={8} color="#fff" /></div>
+            <span className="text-[10px] text-sky-200/60 font-mono">Primary Airspace Target Zone</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-red-500/70 border border-red-300/50 flex items-center justify-center"><TowerControl size={8} color="#fecaca" /></div>
-            <span className="text-[10px] text-sky-200/60 font-mono">Feeder Required ({NEEDED_AIRPORTS.length}+ airports)</span>
+            <div className="w-4 h-4 rounded-full bg-amber-500/40 border border-amber-300/20 flex items-center justify-center"><TowerControl size={8} color="#fef3c7" /></div>
+            <span className="text-[10px] text-sky-200/60 font-mono">Secondary Airspace Target Zone</span>
           </div>
         </div>
       </div>
@@ -225,28 +267,28 @@ function StatusStrip() {
     <section className="py-6 px-4 sm:px-6 md:px-12 lg:px-24">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Active */}
-          <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.03]">
+          {/* Primary Targets */}
+          <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.03]">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-wider">Active Feeders</span>
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-wider">Primary Target Areas</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {['Delhi (DEL)', 'Mumbai (BOM)', 'Bengaluru (BLR)', 'Pune (PNQ)', 'Solapur (SSE)', 'Gulbarga (GBI)'].map((city) => (
-                <span key={city} className="text-xs text-white font-medium px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20">{city}</span>
+              {['Delhi (DEL)', 'Mumbai (BOM)', 'Bengaluru (BLR)', 'Pune (PNQ)', 'Chennai (MAA)', 'Kolkata (CCU)', 'Hyderabad (HYD)'].map((city) => (
+                <span key={city} className="text-xs text-white font-medium px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20">{city}</span>
               ))}
             </div>
           </div>
 
-          {/* Needed */}
-          <div className="p-4 rounded-xl border border-red-500/15 bg-red-500/[0.02]">
+          {/* Underserved */}
+          <div className="p-4 rounded-xl border border-amber-500/10 bg-white/[0.01]">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle size={12} className="text-red-400/70" />
-              <span className="text-[10px] font-mono font-bold text-red-400/70 uppercase tracking-wider">Feeders Urgently Needed ({NEEDED_AIRPORTS.length}+ airports)</span>
+              <div className="w-2 h-2 rounded-full bg-amber-400/50" />
+              <span className="text-[10px] font-mono font-bold text-sky-200/50 uppercase tracking-wider">Underserved Regional Airspace</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {['Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad', 'Kochi', 'Jaipur', 'Lucknow', 'Goa', 'Guwahati', 'Patna', 'Srinagar', 'Chandigarh', 'Nagpur', 'Varanasi', 'and 36+ more...'].map((city) => (
-                <span key={city} className="text-xs text-sky-200/70 font-medium">{city}</span>
+              {['Solapur', 'Gulbarga', 'Nashik', 'Ahmedabad', 'Kochi', 'Jaipur', 'Lucknow', 'and 30+ regional hubs...'].map((city) => (
+                <span key={city} className="text-xs text-sky-200/60 font-medium">{city}</span>
               ))}
             </div>
           </div>
@@ -257,23 +299,26 @@ function StatusStrip() {
 }
 
 /* ═══════════════════════════════════════════
-   COVERAGE GAPS — Why we need more feeders
+   COVERAGE GAPS - Why we need more AeroCaptains
 ═══════════════════════════════════════════ */
 function GapSection() {
   return (
     <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Why India Needs More ADS-B Feeders</h2>
-          <p className="text-sm text-sky-200/60 max-w-xl mx-auto">
-            With only 3 active cities, large portions of Indian airspace remain invisible. Every new feeder closes a gap.
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Why India Needs More ADS-B Coverage</h2>
+          <p className="text-sm text-sky-200/70 max-w-2xl mx-auto leading-relaxed mb-4">
+            Most commercial flight tracking services rely on foreign-hosted servers. Crucially, vast segments of Indian airspace, especially low-altitude zones in tier-2/3 cities, mountainous border terrains, and coastal pathways, remain completely unmonitored. 
+          </p>
+          <p className="text-xs text-sky-200/50 max-w-2xl mx-auto leading-relaxed">
+            By hosting low-power ground station receivers locally, Founding AeroCaptains capture raw 1090 MHz transponder broadcasts directly from the sky, feeding sovereign data back to Indian servers and closing critical regional blind spots.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
-            { icon: <Radar size={20} />, title: 'Eliminate Blind Spots', desc: 'Most of South, East, and Northeast India has zero ADS-B ground coverage today.' },
-            { icon: <Signal size={20} />, title: 'Improve MLAT Accuracy', desc: 'Multiple overlapping feeders enable multilateration for aircraft without ADS-B transponders.' },
-            { icon: <Globe size={20} />, title: 'Airport-Level Visibility', desc: 'Feeders near airports provide surface movement tracking, approach monitoring, and departure intelligence.' },
+            { icon: <Radar size={20} />, title: 'Eliminate Blind Spots', desc: 'Dense local ground stations help cover low-altitude airspace below standard radar beams.' },
+            { icon: <Signal size={20} />, title: 'Improve MLAT Accuracy', desc: 'Overlapping receivers enable multilateration calculations to track aircraft without full ADS-B transponders.' },
+            { icon: <Globe size={20} />, title: 'Airport Surface Movement', desc: 'Reactors placed close to runways provide approach monitoring and surface taxi tracking.' },
           ].map((item) => (
             <div key={item.title} className="p-5 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-amber-500/15 transition-all">
               <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mb-3">{item.icon}</div>
@@ -288,32 +333,32 @@ function GapSection() {
 }
 
 /* ═══════════════════════════════════════════
-   FEEDER CTA
+   AEROCAPTAIN CTA
 ═══════════════════════════════════════════ */
-function FeederCTA() {
+function AeroCaptainCTA() {
   return (
     <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
-          Your City Needs a Feeder
+          Your City Needs an AeroCaptain
         </h2>
         <p className="text-sm text-sky-200/60 max-w-lg mx-auto mb-6">
-          If you're near any Indian airport without coverage, you can make a real difference.
-          AeroSky provides feeder kits to qualified applicants.
+          If you live near any Indian airport or flight corridor, you can help feed sovereign data. AeroSky provides setup support and receiver kits to qualified applicants.
         </p>
         <Link
-          to="/feeders"
+          to="/aerocaptains"
+          onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'coverage_cta' })}
           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_25px_rgba(255,153,51,0.3)] hover:-translate-y-0.5"
           style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
         >
-          Apply for Hosting Ground Station <ArrowRight size={16} />
+          Become a Founding AeroCaptain <ArrowRight size={16} />
         </Link>
         <div className="flex flex-wrap justify-center gap-4 mt-6">
           {[
-            { icon: <Cpu size={12} />, text: 'Free Feeder Kit for Qualified Applicants' },
-            { icon: <Zap size={12} />, text: 'Self-Setup Option Available' },
-            { icon: <Radio size={12} />, text: 'Founding Feeder Recognition' },
-            { icon: <MapPin size={12} />, text: 'Live Coverage Analytics' },
+            { icon: <Cpu size={12} />, text: 'Free Hardware Kits to Selected Hosts' },
+            { icon: <Zap size={12} />, text: 'DIY Raspberry Pi setups fully supported' },
+            { icon: <Radio size={12} />, text: 'Founding AeroCaptain badge' },
+            { icon: <MapPin size={12} />, text: 'Fuzzed location coordinates for privacy' },
           ].map((t) => (
             <span key={t.text} className="flex items-center gap-1.5 text-[10px] font-mono text-sky-200/50 uppercase tracking-wider">
               <span className="text-amber-400">{t.icon}</span> {t.text}
@@ -330,11 +375,10 @@ function FeederCTA() {
 ═══════════════════════════════════════════ */
 function FAQSection() {
   const faqs = [
-    { q: 'What is ADS-B coverage?', a: 'ADS-B coverage is the geographic area where ground receivers can detect aircraft transponder signals on 1090 MHz. More receivers in more locations means fewer blind spots in Indian airspace.' },
-    { q: 'Why is coverage only ~30%?', a: 'AeroSky covers major aviation corridors with active feeders in 6 locations (Delhi, Mumbai, Bengaluru, Pune, Solapur, Gulbarga). India has 118 airports and vast airspace that still needs community-powered ground stations for full visibility.' },
-    { q: 'How can I help expand coverage?', a: 'Apply as a feeder through our program. AeroSky provides feeder kits to qualified applicants, or you can self-setup with a Raspberry Pi and RTL-SDR if you already have hardware.' },
-    { q: 'Which airports need feeders most?', a: 'Hyderabad, Chennai, Kolkata, Ahmedabad, Kochi, Jaipur, Lucknow, Goa, Guwahati, Nagpur, Varanasi, Srinagar, and 100+ other Indian airports are priority locations.' },
-    { q: 'Do I need to be near an airport?', a: 'Being near an airport helps, but feeders anywhere in India contribute. ADS-B signals travel line-of-sight, so even feeders 50-100km from airports can track aircraft at cruising altitude.' },
+    { q: 'What is ADS-B coverage?', a: 'ADS-B coverage is the line-of-sight range where ground stations can capture signals broadcasted by aircraft transponders. Dense regional setups allow seamless tracking.' },
+    { q: 'How can I help expand the network?', a: 'You can apply to host an AeroSky receiver ground station. We provide hardware kits to qualified nodes, or you can feed data using your own DIY receiver.' },
+    { q: 'Which airports need coverage most?', a: 'Chennai, Kolkata, Hyderabad, Ahmedabad, Jaipur, Kochi, Goa, Lucknow, and over 100 other locations currently represent critical coverage gaps.' },
+    { q: 'Do I need to live right next to an airport?', a: 'No. ADS-B signals travel line-of-sight up to 200+ miles. Even Simple setups 50km away from airports can capture cruising aircraft telemetry.' },
   ];
 
   const [openIdx, setOpenIdx] = useState<number | null>(null);
@@ -349,11 +393,11 @@ function FAQSection() {
         <div className="space-y-2">
           {faqs.map((faq, i) => (
             <div key={i} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden">
-              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="w-full flex items-center justify-between p-4 text-left">
+              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-expanded={openIdx === i} className="w-full flex items-center justify-between p-4 text-left">
                 <span className="text-sm font-medium text-white pr-4">{faq.q}</span>
                 <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
               </button>
-              {openIdx === i && <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed">{faq.a}</p>}
+              {openIdx === i && <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed pt-2 border-t border-white/5">{faq.a}</p>}
             </div>
           ))}
         </div>

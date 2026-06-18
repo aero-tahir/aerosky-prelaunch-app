@@ -3,15 +3,18 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "AeroSky — India's community-powered airspace intelligence network. Pre-launch website.",
+  "description": "AeroSky: India's community-powered airspace intelligence network. Pre-launch website.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/clarity": "^1.0.2",
+    "@neondatabase/serverless": "^1.1.0",
     "lucide-react": "^0.563.0",
     "maplibre-gl": "^5.24.0",
+    "puppeteer-core": "^25.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-map-gl": "^8.1.1",
