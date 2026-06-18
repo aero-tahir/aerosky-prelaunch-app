@@ -85,8 +85,13 @@ const Footer: React.FC = () => {
           </nav>
         </div>
 
+        {/* Educational Use Notice */}
+        <div className="border-t border-white/5 pt-6 text-[10px] text-sky-200/40 leading-relaxed">
+          AeroSky is a community-driven flight data research initiative. Airspace intelligence data published on this platform is intended solely for educational, research, and hobbyist purposes. Do not use this data for flight navigation, air traffic control, or any operational aviation safety decisions.
+        </div>
+
         {/* Bottom Bar */}
-        <div className="border-t border-white/5 pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
+        <div className="pt-4 flex flex-col md:flex-row justify-between items-center gap-3">
           <p className="text-xs text-sky-200/60">
             {siteSettings.footerCopyright || "© 2026 AeroSky - AeroLytics Intelligence Pvt. Ltd. | Made in India"}
           </p>

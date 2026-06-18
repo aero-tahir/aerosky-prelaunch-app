@@ -63,12 +63,12 @@ const About: React.FC = () => {
       />
 
       {/* Hero */}
-      <section className="relative py-20 sm:py-28 px-4 sm:px-6 text-center overflow-hidden">
+      <section className="relative py-20 sm:py-28 px-4 sm:px-6 md:px-12 lg:px-24 text-center overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[120px]" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-mono font-bold tracking-wider uppercase mb-6 animate-pulse-glow" style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-xs font-mono font-bold tracking-wider uppercase mb-6 animate-pulse-glow">
             <Globe size={14} /> About AeroSky
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1] mb-6">
@@ -78,7 +78,7 @@ const About: React.FC = () => {
       </section>
 
       {/* Content */}
-      <section className="py-4 px-4 sm:px-6 pb-24">
+      <section className="section-std !pt-4 pb-24">
         <div className="max-w-4xl mx-auto">
           <div className="glass rounded-2xl p-8 sm:p-12 border border-white/[0.05]">
             <Markdown content={page.content} />
@@ -88,8 +88,7 @@ const About: React.FC = () => {
               <Link
                 to="/aerocaptains"
                 onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'about_cta' })}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 bg-gradient-to-br from-saffron to-gold"
               >
                 <Radio size={16} /> Become an AeroCaptain
               </Link>

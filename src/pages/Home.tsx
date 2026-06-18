@@ -95,6 +95,7 @@ const Home: React.FC = () => {
       <HeroSection metrics={metrics} />
       <MissionSection />
       <AeroCaptainProgramSection />
+      <WhyAeroCaptainSection />
       <CommunityJourneySection />
       <CommunitySection upcomingEvent={upcomingEvent} />
       <LatestArticlesSection articles={articles} loading={loading} />
@@ -119,14 +120,14 @@ interface HeroSectionProps {
 function HeroSection({ metrics }: HeroSectionProps) {
   const siteSettings = useSiteSettings();
 
-  const titleText = siteSettings.heroTitle || "India's Own|Airspace|Intelligence";
-  const subtitleText = siteSettings.heroSubtitle || "Help build India's independent aviation intelligence network. Join our founding community to host ground receiver nodes, decode transponder feeds, and map Indian airspace together.";
-  const bannerText = siteSettings.announcementBanner || "SOVEREIGN DATA • INDEPENDENT INDIAN AIRSPACE NETWORK";
+  const titleText = siteSettings.heroTitle || "Community-Powered|Airspace|Intelligence";
+  const subtitleText = siteSettings.heroSubtitle || "Help build India's independent aviation intelligence network by hosting a low-power ADS-B ground station. Contribute real-world flight data, expand coverage, and become part of a growing community of aviation enthusiasts and engineers.";
+  const bannerText = siteSettings.announcementBanner || "COMMUNITY-POWERED AIRSPACE INTELLIGENCE FOR INDIA";
   
   const cta1Link = siteSettings.primaryCtaLink || "/aerocaptains";
-  const cta1Text = siteSettings.primaryCtaText || "Become a Founding AeroCaptain";
-  const cta2Link = siteSettings.secondaryCtaLink || "#community";
-  const cta2Text = siteSettings.secondaryCtaText || "Join the Founding Community";
+  const cta1Text = siteSettings.primaryCtaText || "Become an AeroCaptain";
+  const cta2Link = siteSettings.secondaryCtaLink || "https://discord.gg/aerosky";
+  const cta2Text = siteSettings.secondaryCtaText || "Join Community";
 
   return (
     <section className="relative h-screen w-full overflow-hidden" aria-label="AeroSky Hero">
@@ -152,8 +153,7 @@ function HeroSection({ metrics }: HeroSectionProps) {
       <div className="relative z-20 h-full flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-20 pt-20 pb-4">
         <div className="w-full max-w-2xl">
           <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-[11px] font-mono font-bold tracking-[0.15em] mb-4 animate-slide-up"
-            style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-[11px] font-mono font-bold tracking-[0.15em] mb-4 animate-slide-up"
           >
             <Shield size={12} className="animate-pulse" />
             {bannerText}
@@ -162,9 +162,9 @@ function HeroSection({ metrics }: HeroSectionProps) {
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tighter mb-4 animate-slide-up delay-100">
             {titleText.includes('|') ? (
               <>
-                <span style={{ color: INDIA_ORANGE }}>{titleText.split('|')[0]}</span><br />
+                <span className="text-saffron">{titleText.split('|')[0]}</span><br />
                 <span className="text-white">{titleText.split('|')[1]}</span>{' '}
-                <span style={{ color: INDIA_GREEN }}>{titleText.split('|')[2] || ''}</span>
+                <span className="text-india-green">{titleText.split('|')[2] || ''}</span>
               </>
             ) : (
               <span className="text-white">{titleText}</span>
@@ -178,7 +178,7 @@ function HeroSection({ metrics }: HeroSectionProps) {
           {/* Status Cards */}
           <div className="grid grid-cols-2 gap-3 max-w-lg mb-6 animate-slide-up delay-250">
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Founding AeroCaptain Program</div>
+              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">AeroCaptain Program</div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[9px] font-mono font-bold text-emerald-400 uppercase">Applications Open</span>
@@ -189,23 +189,23 @@ function HeroSection({ metrics }: HeroSectionProps) {
               <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Community</div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-indigo-400 uppercase">Join Our Discord</span>
+                <span className="text-[9px] font-mono font-bold text-indigo-400 uppercase">Discord Server Active</span>
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">India Airspace Report</div>
+              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Airspace Report</div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">Subscribe for Updates</span>
+                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">Subscribe to Updates</span>
               </div>
             </div>
 
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Platform</div>
+              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Platform Status</div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-sky-400 uppercase">Pre-Launch</span>
+                <span className="text-[9px] font-mono font-bold text-sky-400 uppercase">Pre-Launch Beta</span>
               </div>
             </div>
           </div>
@@ -213,8 +213,8 @@ function HeroSection({ metrics }: HeroSectionProps) {
           {/* Social Proof Real Badges */}
           <div className="grid grid-cols-2 gap-2 max-w-lg mb-8 animate-slide-up delay-300">
             {[
-              'Founding AeroCaptain Program Open',
-              'Community Applications Open',
+              'AeroCaptain Program Open',
+              'Discord Community Active',
               'Beta Applications Open',
               'Coverage Vision Established'
             ].map((text) => (
@@ -233,8 +233,7 @@ function HeroSection({ metrics }: HeroSectionProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
-                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1 bg-gradient-to-br from-saffron to-gold"
               >
                 <Radio size={16} className="animate-pulse" /> {cta1Text}
               </a>
@@ -242,8 +241,7 @@ function HeroSection({ metrics }: HeroSectionProps) {
               <Link
                 to={cta1Link}
                 onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
-                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1 bg-gradient-to-br from-saffron to-gold"
               >
                 <Radio size={16} className="animate-pulse" /> {cta1Text}
               </Link>
@@ -312,11 +310,11 @@ function MissionSection() {
   ];
 
   return (
-    <section className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="relative z-10 section-std">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Flag size={12} style={{ color: INDIA_ORANGE }} /> Core Pillars
+            <Flag size={12} className="text-saffron" /> Core Pillars
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-4">
             Why AeroSky Exists
@@ -364,15 +362,15 @@ function AeroCaptainProgramSection() {
   ];
 
   return (
-    <section className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="relative z-10 section-std">
       <div className="max-w-5xl mx-auto">
         <div className="glass rounded-3xl p-8 sm:p-12 relative overflow-hidden border border-white/[0.06] hover:border-amber-500/15 transition-all duration-500">
           <div className="absolute -right-10 -bottom-10 opacity-[0.05] pointer-events-none">
-            <Antenna size={250} style={{ color: INDIA_ORANGE }} />
+            <Antenna size={250} className="text-saffron" />
           </div>
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4" style={{ borderColor: 'rgba(255,153,51,0.2)', background: 'rgba(255,153,51,0.04)' }}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-saffron/20 bg-saffron/[0.04] text-saffron text-[10px] font-mono font-bold tracking-widest uppercase mb-4">
                 <Radio size={12} className="text-amber-400 animate-pulse" /> Ground Station Hosting
               </div>
               <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3">Become an AeroCaptain</h2>
@@ -385,8 +383,7 @@ function AeroCaptainProgramSection() {
               <Link
                 to="/aerocaptains"
                 onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 cursor-pointer"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 cursor-pointer bg-gradient-to-br from-saffron to-gold"
               >
                 Apply to Become an AeroCaptain <ArrowRight size={14} />
               </Link>
@@ -403,6 +400,73 @@ function AeroCaptainProgramSection() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTION 3.5: WHY BECOME AN AEROCAPTAIN
+ ═══════════════════════════════════════════════════════════════ */
+function WhyAeroCaptainSection() {
+  const cards = [
+    {
+      icon: <Radar size={22} />,
+      title: "Improve India's ADS-B Coverage",
+      desc: "Fill critical tracking gaps in local airspace, helping to map low-altitude flights and general aviation where coverage is sparse."
+    },
+    {
+      icon: <Radio size={22} />,
+      title: "Learn SDR & RF Technology",
+      desc: "Gain hands-on experience with Software-Defined Radio, antennas, and unencrypted signal decoding on single-board computers."
+    },
+    {
+      icon: <BookOpen size={22} />,
+      title: "Contribute to Aviation Research",
+      desc: "Provide high-fidelity flight data to help local researchers, spotters, and developers optimize routes and airport operations."
+    },
+    {
+      icon: <Users size={22} />,
+      title: "Join a Community of Builders",
+      desc: "Collaborate directly with hardware engineers, pilots, and radio hobbyists on receiver setups and telemetry tools."
+    },
+    {
+      icon: <Award size={22} />,
+      title: "Earn Recognition & Rewards",
+      desc: "Receive permanent Hall of Fame status, active range badges, and priority eligibility for future hardware distributions."
+    }
+  ];
+
+  return (
+    <section className="relative z-10 section-std bg-black/10">
+      <div className="max-w-6xl mx-auto">
+        <header className="text-center mb-10">
+          <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-4">
+            Why Become an AeroCaptain?
+          </h2>
+          <p className="text-sky-200/70 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+            Hosting a ground station is more than running a receiver—it is about contributing to India's independent airspace infrastructure.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {cards.slice(0, 3).map((c) => (
+            <div key={c.title} className="glass rounded-2xl p-6 border border-white/[0.04] hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">{c.icon}</div>
+              <h3 className="text-base font-bold text-white mb-2">{c.title}</h3>
+              <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
+            </div>
+          ))}
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-5 lg:w-[67%] lg:mx-auto">
+            {cards.slice(3).map((c) => (
+              <div key={c.title} className="glass rounded-2xl p-6 border border-white/[0.04] hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">{c.icon}</div>
+                <h3 className="text-base font-bold text-white mb-2">{c.title}</h3>
+                <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -438,11 +502,11 @@ function CommunityJourneySection() {
   ];
 
   return (
-    <section className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="relative z-10 section-std">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Award size={12} style={{ color: INDIA_ORANGE }} /> Progression
+            <Award size={12} className="text-saffron" /> Progression
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
             Your Journey in the AeroSky Community
@@ -487,7 +551,7 @@ function CommunitySection({ upcomingEvent }: CommunitySectionProps) {
   ];
 
   return (
-    <section id="community" className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section id="community" className="relative z-10 section-std">
       <div className="max-w-5xl mx-auto">
         <div className="glass rounded-3xl p-6 sm:p-10 border border-white/[0.06] bg-gradient-to-br from-sky-950/40 via-sky-950/10 to-transparent">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -565,11 +629,11 @@ function CoveragePreviewSection() {
   ];
 
   return (
-    <section className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="relative z-10 section-std">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Radar size={12} style={{ color: INDIA_ORANGE }} /> Network Vision
+            <Radar size={12} className="text-saffron" /> Network Vision
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
             Building India's Coverage Network
@@ -582,7 +646,7 @@ function CoveragePreviewSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* Map Preview */}
           <div className="rounded-2xl border border-white/[0.05] overflow-hidden bg-sky-950/20 backdrop-blur-md relative" style={{ height: '350px' }}>
-            <MapBackground className="w-full h-full absolute inset-0 z-0" />
+            <MapBackground className="w-full h-full absolute inset-0 z-0" longitude={78} latitude={22} zoom={3.6} />
             <div className="absolute inset-0 bg-gradient-to-t from-sky-950 via-transparent to-transparent pointer-events-none" />
             <div className="absolute bottom-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
@@ -623,17 +687,19 @@ function CoveragePreviewSection() {
  ═══════════════════════════════════════════════════════════════ */
 function RoadmapSection() {
   const phases = [
-    { stage: 'Current Stage', title: 'Community Formation', desc: 'Establishing founding forums, welcoming first AeroCaptains, and conducting airspace coverage assessments.' },
-    { stage: 'Next Stage', title: 'AeroCaptain Network', desc: 'Shipping receiver kits to founding members, expanding receiver setups into major aviation corridors and tier-2 cities.' },
-    { stage: 'Future Stage', title: 'Live Flight Intelligence Platform', desc: 'Deploying our secure web application, featuring interactive live maps, meteorological overlays, and aviation analytical APIs.' }
+    { stage: 'Phase 1', title: 'Community Growth', desc: 'Forming the founding forum, welcoming AeroCaptains, and hosting pre-launch technical briefings.' },
+    { stage: 'Phase 2', title: 'Coverage Expansion', desc: 'Distributing custom ADS-B receiver kits to selected hosts in critical flight corridors and regional airports.' },
+    { stage: 'Phase 3', title: 'Platform Launch', desc: 'Deploying the interactive live map web interface to visualize aircraft transponder streams in real-time.' },
+    { stage: 'Phase 4', title: 'Airspace Intelligence', desc: 'Integrating historical route analysis, arrival analytics, and meteorological overlays into the core dashboard.' },
+    { stage: 'Phase 5', title: 'Developer Ecosystem', desc: 'Releasing open-source telemetry decoders and low-latency API access for builders and researchers.' }
   ];
 
   return (
-    <section className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="relative z-10 section-std">
       <div className="max-w-5xl mx-auto">
         <header className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Target size={12} style={{ color: INDIA_ORANGE }} /> Development Path
+            <Target size={12} className="text-saffron" /> Development Path
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
             Building India's Aviation Intelligence Network
@@ -670,22 +736,22 @@ function RoadmapSection() {
  ═══════════════════════════════════════════════════════════════ */
 function AboutSection() {
   return (
-    <section className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="relative z-10 section-std">
       <div className="max-w-4xl mx-auto">
         <div className="glass rounded-3xl p-8 sm:p-10 border border-white/[0.05] relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[10px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-              <Globe size={12} style={{ color: INDIA_GREEN }} /> Sovereignty
+              <Globe size={12} className="text-india-green" /> Sovereignty
             </div>
             <h2 className="text-xl sm:text-3xl font-bold text-white mb-3">Built for Indian Skies</h2>
             <p className="text-sm text-sky-200/70 leading-relaxed max-w-2xl mx-auto mb-6">
               AeroSky is creating a community-powered aviation intelligence platform designed specifically for India's rapidly growing aviation ecosystem. Built by aviation enthusiasts, engineers and contributors who believe aviation intelligence should be transparent, accessible and community driven.
             </p>
             <div className="flex gap-2 justify-center" aria-label="Indian Flag Colors">
-              <div className="w-4 h-1 rounded-sm" style={{ background: INDIA_ORANGE }} />
+              <div className="w-4 h-1 rounded-sm bg-saffron" />
               <div className="w-4 h-1 rounded-sm bg-white" />
-              <div className="w-4 h-1 rounded-sm" style={{ background: INDIA_GREEN }} />
+              <div className="w-4 h-1 rounded-sm bg-india-green" />
             </div>
           </div>
         </div>
@@ -757,23 +823,23 @@ function NewsletterSection() {
   };
 
   return (
-    <section id="newsletter" className="relative z-10 py-16 px-4 sm:px-6 md:px-12 lg:px-24 bg-black/10">
+    <section id="newsletter" className="relative z-10 section-std bg-black/10">
       <div className="max-w-2xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-4">
           <Mail size={12} /> Monthly Intelligence
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">India Airspace Report</h2>
         <p className="text-xs sm:text-sm text-sky-200/60 max-w-md mx-auto mb-4 leading-relaxed">
-          Receive monthly updates on AeroSky's progress, aviation insights, community milestones and upcoming launches.
+          Receive monthly insights on Indian aviation, community progress, network expansion, and AeroSky development.
         </p>
 
         {/* Newsletter Agenda Bullets */}
         <div className="flex flex-wrap justify-center gap-2 mb-6 max-w-lg mx-auto animate-slide-up">
           {[
-            'Community growth logs',
-            'ADS-B receiver updates',
-            'AeroCaptain spotlights',
-            'Sovereign airspace insights'
+            'Aviation insights',
+            'Community milestones',
+            'Receiver telemetry updates',
+            'Network expansion reports'
           ].map((agenda) => (
             <span key={agenda} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.01] border border-white/[0.04] text-[10px] text-sky-200/60 font-mono">
               <CheckCircle2 size={10} className="text-amber-500" /> {agenda}
@@ -800,7 +866,7 @@ function NewsletterSection() {
                 onChange={(e) => setHoneypot(e.target.value)}
                 style={{ display: 'none' }}
                 tabIndex={-1}
-                autocomplete="off"
+                autoComplete="off"
               />
 
               <input
@@ -813,7 +879,7 @@ function NewsletterSection() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs sm:text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
               />
-              <button type="submit" className="px-6 py-3 rounded-xl text-black font-bold text-xs sm:text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 cursor-pointer" style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}>
+              <button type="submit" className="px-6 py-3 rounded-xl text-black font-bold text-xs sm:text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 cursor-pointer bg-gradient-to-br from-saffron to-gold">
                 Subscribe
               </button>
             </form>
@@ -838,7 +904,7 @@ interface LatestArticlesSectionProps {
 function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps) {
   if (loading) {
     return (
-      <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24 max-w-5xl mx-auto">
+      <section className="section-std max-w-5xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-6 w-48 bg-white/5 rounded mx-auto" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -854,7 +920,7 @@ function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps
   if (articles.length === 0) return null;
 
   return (
-    <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24 bg-black/10">
+    <section className="section-std bg-black/10">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-3">
@@ -944,7 +1010,7 @@ function FAQSection({ faqs, loading }: FAQSectionProps) {
 
   if (loading) {
     return (
-      <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24 max-w-3xl mx-auto animate-pulse space-y-3">
+      <section className="section-std max-w-3xl mx-auto animate-pulse space-y-3">
         <div className="h-6 w-32 bg-white/5 rounded mx-auto mb-6" />
         {[1, 2, 3].map(i => (
           <div key={i} className="h-12 bg-white/5 rounded-xl" />
@@ -956,7 +1022,7 @@ function FAQSection({ faqs, loading }: FAQSectionProps) {
   if (faqs.length === 0) return null;
 
   return (
-    <section className="py-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-std">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-2 justify-center mb-6">
           <HelpCircle size={14} className="text-amber-400" />

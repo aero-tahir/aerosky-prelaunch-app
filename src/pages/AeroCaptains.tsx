@@ -174,21 +174,21 @@ const AeroCaptains: React.FC = () => {
       />
 
       {/* Hero */}
-      <section className="relative min-h-[65vh] flex items-center justify-center overflow-hidden px-4 sm:px-6">
+      <section className="relative min-h-[65vh] flex items-center justify-center overflow-hidden px-4 sm:px-6 md:px-12 lg:px-24">
         <div className="absolute inset-0">
           <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: `radial-gradient(circle, rgba(255,153,51,0.4) 1px, transparent 1px)`, backgroundSize: '30px 30px' }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/[0.03] rounded-full blur-[100px]" />
         </div>
         <div className="relative z-10 max-w-4xl mx-auto text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-mono font-bold tracking-wider uppercase mb-5 animate-pulse-glow" style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-xs font-mono font-bold tracking-wider uppercase mb-5 animate-pulse-glow">
             <Antenna size={14} /> Founding AeroCaptain Program Open
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.05] mb-4">
-            <span className="text-white">Become an AeroSky AeroCaptain.</span><br />
-            <span style={{ color: INDIA_ORANGE }}>Help Build India's Airspace Network.</span>
+            <span className="text-white">Become a Founding AeroCaptain.</span><br />
+            <span className="text-saffron">Host a Ground Station.</span>
           </h1>
           <p className="text-sm sm:text-base text-sky-200/60 max-w-2xl mx-auto mb-3 leading-relaxed">
-            Become one of the first AeroCaptains helping build India's independent aviation intelligence network. Host a small, low-power receiver node and feed real-time airspace telemetry.
+            Host a compact, low-power ADS-B receiver to track local flights and stream airspace telemetry to our independent grid. No prior radio frequency experience required.
           </p>
           <p className="text-xs text-sky-200/50 max-w-lg mx-auto mb-6">
             Early contributors receive Founding AeroCaptain status, leaderboard recognition, premium platform features, and future hardware rewards.
@@ -197,8 +197,7 @@ const AeroCaptains: React.FC = () => {
             <a
               href="#apply"
               onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'hero_cta', action: 'scroll_to_apply' })}
-              className="px-7 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_30px_rgba(255,153,51,0.3)] hover:-translate-y-0.5"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              className="px-7 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_30px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 bg-gradient-to-br from-saffron to-gold"
             >
               Apply to Become an AeroCaptain
             </a>
@@ -220,21 +219,21 @@ const AeroCaptains: React.FC = () => {
       </section>
 
       {/* Core Info */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24 space-y-8">
+      <section className="section-std space-y-8">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Vision */}
           <div>
             <div className="flex justify-center mb-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-                <Flag size={12} style={{ color: INDIA_ORANGE }} /> Our Vision
+                <Flag size={12} className="text-saffron" /> Our Vision
               </div>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-6">A Community-Powered <span style={{ color: INDIA_GREEN }}>Airspace Intelligence Network</span></h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-6">A Community-Powered <span className="text-india-green">Aviation Intelligence Platform</span></h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { icon: <Globe size={22} />, title: 'Coverage Vision', desc: 'Expanding ADS-B coverage across metros, tier-2 cities, coastal regions, and underserved airspace to close low-altitude tracking gaps.' },
                 { icon: <Users size={22} />, title: 'Community Powered', desc: 'Powered by aviation enthusiasts, engineers, students, spotters, and contributors across India.' },
-                { icon: <Shield size={22} />, title: 'Sovereign Infrastructure', desc: 'Indian-hosted, community-driven telemetry and transparent aviation intelligence.' },
+                { icon: <Shield size={22} />, title: 'Independent Infrastructure', desc: 'Indian-hosted, community-driven telemetry and transparent aviation intelligence.' },
               ].map((c) => (
                 <div key={c.title} className="glass rounded-xl p-5 hover:border-amber-500/15 transition-all duration-300">
                   <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mb-3">{c.icon}</div>
@@ -289,13 +288,13 @@ const AeroCaptains: React.FC = () => {
                 <Cpu size={12} className="text-amber-400" /> Hardware Configuration
               </div>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-5">Simple Hardware. National Coverage.</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-5">Hardware Configuration</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { icon: <Cpu size={24} />, name: 'Raspberry Pi / Orange Pi', desc: 'Computes and processes telemetry logs' },
-                { icon: <Radio size={24} />, name: 'RTL-SDR USB Dongle', desc: 'Tuned specifically to 1090 MHz' },
-                { icon: <Antenna size={24} />, name: 'Omni-Directional Antenna', desc: 'Captures signals up to 250 miles' },
-                { icon: <Wifi size={24} />, name: 'Ethernet / WiFi Connection', desc: 'Streams data to Indian servers' },
+                { icon: <Cpu size={24} />, name: 'Raspberry Pi / SBC', desc: 'Runs dump1090-fa or readsb decoder daemons' },
+                { icon: <Radio size={24} />, name: 'RTL-SDR Receiver', desc: 'USB software-defined radio tuned to 1090 MHz' },
+                { icon: <Antenna size={24} />, name: '1090 MHz Antenna', desc: 'Omni-directional antenna for line-of-sight capture' },
+                { icon: <Wifi size={24} />, name: 'Network Connection', desc: 'Streams decoded JSON packets to domestic servers' },
               ].map((hw) => (
                 <div key={hw.name} className="glass rounded-xl p-4 text-center hover:border-amber-500/15 transition-all">
                   <div className="w-11 h-11 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mx-auto mb-2">{hw.icon}</div>
@@ -317,12 +316,12 @@ const AeroCaptains: React.FC = () => {
       </section>
 
       {/* Benefits */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+      <section className="section-std">
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
             <div className="flex justify-center mb-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-                <Zap size={12} style={{ color: INDIA_ORANGE }} /> Program Rewards
+                <Zap size={12} className="text-saffron" /> Program Rewards
               </div>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-5">AeroCaptain Benefits</h2>
@@ -347,7 +346,7 @@ const AeroCaptains: React.FC = () => {
           {/* Dash preview */}
           <div className="glass rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Eye size={16} style={{ color: INDIA_ORANGE }} className="shrink-0" />
+              <Eye size={16} className="text-saffron shrink-0" />
               <h3 className="text-base font-bold text-white">Contributor Analytics Dashboard</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
@@ -366,7 +365,7 @@ const AeroCaptains: React.FC = () => {
       </section>
 
       {/* Community Hierarchy */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+      <section className="section-std">
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-center mb-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
@@ -394,7 +393,7 @@ const AeroCaptains: React.FC = () => {
       </section>
 
       {/* Founding Directory */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+      <section className="section-std">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center mb-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
@@ -427,7 +426,7 @@ const AeroCaptains: React.FC = () => {
       </section>
 
       {/* FAQ */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+      <section className="section-std">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center mb-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
@@ -458,7 +457,7 @@ const AeroCaptains: React.FC = () => {
       </section>
 
       {/* Application Form */}
-      <section id="apply" className="py-12 px-4 sm:px-6 md:px-12 lg:px-24 bg-black/20">
+      <section id="apply" className="section-std bg-black/20">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">AeroCaptain Application Form</h2>
@@ -472,12 +471,12 @@ const AeroCaptains: React.FC = () => {
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 size={32} className="text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-1">Application Received!</h3>
+              <h3 className="text-xl font-bold text-white mb-1">Application Submitted</h3>
               <div className="inline-block px-3.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-mono font-bold text-amber-400 mb-4 uppercase tracking-wider">
-                Registration Queue: Founding AeroCaptain #{assignedNumber.replace('AC', '')} (Pending verification)
+                Queue Number: #{assignedNumber.replace('AC', '')} | Verification Pending
               </div>
               <p className="text-sm text-sky-200/60 max-w-md mx-auto">
-                Thank you for applying to become a founding AeroCaptain. We will review your location coordinates and reach out within 7-10 business days regarding kit availability or setup instructions.
+                Thank you. Our engineering team will assess your location coordinates and contact you within 7 to 10 business days with kit availability details or DIY configuration logs.
               </p>
               <div className="mt-6 flex justify-center gap-4">
                 <Link to="/" className="text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider">
@@ -499,7 +498,7 @@ const AeroCaptains: React.FC = () => {
                 onChange={(e) => setHoneypot(e.target.value)}
                 style={{ display: 'none' }}
                 tabIndex={-1}
-                autocomplete="off"
+                autoComplete="off"
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -569,10 +568,10 @@ const AeroCaptains: React.FC = () => {
                     className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-amber-500/50 appearance-none text-sky-100"
                   >
                     <option value="" className="bg-[#0c1222]">Select placement</option>
-                    <option value="rooftop" className="bg-[#0c1222]">Outdoor Rooftop / Mast (Best)</option>
-                    <option value="balcony" className="bg-[#0c1222]">Balcony / High Floor</option>
-                    <option value="indoor" className="bg-[#0c1222]">Window / Indoor Setup</option>
-                    <option value="none" className="bg-[#0c1222]">None / Unsure</option>
+                    <option value="rooftop" className="bg-[#0c1222]">Rooftop or mast mounting (Clear line of sight)</option>
+                    <option value="balcony" className="bg-[#0c1222]">Balcony or upper floor window mount</option>
+                    <option value="indoor" className="bg-[#0c1222]">Indoor window mount</option>
+                    <option value="none" className="bg-[#0c1222]">Unsure / Ground level setup</option>
                   </select>
                 </div>
                 <div>
@@ -619,14 +618,14 @@ const AeroCaptains: React.FC = () => {
                 <textarea
                   id="ac-motivation"
                   rows={3}
-                  placeholder="Share details about your location, elevation, or interest in aviation."
+                  placeholder="Detail your elevation, building height, line of sight, or existing radio hardware."
                   value={formData.motivation}
                   onChange={(e) => setFormData(p => ({ ...p, motivation: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
                 />
               </div>
 
-              <button type="submit" className="w-full py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] cursor-pointer" style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}>
+              <button type="submit" className="w-full py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] cursor-pointer bg-gradient-to-br from-saffron to-gold">
                 Apply to Become an AeroCaptain
               </button>
 

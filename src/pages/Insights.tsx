@@ -301,11 +301,10 @@ const Insights: React.FC = () => {
       />
 
       {/* Hero Header */}
-      <section className="relative py-20 sm:py-24 px-4 sm:px-6 text-center">
+      <section className="relative py-20 sm:py-24 px-4 sm:px-6 md:px-12 lg:px-24 text-center">
         <div className="max-w-4xl mx-auto">
           <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-mono font-bold tracking-wider uppercase mb-6 animate-pulse-glow"
-            style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-xs font-mono font-bold tracking-wider uppercase mb-6 animate-pulse-glow"
           >
             <BookOpen size={14} /> AeroSky Insights & Academy
           </div>
@@ -320,7 +319,7 @@ const Insights: React.FC = () => {
       </section>
 
       {/* Main Grid Layout */}
-      <section className="py-8 px-4 sm:px-6 pb-24 max-w-6xl mx-auto">
+      <section className="section-std !py-8 !pb-24 max-w-6xl mx-auto">
         {isEmpty ? (
           <div className="text-center py-20 glass rounded-3xl border border-white/5">
             <BookOpen className="mx-auto text-sky-200/20 mb-4 animate-pulse" size={48} />
