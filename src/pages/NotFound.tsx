@@ -5,7 +5,7 @@ import SEO from '../components/SEO';
 
 const NotFound: React.FC = () => {
   return (
-    <div className="relative min-h-[80vh] flex items-center justify-center px-4 sm:px-6">
+    <div className="relative min-h-[80vh] flex items-center justify-center px-4 sm:px-6 md:px-12 lg:px-24">
       <SEO
         title="Page Not Found | AeroSky"
         description="The coordinates you requested do not map to active airspace paths. Return to your flight path."
@@ -26,10 +26,10 @@ const NotFound: React.FC = () => {
           Error Code: 404
         </span>
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-          Altitude Deviation
+          Route Deviation
         </h1>
         <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed mb-8">
-          The coordinates or path you requested do not map to active AeroSky airspace. Your flight plan has drifted off course.
+          The page you are looking for doesn't exist, has been moved, or is temporarily unavailable. Let's get you back on track.
         </p>
 
         {/* CTA Actions */}
@@ -38,13 +38,13 @@ const NotFound: React.FC = () => {
             to="/"
             className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-[#FF9933] to-[#FFD700] text-black font-bold text-xs sm:text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.25)] hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
           >
-            <ArrowLeft size={14} /> Return to Flight Path
+            <ArrowLeft size={14} /> Return Home
           </Link>
           <Link
             to="/support"
             className="flex-1 px-5 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold text-xs sm:text-sm transition-all hover:-translate-y-0.5 flex items-center justify-center gap-1.5"
           >
-            <LifeBuoy size={14} /> Get Support
+            <LifeBuoy size={14} /> Contact Support
           </Link>
         </div>
       </div>

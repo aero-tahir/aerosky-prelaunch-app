@@ -9,7 +9,7 @@ const INDIA_GREEN = '#138808';
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/community', label: 'Community' },
-  { to: '/aerocaptains', label: 'AeroCaptains', badge: 'Founding Open' },
+  { to: '/aerocaptains', label: 'AeroCaptains', badge: 'Apply Now' },
   { to: '/coverage', label: 'Coverage' },
   { to: '/insights', label: 'Insights' },
   { to: '/about', label: 'About' },
@@ -26,8 +26,8 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const ctaLink = siteSettings.primaryCtaLink || "/#newsletter";
-  const ctaText = siteSettings.primaryCtaText || "Join Founding Members";
+  const ctaLink = siteSettings.primaryCtaLink || "/aerocaptains";
+  const ctaText = siteSettings.primaryCtaText || "Become an AeroCaptain";
 
   return (
     <>

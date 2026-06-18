@@ -159,6 +159,7 @@ const Coverage: React.FC = () => {
       <CoverageMap />
       <StatusStrip />
       <GapSection />
+      <HowCoverageWorksSection />
       <AeroCaptainCTA />
       <FAQSection />
     </div>
@@ -175,7 +176,7 @@ function HeroSection() {
     'Coverage Vision Established',
     'Targeting Underserved Corridors',
     'Community Driven Network',
-    'Founding AeroCaptains Joining'
+    'AeroCaptain Applications Open'
   ];
 
   return (
@@ -192,12 +193,12 @@ function HeroSection() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.05] mb-4">
-            <span className="text-white">Our Sovereign</span><br />
-            <span style={{ color: INDIA_ORANGE }}>Coverage Vision</span>
+            <span className="text-white">Airspace Coverage</span><br />
+            <span className="text-saffron">Vision Grid</span>
           </h1>
 
           <p className="text-sm sm:text-base text-sky-200/70 max-w-xl mb-6 leading-relaxed">
-            Our goal is to build India's independent, community-powered aviation data network. We are mapping critical target zones to place our first ground stations and eliminate airspace tracking blind spots.
+            We are mapping target zones across major domestic corridors and tier-2 hubs. Our objective is to deploy fifty founding receiver nodes, eliminating low-altitude blind spots.
           </p>
 
           {/* Status Indicators list */}
@@ -214,8 +215,7 @@ function HeroSection() {
             <Link
               to="/aerocaptains"
               onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'coverage_hero' })}
-              className="px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 text-center cursor-pointer"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              className="px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 text-center cursor-pointer bg-gradient-to-br from-saffron to-gold"
             >
               Become a Founding AeroCaptain
             </Link>
@@ -234,7 +234,7 @@ function HeroSection() {
 ═══════════════════════════════════════════ */
 function CoverageMap() {
   return (
-    <section id="map" className="py-8 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section id="map" className="section-compact">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-6">
           <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Target Airspace Coverage Vision</h2>
@@ -305,7 +305,7 @@ function CoverageMap() {
 ═══════════════════════════════════════════ */
 function StatusStrip() {
   return (
-    <section className="py-6 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Primary Targets */}
@@ -344,16 +344,27 @@ function StatusStrip() {
 ═══════════════════════════════════════════ */
 function GapSection() {
   return (
-    <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Why India Needs More ADS-B Coverage</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Addressing India's Coverage Gaps</h2>
           <p className="text-sm text-sky-200/70 max-w-2xl mx-auto leading-relaxed mb-4">
-            Most commercial flight tracking services rely on foreign-hosted servers. Crucially, vast segments of Indian airspace, especially low-altitude zones in tier-2/3 cities, mountainous border terrains, and coastal pathways, remain completely unmonitored. 
+            Most tracking networks operate remote servers beyond Indian borders. Crucially, low-altitude airspace in tier-2/3 cities, coastal airways, and remote border corridors contain significant tracking blind spots.
           </p>
-          <p className="text-xs text-sky-200/50 max-w-2xl mx-auto leading-relaxed">
-            By hosting low-power ground station receivers locally, Founding AeroCaptains capture raw 1090 MHz transponder broadcasts directly from the sky, feeding sovereign data back to Indian servers and closing critical regional blind spots.
+          <p className="text-xs text-sky-200/60 max-w-2xl mx-auto leading-relaxed mb-6">
+            By hosting local ground stations, contributors capture raw 1090 MHz transponder broadcasts directly from overhead aircraft. This telemetry feeds domestic databases, building a highly redundant and independent mapping infrastructure.
           </p>
+
+          {/* Aviation & Educational Disclaimer card */}
+          <div className="max-w-2xl mx-auto p-4 rounded-xl bg-white/[0.01] border border-white/[0.05] text-left flex items-start gap-3">
+            <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={16} />
+            <div>
+              <div className="text-xs font-bold text-white mb-0.5">Educational Use & Non-Navigational Notice</div>
+              <div className="text-[11px] text-sky-200/50 leading-normal">
+                AeroSky is an independent community project. Telemetry displays and flight vectors are processed for academic, hobbyist, and testing purposes. This utility is not certified for air traffic management, flight routing, or safety-critical navigation operations.
+              </div>
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
@@ -378,7 +389,7 @@ function GapSection() {
 ═══════════════════════════════════════════ */
 function AeroCaptainCTA() {
   return (
-    <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
           Your City Needs an AeroCaptain
@@ -389,8 +400,7 @@ function AeroCaptainCTA() {
         <Link
           to="/aerocaptains"
           onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'coverage_cta' })}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_25px_rgba(255,153,51,0.3)] hover:-translate-y-0.5"
-          style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_25px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 bg-gradient-to-br from-saffron to-gold"
         >
           Become a Founding AeroCaptain <ArrowRight size={16} />
         </Link>
@@ -399,7 +409,7 @@ function AeroCaptainCTA() {
             { icon: <Cpu size={12} />, text: 'Free Hardware Kits to Selected Hosts' },
             { icon: <Zap size={12} />, text: 'DIY Raspberry Pi setups fully supported' },
             { icon: <Radio size={12} />, text: 'Founding AeroCaptain badge' },
-            { icon: <MapPin size={12} />, text: 'Fuzzed location coordinates for privacy' },
+            { icon: <MapPin size={12} />, text: 'Fuzzed public coordinates for host privacy' },
           ].map((t) => (
             <span key={t.text} className="flex items-center gap-1.5 text-[10px] font-mono text-sky-200/50 uppercase tracking-wider">
               <span className="text-amber-400">{t.icon}</span> {t.text}
@@ -412,8 +422,54 @@ function AeroCaptainCTA() {
 }
 
 /* ═══════════════════════════════════════════
+   HOW COVERAGE WORKS
+ ═══════════════════════════════════════════ */
+function HowCoverageWorksSection() {
+  const parameters = [
+    { title: "Line of Sight", desc: "ADS-B signals operate at 1090 MHz, which is a high-frequency band requiring an unobstructed visual line of sight between the aircraft and the ground station antenna." },
+    { title: "Terrain Profiles", desc: "Mountains, buildings, and local hills block signals. Ground stations at higher elevations or in flat plains capture streams from much further away." },
+    { title: "Antenna Elevation", desc: "Placing your antenna on a rooftop or mounting mast significantly increases the radio horizon, extending target range up to 250 miles." },
+    { title: "Aircraft Altitude", desc: "Cruising commercial airliners at 35,000 feet transmit signals that carry much further than low-altitude flights." },
+    { title: "Receiver Sensitivity", desc: "Using high-quality RTL-SDR dongles equipped with Low Noise Amplifiers (LNA) and bandpass filters filters out local RF noise, improving packet yields." }
+  ];
+
+  return (
+    <section className="section-compact bg-black/10">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-3">
+            <Signal size={12} className="text-amber-500" /> Radio Science
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">How Airspace Coverage Works</h2>
+          <p className="text-xs sm:text-sm text-sky-200/60 max-w-xl mx-auto">
+            ADS-B signal propagation is governed by physics. Understanding these five parameters helps optimize ground station positioning.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {parameters.slice(0, 3).map((item) => (
+            <div key={item.title} className="p-5 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-amber-500/15 transition-all">
+              <h3 className="text-sm font-bold text-white mb-1.5">{item.title}</h3>
+              <p className="text-xs text-sky-200/60 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-5 lg:w-[67%] lg:mx-auto">
+            {parameters.slice(3).map((item) => (
+              <div key={item.title} className="p-5 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-amber-500/15 transition-all">
+                <h3 className="text-sm font-bold text-white mb-1.5">{item.title}</h3>
+                <p className="text-xs text-sky-200/60 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════
    FAQ
-═══════════════════════════════════════════ */
+ ═══════════════════════════════════════════ */
 function FAQSection() {
   const [faqs, setFaqs] = useState<StrapiFAQ[]>([]);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
@@ -439,7 +495,7 @@ function FAQSection() {
   }, []);
 
   return (
-    <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-2 justify-center mb-6">
           <HelpCircle size={14} className="text-amber-400" />

@@ -37,11 +37,11 @@ const Launch: React.FC = () => {
     {
       id: 'captains',
       icon: <Radio className="text-amber-400" size={18} />,
-      label: 'Founding AeroCaptains',
+      label: 'AeroCaptain Applications',
       current: metrics.foundingCaptains,
       target: 50,
       unit: 'Captains',
-      desc: 'Active ground station hosts streaming aircraft signals.'
+      desc: 'Applications submitted to host low-power ground stations.'
     },
     {
       id: 'cities',
@@ -104,17 +104,17 @@ const Launch: React.FC = () => {
             <Activity size={12} className="animate-pulse" /> Launch Readiness
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-3">
-            Sovereign Skies <span style={{ color: INDIA_ORANGE }}>Launch Tracker</span>
+            India Airspace <span className="text-saffron">Pre-Launch Tracker</span>
           </h1>
           <p className="text-sm sm:text-base text-sky-200/60 leading-relaxed max-w-xl mx-auto">
-            Live progress logs from India's community-powered aviation network. Watch our coverage density grow in real-time as we prepare for official platform release.
+            Track active pre-launch milestones as we build India's independent airspace intelligence network. Help us expand coverage by applying to host a receiver node.
           </p>
         </header>
 
         {/* Dynamic Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-10">
           {[
-            { val: metrics.foundingCaptains, label: 'AeroCaptains', color: 'text-amber-400' },
+            { val: metrics.foundingCaptains, label: 'Applications', color: 'text-amber-400' },
             { val: metrics.citiesRegistered, label: 'Cities', color: 'text-sky-400' },
             { val: metrics.statesRepresented, label: 'States', color: 'text-emerald-400' },
             { val: metrics.newsletterSubscribers, label: 'Newsletter', color: 'text-purple-400' },
@@ -139,7 +139,7 @@ const Launch: React.FC = () => {
         {/* Milestones Progress Section */}
         <div className="space-y-6 mb-12">
           <div className="flex items-center gap-2 mb-2">
-            <Target size={16} style={{ color: INDIA_ORANGE }} />
+            <Target size={16} className="text-saffron" />
             <h2 className="text-base font-bold text-white">Active Launch Milestones</h2>
           </div>
 
@@ -184,23 +184,23 @@ const Launch: React.FC = () => {
           </div>
         </div>
 
-        {/* Sovereignty footer bar */}
+        {/* Network accountability footer */}
         <div className="glass rounded-2xl p-6 border border-white/[0.05] text-center">
-          <Shield size={20} style={{ color: INDIA_ORANGE }} className="mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-white mb-1.5">Launch Program Accountability</h3>
+          <Shield size={20} className="text-saffron mx-auto mb-2" />
+          <h3 className="text-sm font-bold text-white mb-1.5">Pre-Launch Accountability</h3>
           <p className="text-xs text-sky-200/60 max-w-md mx-auto leading-relaxed mb-4">
-            AeroSky metrics feed directly from our sovereign database records. We represent only active verified nodes and genuine community signups, maintaining complete data transparency.
+            AeroSky metrics are updated directly from active pre-launch registrations and community subscriptions, maintaining complete transparency during our roll-out.
           </p>
           <div className="flex gap-2 justify-center mb-4" aria-label="Indian Flag Colors">
-            <div className="w-4 h-1 rounded-sm" style={{ background: INDIA_ORANGE }} />
+            <div className="w-4 h-1 rounded-sm bg-saffron" />
             <div className="w-4 h-1 rounded-sm bg-white" />
-            <div className="w-4 h-1 rounded-sm" style={{ background: INDIA_GREEN }} />
+            <div className="w-4 h-1 rounded-sm bg-india-green" />
           </div>
           <Link
             to="/aerocaptains"
             className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider transition-colors"
           >
-            Become a part of the statistics <ArrowRight size={12} />
+            Become an AeroCaptain <ArrowRight size={12} />
           </Link>
         </div>
       </div>
