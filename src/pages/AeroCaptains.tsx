@@ -10,6 +10,8 @@ import Schema from '../components/Schema';
 import { trackEvent } from '../utils/analytics';
 import { submitAeroCaptainApplication, getAeroCaptainsDirectory } from '../utils/db';
 import { sanitizeInput, validateEmail, isBotSubmission, isRateLimited } from '../utils/security';
+import { getFAQs } from '../services/strapi';
+import { StrapiFAQ } from '../types/strapi';
 
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
@@ -22,6 +24,8 @@ const AeroCaptains: React.FC = () => {
   const [startedTracking, setStartedTracking] = useState(false);
   
   const [directory, setDirectory] = useState<{ num: string; state: string; status: string }[]>([]);
+  const [faqs, setFaqs] = useState<StrapiFAQ[]>([]);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -44,7 +48,27 @@ const AeroCaptains: React.FC = () => {
         console.error('Failed to load captains directory:', err);
       }
     }
+    async function loadFAQs() {
+      try {
+        const data = await getFAQs();
+        // Filter FAQs for AeroCaptains
+        const filtered = data.filter(faq => {
+          const q = faq.question.toLowerCase();
+          const a = faq.answer.toLowerCase();
+          return (
+            q.includes('experience') || q.includes('legal') || q.includes('bandwidth') ||
+            q.includes('antenna') || q.includes('kits') || q.includes('privacy') ||
+            a.includes('experience') || a.includes('legal') || a.includes('bandwidth') ||
+            a.includes('antenna') || a.includes('kits') || a.includes('privacy')
+          );
+        });
+        setFaqs(filtered);
+      } catch (err) {
+        console.error('Failed to load FAQs:', err);
+      }
+    }
     loadDirectory();
+    loadFAQs();
   }, [submitted]);
 
   const handleInputFocus = () => {
@@ -412,25 +436,23 @@ const AeroCaptains: React.FC = () => {
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-6">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { q: 'Do I need aviation experience?', a: 'No. Anyone comfortable with basic hardware connections and having internet access can set up a station.' },
-              { q: 'Is hosting a ground station legal in India?', a: 'Yes. Aircraft telemetry is broadcasted publicly on unencrypted frequencies. Receiving public signal streams for situational and scientific analysis is common globally.' },
-              { q: 'How much internet bandwidth does it consume?', a: 'The data transmission is very lightweight, using less than 1-2 GB of bandwidth per month.' },
-              { q: 'Where should I place the antenna?', a: 'Rooftops or outdoor poles with a clear, unobstructed line of sight to the horizon provide the maximum tracking range.' },
-              { q: 'Will AeroSky provide hardware receiver kits?', a: 'Yes. AeroSky evaluates locations and provides free hardware kits to selected hosts in critical coverage zones. We also assist self-funded DIY setups.' },
-              { q: 'How is my privacy protected?', a: 'To maintain host security, the exact coordinates of your receiver are fuzzed on public maps.' },
-            ].map((faq, i) => {
-              const [open, setOpen] = useState(false);
-              return (
-                <div key={i} className="glass rounded-xl overflow-hidden">
-                  <button onClick={() => setOpen(!open)} aria-expanded={open} className="w-full flex items-center justify-between p-4 text-left border-b border-transparent">
-                    <span className="text-xs font-bold text-white pr-3">{faq.q}</span>
-                    <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-                  </button>
-                  {open && <p className="px-4 pb-4 text-xs text-sky-200/60 leading-relaxed border-t border-white/5 pt-2">{faq.a}</p>}
-                </div>
-              );
-            })}
+            {faqs.map((faq, i) => (
+              <div key={faq.id || i} className="glass rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
+                  aria-expanded={openFaqIndex === i}
+                  className="w-full flex items-center justify-between p-4 text-left border-b border-transparent hover:bg-white/[0.01] transition-colors"
+                >
+                  <span className="text-xs font-bold text-white pr-3">{faq.question}</span>
+                  <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openFaqIndex === i ? 'rotate-180' : ''}`} />
+                </button>
+                {openFaqIndex === i && (
+                  <p className="px-4 pb-4 text-xs text-sky-200/60 leading-relaxed border-t border-white/5 pt-2">
+                    {faq.answer}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -7,6 +7,8 @@ import SEO from '../components/SEO';
 import Schema from '../components/Schema';
 import { trackEvent } from '../utils/analytics';
 import { getLaunchMetrics, LaunchMetrics } from '../utils/db';
+import { getFAQs } from '../services/strapi';
+import { StrapiFAQ } from '../types/strapi';
 
 const INDIA_ORANGE = '#FF9933';
 const INDIA_GREEN = '#138808';
@@ -110,6 +112,45 @@ const Coverage: React.FC = () => {
           itemListElement: [
             { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.in/' },
             { '@type': 'ListItem', position: 2, name: 'Coverage', item: 'https://aerosky.in/coverage' }
+          ]
+        }}
+      />
+      <Schema
+        type="FAQPage"
+        data={{
+          mainEntity: [
+            {
+              '@type': 'Question',
+              name: 'What is ADS-B coverage?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'ADS-B coverage is the line-of-sight range where ground stations can capture signals broadcasted by aircraft transponders. Dense regional setups allow seamless tracking.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'How can I help expand the network?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'You can apply to host an AeroSky receiver ground station. We provide hardware kits to qualified nodes, or you can feed data using your own DIY receiver.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'Which airports need coverage most?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Chennai, Kolkata, Hyderabad, Ahmedabad, Jaipur, Kochi, Goa, Lucknow, and over 100 other locations currently represent critical coverage gaps.'
+              }
+            },
+            {
+              '@type': 'Question',
+              name: 'Do I need to live right next to an airport?',
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'No. ADS-B signals travel line-of-sight up to 200+ miles. Even Simple setups 50km away from airports can capture cruising aircraft telemetry.'
+              }
+            }
           ]
         }}
       />
@@ -374,14 +415,28 @@ function AeroCaptainCTA() {
    FAQ
 ═══════════════════════════════════════════ */
 function FAQSection() {
-  const faqs = [
-    { q: 'What is ADS-B coverage?', a: 'ADS-B coverage is the line-of-sight range where ground stations can capture signals broadcasted by aircraft transponders. Dense regional setups allow seamless tracking.' },
-    { q: 'How can I help expand the network?', a: 'You can apply to host an AeroSky receiver ground station. We provide hardware kits to qualified nodes, or you can feed data using your own DIY receiver.' },
-    { q: 'Which airports need coverage most?', a: 'Chennai, Kolkata, Hyderabad, Ahmedabad, Jaipur, Kochi, Goa, Lucknow, and over 100 other locations currently represent critical coverage gaps.' },
-    { q: 'Do I need to live right next to an airport?', a: 'No. ADS-B signals travel line-of-sight up to 200+ miles. Even Simple setups 50km away from airports can capture cruising aircraft telemetry.' },
-  ];
-
+  const [faqs, setFaqs] = useState<StrapiFAQ[]>([]);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function loadFAQs() {
+      try {
+        const data = await getFAQs();
+        const filtered = data.filter(faq => {
+          const q = faq.question.toLowerCase();
+          const a = faq.answer.toLowerCase();
+          return (
+            q.includes('coverage') || q.includes('expand') || q.includes('airport') || q.includes('live right next') ||
+            a.includes('coverage') || a.includes('expand') || a.includes('airport') || a.includes('live right next')
+          );
+        });
+        setFaqs(filtered);
+      } catch (err) {
+        console.error('Failed to load FAQs:', err);
+      }
+    }
+    loadFAQs();
+  }, []);
 
   return (
     <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
@@ -392,12 +447,12 @@ function FAQSection() {
         </div>
         <div className="space-y-2">
           {faqs.map((faq, i) => (
-            <div key={i} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden">
-              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-expanded={openIdx === i} className="w-full flex items-center justify-between p-4 text-left">
-                <span className="text-sm font-medium text-white pr-4">{faq.q}</span>
+            <div key={faq.id || i} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden">
+              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-expanded={openIdx === i} className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.01] transition-colors">
+                <span className="text-sm font-medium text-white pr-4">{faq.question}</span>
                 <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
               </button>
-              {openIdx === i && <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed pt-2 border-t border-white/5">{faq.a}</p>}
+              {openIdx === i && <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed pt-2 border-t border-white/5">{faq.answer}</p>}
             </div>
           ))}
         </div>

@@ -5,6 +5,7 @@ import App from './App';
 import './index.css';
 import { initClarity } from './utils/analytics';
 import { initDB } from './utils/db';
+import { CMSProvider } from './context/CMSContext';
 
 // Capture and persist referral code from URL parameter
 try {
@@ -30,7 +31,10 @@ if (!rootElement) throw new Error('Root element not found');
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <CMSProvider>
+        <App />
+      </CMSProvider>
     </BrowserRouter>
   </React.StrictMode>
 );
+
