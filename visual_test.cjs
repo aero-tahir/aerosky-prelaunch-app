@@ -13,7 +13,7 @@ const routes = [
   '/support'
 ];
 
-const artifactDir = 'C:\\Users\\AeroLytics\\.gemini\\antigravity\\brain\\9f76b109-dc69-4295-a3d1-229dd8b48585';
+const artifactDir = 'C:\\Users\\AeroLytics\\.gemini\\antigravity\\brain\\190770c4-4f96-47ce-8e19-cfa2820d012a';
 
 (async () => {
   // Ensure artifact directory exists
