@@ -10,11 +10,11 @@ const Coverage = lazy(() => import('./pages/Coverage'));
 const Insights = lazy(() => import('./pages/Insights'));
 const Community = lazy(() => import('./pages/Community'));
 const About = lazy(() => import('./pages/About'));
-const Launch = lazy(() => import('./pages/Launch'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
 const Support = lazy(() => import('./pages/Support'));
+const MemberDashboard = lazy(() => import('./pages/MemberDashboard'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = () => (
@@ -40,8 +40,8 @@ const PageTracker: React.FC = () => {
     else if (path === '/coverage') eventName = 'coverage_page_viewed';
     else if (path === '/aerocaptains/hall-of-fame') eventName = 'hall_of_fame_viewed';
     else if (path === '/insights') eventName = 'insights_page_viewed';
-    else if (path === '/launch') eventName = 'launch_page_viewed';
     else if (path === '/support') eventName = 'support_page_viewed';
+    else if (path.startsWith('/member/')) eventName = 'member_dashboard_viewed';
     else if (path === '/privacy') eventName = 'privacy_page_viewed';
     else if (path === '/terms') eventName = 'terms_page_viewed';
     else if (path === '/cookie-policy') eventName = 'cookie_policy_viewed';
@@ -67,11 +67,11 @@ const App: React.FC = () => (
         <Route path="insights/:slug" element={<Insights />} />
         <Route path="community" element={<Community />} />
         <Route path="about" element={<About />} />
-        <Route path="launch" element={<Launch />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="terms" element={<Terms />} />
         <Route path="cookie-policy" element={<CookiePolicy />} />
         <Route path="support" element={<Support />} />
+        <Route path="member/:memberId" element={<MemberDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

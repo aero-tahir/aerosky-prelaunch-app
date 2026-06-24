@@ -47,9 +47,9 @@ const siteSettingsData = {
   tagline: "Community-powered airspace intelligence for India.",
   heroTitle: "Community-Powered|Airspace|Intelligence",
   heroSubtitle: "Help build India's independent aviation intelligence network by hosting a low-power ADS-B ground station. Contribute real-world flight data, expand coverage, and become part of a growing community of aviation enthusiasts and engineers.",
-  announcementBanner: "Pre-Launch Beta Open",
+  announcementBanner: "Airspace Grid Onboarding",
   discordInviteUrl: "https://discord.gg/aerosky",
-  communityUrl: "https://aerosky.in/community",
+  communityUrl: "https://aerosky.ai/community",
   newsletterCta: "India Airspace Report",
   primaryCtaText: "Become an AeroCaptain",
   primaryCtaLink: "/aerocaptains",
@@ -332,18 +332,18 @@ Reach out to the appropriate team for hardware assistance, data access, partners
 
 ## Contact Directory
 
-- **Support & AeroCaptains:** support@aerosky.in
+- **Support & AeroCaptains:** support@aerosky.ai
   *Hardware configurations, RTL-SDR setups, receiver kit deliveries, and connection logs.*
-- **Press & Media:** press@aerosky.in
+- **Press & Media:** press@aerosky.ai
   *Airspace data requests, media publications, and pre-launch report citations.*
-- **Partnerships:** partners@aerosky.in
+- **Partnerships:** partners@aerosky.ai
   *Academic research collaborations, commercial airspace analytics, and local database integrations.*
-- **Security (VDP):** security@aerosky.in
+- **Security (VDP):** security@aerosky.ai
   *Report transponder decode issues, network vulnerabilities, or data leakage reports.*
-- **General Administrative:** contact@aerosky.in
+- **General Administrative:** contact@aerosky.ai
   *General inquiries, corporate details, parent organization (AeroLytics) correspondence.*
 
-For institutional queries or official business correspondence, please email contact@aerosky.in.`
+For institutional queries or official business correspondence, please email contact@aerosky.ai.`
   }
 ];
 

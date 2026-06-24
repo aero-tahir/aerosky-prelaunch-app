@@ -1,44 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, Globe, Radio, Shield, Flag, Database, Lock, Radar, Plane,
-  BarChart3, Users, Zap, ArrowRight, MapPin, CheckCircle2,
-  CloudLightning, Eye, Fingerprint, IndianRupee, Map as MapIcon, ChevronRight, BookOpen, Send, Mail, Antenna, Award, Target, Clock, HelpCircle, ChevronDown
+  Radio, Shield, Users, Zap, ArrowRight, CheckCircle2,
+  ChevronRight, BookOpen, Award, Target, Clock, HelpCircle,
+  ChevronDown, Radar, BarChart3, Flag, Globe, Antenna
 } from 'lucide-react';
 import MapBackground from '../components/MapBackground';
 import SEO from '../components/SEO';
 import Schema from '../components/Schema';
 import DiscordCTA from '../components/DiscordCTA';
 import { trackEvent } from '../utils/analytics';
-import { getLaunchMetrics, addNewsletterSubscription, LaunchMetrics } from '../utils/db';
+import { getLaunchMetrics, addAeroCadet, LaunchMetrics } from '../utils/db';
 import { sanitizeInput, validateEmail, isBotSubmission, isRateLimited } from '../utils/security';
 import { useSiteSettings } from '../context/CMSContext';
 import { getArticles, getUpcomingEvents, getFAQs, formatImageUrl } from '../services/strapi';
 import { StrapiArticle, StrapiEvent, StrapiFAQ } from '../types/strapi';
+import { BadgeCard } from '../components/BadgeCard';
+import { ShareOverlay } from '../components/ShareOverlay';
 
-const INDIA_ORANGE = '#FF9933';
-const INDIA_GREEN = '#138808';
 
 /* ═══════════════════════════════════════════════════════════════
-   HOME PAGE
-   Order of sections:
+   HOME PAGE — 7-section conversion-first architecture
    1. HeroSection
-   2. MissionSection ("Why AeroSky Exists")
-   3. AeroCaptainProgramSection ("Become an AeroCaptain")
-   4. CommunityJourneySection ("Your Journey in the AeroSky Community")
-   5. CommunitySection ("Join India's Aviation Data Community")
-   6. CoveragePreviewSection ("Building India's Coverage Network")
-   7. RoadmapSection ("Building India's Aviation Intelligence Network")
-   8. AboutSection ("Built for Indian Skies")
-   9. NewsletterSection ("India Airspace Report")
- ═══════════════════════════════════════════════════════════════ */
+   2. CommunityPathwaysSection  ← signup cards immediately after hero
+   3. AeroCaptainProgramSection ← merged with WhyAeroCaptain + tier strip
+   4. CommunitySection
+   5. CoverageRoadmapSection    ← merged Coverage + Roadmap
+   6. LatestArticlesSection     (conditional — only if CMS has articles)
+   7. FAQSection                (conditional — only if CMS has FAQs)
+   ═══════════════════════════════════════════════════════════════ */
 const Home: React.FC = () => {
   const [metrics, setMetrics] = useState<LaunchMetrics>({
-    foundingCaptains: 31,
-    citiesRegistered: 14,
-    statesRepresented: 8,
-    newsletterSubscribers: 57,
-    communityMembers: 142
+    foundingCaptains: 0,
+    citiesRegistered: 0,
+    statesRepresented: 0,
+    newsletterSubscribers: 0,
+    communityMembers: 0
   });
 
   const [articles, setArticles] = useState<StrapiArticle[]>([]);
@@ -47,45 +44,51 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadMetrics() {
+    async function loadData() {
       try {
-        const data = await getLaunchMetrics();
-        setMetrics(data);
-      } catch (err) {
-        console.error('Failed to load home metrics:', err);
-      }
-    }
+        // Load launch metrics
+        const m = await getLaunchMetrics();
+        setMetrics(m);
 
-    async function loadCmsContent() {
-      try {
-        const [articlesList, eventsList, faqsList] = await Promise.all([
+        // Load CMS data
+        const [articlesData, eventsData, faqsData] = await Promise.all([
           getArticles(),
           getUpcomingEvents(),
           getFAQs()
         ]);
-        setArticles(articlesList.slice(0, 3));
-        setUpcomingEvent(eventsList[0] || null);
-        setFaqs(faqsList.filter(f => f.active === true).slice(0, 5));
-      } catch (e) {
-        console.error('[Home CMS] Failed to resolve homepage data:', e);
+
+        setArticles(articlesData || []);
+        
+        // Find next upcoming event
+        if (eventsData && eventsData.length > 0) {
+          const sorted = eventsData
+            .filter(e => e.active !== false && new Date(e.eventDate) > new Date())
+            .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+          setUpcomingEvent(sorted[0] || null);
+        }
+
+        setFaqs(faqsData || []);
+      } catch (err) {
+        console.error('Failed to load home page data:', err);
       } finally {
         setLoading(false);
       }
     }
-
-    loadMetrics();
-    loadCmsContent();
+    loadData();
   }, []);
 
   return (
-    <div className="relative w-full overflow-x-hidden">
-      <SEO />
+    <div className="relative bg-[#020617] overflow-hidden">
+      <SEO
+        title="AeroSky — India's Airspace Intelligence Network | Community-Powered Flight Tracking"
+        description="Get early access to India's independent airspace intelligence network. Join as an AeroCadet or apply to host a ground station as an AeroCaptain."
+      />
       <Schema
         type="Organization"
         data={{
           name: 'AeroSky',
-          url: 'https://aerosky.in',
-          logo: 'https://aerosky.in/assets/logo.png',
+          url: 'https://aerosky.ai',
+          logo: 'https://aerosky.ai/assets/logo.png',
           sameAs: [
             'https://github.com/AeroLytics',
             'https://discord.gg/aerosky'
@@ -93,25 +96,18 @@ const Home: React.FC = () => {
         }}
       />
       <HeroSection metrics={metrics} />
-      <MissionSection />
+      <CommunityPathwaysSection metrics={metrics} />
       <AeroCaptainProgramSection />
-      <WhyAeroCaptainSection />
-      <CommunityJourneySection />
       <CommunitySection upcomingEvent={upcomingEvent} />
+      <CoverageRoadmapSection metrics={metrics} />
       <LatestArticlesSection articles={articles} loading={loading} />
-      <CoveragePreviewSection />
-      <RoadmapSection />
       <FAQSection faqs={faqs} loading={loading} />
-      <AboutSection />
-      <NewsletterSection />
     </div>
   );
 };
 
-export default Home;
-
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 1: HERO
+   SECTION 1: HERO SECTION
  ═══════════════════════════════════════════════════════════════ */
 interface HeroSectionProps {
   metrics: LaunchMetrics;
@@ -120,157 +116,117 @@ interface HeroSectionProps {
 function HeroSection({ metrics }: HeroSectionProps) {
   const siteSettings = useSiteSettings();
 
-  const titleText = siteSettings.heroTitle || "Community-Powered|Airspace|Intelligence";
-  const subtitleText = siteSettings.heroSubtitle || "Help build India's independent aviation intelligence network by hosting a low-power ADS-B ground station. Contribute real-world flight data, expand coverage, and become part of a growing community of aviation enthusiasts and engineers.";
+  const titleText = siteSettings.heroTitle || "Independent|Airspace|Intelligence";
+  const subtitleText = siteSettings.heroSubtitle || "Get early access to India's next airspace intelligence platform. Join the founding community as an AeroCadet to access delay analytics or host a receiver node as an AeroCaptain to help expand regional coverage.";
   const bannerText = siteSettings.announcementBanner || "COMMUNITY-POWERED AIRSPACE INTELLIGENCE FOR INDIA";
-  
-  const cta1Link = siteSettings.primaryCtaLink || "/aerocaptains";
+
+  const cta1Link = siteSettings.primaryCtaLink || "/aerocaptains#apply";
   const cta1Text = siteSettings.primaryCtaText || "Become an AeroCaptain";
-  const cta2Link = siteSettings.secondaryCtaLink || "https://discord.gg/aerosky";
-  const cta2Text = siteSettings.secondaryCtaText || "Join Community";
+  const cta2Link = "#pathways";
+  const cta2Text = "Join as an AeroCadet";
 
   return (
-    <section className="relative h-screen w-full overflow-hidden" aria-label="AeroSky Hero">
+    <section className="relative h-auto md:h-screen w-full overflow-hidden" aria-label="AeroSky Hero">
       {/* Background: Static Map */}
       <div className="absolute inset-0 z-0">
-        <MapBackground className="w-full h-full" />
+        <MapBackground className="hidden md:block w-full h-full" />
         <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-[#020617] via-[#020617]/95 via-40% to-transparent" />
         <div className="absolute inset-0 z-10 pointer-events-none opacity-[0.03]" style={{
-          background: `linear-gradient(135deg, ${INDIA_ORANGE}00 30%, ${INDIA_ORANGE} 50%, transparent 55%, ${INDIA_GREEN} 60%, ${INDIA_GREEN}00 75%)`
+          background: `linear-gradient(135deg, rgba(255, 153, 51, 0) 30%, var(--color-saffron) 50%, transparent 55%, var(--color-india-green) 60%, rgba(19, 136, 8, 0) 75%)`
         }} />
         <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-[#020617]/70 via-transparent to-[#020617]" />
       </div>
 
-      {/* Pre-launch badge */}
-      <div className="absolute top-24 right-4 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
+      {/* Airspace Grid Onboarding badge (top-right, on the map) - hidden on mobile */}
+      <div className="hidden md:flex absolute top-24 right-4 z-20 items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10">
         <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
         <span className="text-[10px] font-mono font-bold text-sky-200/80 uppercase tracking-widest">
-          {siteSettings.announcementBanner || "Pre-Launch Community Open"}
+          Airspace Grid Onboarding
         </span>
       </div>
 
       {/* Hero Content */}
-      <div className="relative z-20 h-full flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-20 pt-20 pb-4">
+      <div className="relative z-20 px-4 sm:px-6 md:px-10 lg:px-20 pt-24 pb-6 md:h-full md:flex md:flex-col md:justify-center md:pt-20 md:pb-4">
         <div className="w-full max-w-2xl">
           <div
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-[11px] font-mono font-bold tracking-[0.15em] mb-4 animate-slide-up"
+            style={{ animationDelay: '50ms' }}
           >
-            <Shield size={12} className="animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-saffron animate-pulse" />
             {bannerText}
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tighter mb-4 animate-slide-up delay-100">
-            {titleText.includes('|') ? (
-              <>
-                <span className="text-saffron">{titleText.split('|')[0]}</span><br />
-                <span className="text-white">{titleText.split('|')[1]}</span>{' '}
-                <span className="text-india-green">{titleText.split('|')[2] || ''}</span>
-              </>
-            ) : (
-              <span className="text-white">{titleText}</span>
-            )}
+          <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.08] mb-5 animate-slide-up delay-150">
+            {titleText.split('|').map((part, index) => (
+              <span key={index} className="block">
+                {part === 'Intelligence' ? (
+                  <span className="text-saffron bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent">{part}</span>
+                ) : part}
+              </span>
+            ))}
           </h1>
 
-          <p className="text-xs sm:text-sm md:text-base text-sky-200/70 mb-6 max-w-lg leading-relaxed animate-slide-up delay-200">
+          <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed max-w-lg mb-6 animate-slide-up delay-200">
             {subtitleText}
           </p>
 
-          {/* Status Cards */}
-          <div className="grid grid-cols-2 gap-3 max-w-lg mb-6 animate-slide-up delay-250">
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">AeroCaptain Program</div>
-              <div className="mt-1.5 flex items-center gap-1.5">
+          {/* 4 Status Pills */}
+          <div className="grid grid-cols-2 gap-3 max-w-lg mb-8 animate-slide-up delay-300">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-emerald-500/20 transition-colors">
+              <div className="text-[11px] font-mono text-sky-200/50 uppercase tracking-wider">AeroCaptain Program</div>
+              <div className="mt-1 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-emerald-400 uppercase">Applications Open</span>
+                <span className="text-xs font-mono font-bold text-emerald-400 uppercase">Applications Open</span>
               </div>
             </div>
-            
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Community</div>
-              <div className="mt-1.5 flex items-center gap-1.5">
+
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-saffron/20 transition-colors">
+              <div className="text-[11px] font-mono text-sky-200/50 uppercase tracking-wider">India Airspace Network</div>
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-saffron animate-pulse" />
+                <span className="text-xs font-mono font-bold text-saffron uppercase">Community-Powered</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-indigo-500/20 transition-colors">
+              <div className="text-[11px] font-mono text-sky-200/50 uppercase tracking-wider">AeroSky Community</div>
+              <div className="mt-1 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-indigo-400 uppercase">Discord Server Active</span>
+                <span className="text-xs font-mono font-bold text-indigo-400 uppercase">Discord Active</span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Airspace Report</div>
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-amber-400 uppercase">Subscribe to Updates</span>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/10 transition-colors">
-              <div className="text-[9px] font-mono text-sky-200/40 uppercase tracking-widest">Platform Status</div>
-              <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-sky-500/20 transition-colors">
+              <div className="text-[11px] font-mono text-sky-200/50 uppercase tracking-wider">Platform Status</div>
+              <div className="mt-1 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                <span className="text-[9px] font-mono font-bold text-sky-400 uppercase">Pre-Launch Beta</span>
+                <span className="text-xs font-mono font-bold text-sky-400 uppercase">Early Access</span>
               </div>
             </div>
-          </div>
-
-          {/* Social Proof Real Badges */}
-          <div className="grid grid-cols-2 gap-2 max-w-lg mb-8 animate-slide-up delay-300">
-            {[
-              'AeroCaptain Program Open',
-              'Discord Community Active',
-              'Beta Applications Open',
-              'Coverage Vision Established'
-            ].map((text) => (
-              <div key={text} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.05] hover:border-amber-500/20 transition-all">
-                <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                <span className="text-[10px] sm:text-[11px] font-medium text-sky-100/80">{text}</span>
-              </div>
-            ))}
           </div>
 
           {/* CTA Row */}
           <div className="flex flex-col sm:flex-row gap-3 max-w-lg animate-slide-up delay-400">
-            {cta1Link.startsWith('http') ? (
-              <a
-                href={cta1Link}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
-                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1 bg-gradient-to-br from-saffron to-gold"
-              >
-                <Radio size={16} className="animate-pulse" /> {cta1Text}
-              </a>
-            ) : (
-              <Link
-                to={cta1Link}
-                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
-                className="flex-1 text-black text-sm font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_30px_rgba(255,153,51,0.2)] hover:shadow-[0_0_40px_rgba(255,153,51,0.35)] hover:-translate-y-1 bg-gradient-to-br from-saffron to-gold"
-              >
-                <Radio size={16} className="animate-pulse" /> {cta1Text}
-              </Link>
-            )}
-
-            {cta2Link.startsWith('http') ? (
-              <a
-                href={cta2Link}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent('hero_join_community_clicked', { page: '/' })}
-                className="flex-1 px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-              >
-                <Users size={16} /> {cta2Text}
-              </a>
-            ) : (
-              <a
-                href={cta2Link}
-                onClick={() => trackEvent('hero_join_community_clicked', { page: '/' })}
-                className="flex-1 px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-              >
-                <Users size={16} /> {cta2Text}
-              </a>
-            )}
+            <Link
+              to={cta1Link}
+              onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
+              className="flex-1 px-5 py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-br from-saffron to-gold"
+            >
+              <Radio size={16} className="animate-pulse" /> {cta1Text}
+            </Link>
+            <a
+              href={cta2Link}
+              onClick={() => trackEvent('hero_join_community_clicked', { page: '/' })}
+              className="flex-1 px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-bold text-white transition-all hover:-translate-y-1 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <Users size={16} /> {cta2Text}
+            </a>
           </div>
         </div>
       </div>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-0.5 animate-bounce opacity-30">
+      {/* Scroll hint - hidden on mobile */}
+      <div className="hidden md:flex absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex-col items-center gap-0.5 animate-bounce opacity-30">
         <ChevronRight size={12} className="text-gray-500 rotate-90" />
       </div>
     </section>
@@ -278,72 +234,417 @@ function HeroSection({ metrics }: HeroSectionProps) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 2: MISSION ("Why AeroSky Exists")
+   SECTION 2: COMMUNITY PATHWAYS — Signup cards
  ═══════════════════════════════════════════════════════════════ */
-function MissionSection() {
-  const cards = [
-    {
-      icon: <Radar size={22} />,
-      title: 'ADS-B Coverage Expansion',
-      desc: 'Deploying community-hosted ground stations to map low-altitude skies and cover general aviation blind spots across India.'
-    },
-    {
-      icon: <BarChart3 size={22} />,
-      title: 'Aviation Intelligence',
-      desc: 'Sourcing, decoding, and calculating precision flight stats, route logic, and airport operational delays on Indian servers.'
-    },
-    {
-      icon: <Users size={22} />,
-      title: 'Community Contribution',
-      desc: 'Connecting pilots, spotters, hardware engineers, and SDR hobbyists to collaborate on an open Indian flight ecosystem.'
-    },
-    {
-      icon: <BookOpen size={22} />,
-      title: 'Aviation Education',
-      desc: 'Sharing structural guides on radio signals, RF technology, and setup walkthroughs to encourage hardware literacy.'
-    },
-    {
-      icon: <Globe size={22} />,
-      title: 'Open Innovation',
-      desc: 'Enabling local developers to integrate sovereign airspace datasets into tools, analysis projects, and services.'
+interface CommunityPathwaysSectionProps {
+  metrics: LaunchMetrics;
+}
+
+function CommunityPathwaysSection({ metrics }: CommunityPathwaysSectionProps) {
+  const [showModal, setShowModal] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [assignedCadetNum, setAssignedCadetNum] = useState('');
+  const [assignedCadetSlug, setAssignedCadetSlug] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!showModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCloseModal();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showModal]);
+
+  const cadetCount = metrics.newsletterSubscribers;
+  const captainCount = metrics.foundingCaptains;
+
+  const cadetRemaining = Math.max(500 - cadetCount, 0);
+  const captainRemaining = Math.max(500 - captainCount, 0);
+  const cadetProgress = Math.min(Math.round((cadetCount / 500) * 100), 100);
+  const captainProgress = Math.min(Math.round((captainCount / 500) * 100), 100);
+
+  const handleCadetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+
+    if (isBotSubmission(honeypot)) {
+      setAssignedCadetNum('CAD999');
+      setRegistered(true);
+      setSubmitting(false);
+      return;
     }
+
+    const cleanName = sanitizeInput(userName);
+    const cleanEmail = sanitizeInput(userEmail);
+
+    if (!cleanName || !cleanEmail) {
+      setError('Please fill in all fields.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!validateEmail(cleanEmail)) {
+      setError('Please enter a valid email address.');
+      setSubmitting(false);
+      return;
+    }
+
+    if (isRateLimited('cadet_signup', 10)) {
+      setError('Too many attempts. Please wait 10 seconds.');
+      setSubmitting(false);
+      return;
+    }
+
+    const referrer = localStorage.getItem('aerosky_ref') || '';
+
+    try {
+      const result = await addAeroCadet({
+        name: cleanName,
+        email: cleanEmail,
+        invited_by: referrer,
+        source_page: 'Home'
+      });
+      setAssignedCadetNum(result.code);
+      setAssignedCadetSlug(result.slug);
+      
+      // Store in session storage for frictionless instant access
+      if (result.slug) {
+        sessionStorage.setItem(`verified_member_email_${result.slug}`, cleanEmail);
+      }
+      if (result.code) {
+        sessionStorage.setItem(`verified_member_email_${result.code}`, cleanEmail);
+      }
+
+      setRegistered(true);
+      trackEvent('aerocadet_registered', { cadetNumber: result.code, referrer });
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    if (registered) {
+      setRegistered(false);
+      setUserName('');
+      setUserEmail('');
+      setAssignedCadetNum('');
+    }
+  };
+
+  const cadetBenefits = [
+    'Early Platform Access',
+    'Beta Invitations',
+    'India Airspace Report',
+    'Community Events',
+    'Discord Community',
+    'Product Updates'
+  ];
+
+  const captainBenefits = [
+    'Dedicated onboarding',
+    'Hardware guidance',
+    'Recognition & Badge',
+    'Coverage contribution',
+    'Future rewards',
+    'Platinum Platform Subscription'
   ];
 
   return (
-    <section className="relative z-10 section-std">
-      <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Flag size={12} className="text-saffron" /> Core Pillars
+    <section id="pathways" className="scroll-mt-20 relative z-10 section-std bg-gradient-to-b from-[#020617] via-black/30 to-transparent">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <header className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-3">
+            <Award size={12} /> Founding Membership
           </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-4">
-            Why AeroSky Exists
+          <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+            Join the Founding Cohort
           </h2>
-          <p className="text-sky-200/70 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            India's aviation intelligence ecosystem relies heavily on foreign platforms. AeroSky is building an independent, community-powered network focused on Indian skies, aviation transparency and contributor-driven coverage.
+          <p className="text-sky-200/60 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
+            Two paths. One mission. Choose your role in building India's independent airspace intelligence network.
           </p>
         </header>
 
-        {/* Feature Cards Grid (3 on top, 2 centered below or 3+2 layout) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {cards.slice(0, 3).map((c) => (
-            <div key={c.title} className="glass rounded-2xl p-6 border border-white/[0.04] hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">{c.icon}</div>
-              <h3 className="text-base font-bold text-white mb-2">{c.title}</h3>
-              <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
-            </div>
-          ))}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-5 lg:w-[67%] lg:mx-auto">
-            {cards.slice(3).map((c) => (
-              <div key={c.title} className="glass rounded-2xl p-6 border border-white/[0.04] hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">{c.icon}</div>
-                <h3 className="text-base font-bold text-white mb-2">{c.title}</h3>
-                <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {/* Pathway 1: AeroCadet */}
+          <div className="glass rounded-3xl p-6 sm:p-8 border border-sky-500/10 hover:border-sky-500/25 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group bg-gradient-to-br from-sky-950/20 via-transparent to-transparent">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-sky-400/25 to-transparent" />
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-[10px] font-mono font-bold text-sky-400 uppercase tracking-wider">
+                  Founding AeroCadet
+                </span>
+                <span className="text-[10px] font-mono text-sky-200/70">Tier 1</span>
               </div>
-            ))}
+              <h3 className="text-lg font-bold text-white mb-2">Early Platform Access</h3>
+              <p className="text-xs text-sky-200/60 leading-relaxed mb-5">
+                For aviation enthusiasts, student pilots, engineers, and passengers interested in delay analytics and early product updates.
+              </p>
+
+              {/* Scarcity Ticker */}
+              <div className="mb-5 bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4">
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className="text-sky-200/50 font-medium">Founding seats claimed</span>
+                  <span className="font-mono font-bold text-sky-400">{cadetCount} / 500</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="h-full rounded-full bg-sky-400 transition-all duration-1000" style={{ width: `${cadetProgress}%` }} />
+                </div>
+                <p className="text-[10px] font-mono text-amber-400 font-bold mt-2">
+                  {cadetRemaining > 0 ? `Only ${cadetRemaining} founding seats remain.` : 'Cohort fully booked!'}
+                </p>
+              </div>
+
+              <h4 className="text-[10px] font-mono font-bold text-sky-200/70 uppercase tracking-widest mb-3">Membership Benefits</h4>
+              <ul className="space-y-2 mb-6">
+                {cadetBenefits.map((b) => (
+                  <li key={b} className="flex items-center gap-2 text-xs text-sky-100/80">
+                    <CheckCircle2 size={12} className="text-sky-400 shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <button
+              onClick={() => { setShowModal(true); trackEvent('cadet_signup_started', { trigger: 'pathways_section' }); }}
+              className="w-full py-3.5 rounded-xl border border-sky-400/20 bg-sky-400/10 hover:bg-sky-400/20 text-sky-400 font-bold text-xs uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
+            >
+              Join as an AeroCadet
+            </button>
+          </div>
+
+          {/* Pathway 2: AeroCaptain */}
+          <div className="glass rounded-3xl p-6 sm:p-8 border border-orange-500/10 hover:border-orange-500/25 transition-all duration-300 flex flex-col justify-between relative overflow-hidden group bg-gradient-to-br from-orange-950/20 via-transparent to-transparent">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-orange-400/25 to-transparent" />
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] font-mono font-bold text-orange-400 uppercase tracking-wider">
+                  Founding AeroCaptain
+                </span>
+                <span className="text-[10px] font-mono text-orange-200/40 font-bold uppercase">Hardware Tier</span>
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Host a Ground Station</h3>
+              <p className="text-xs text-sky-200/60 leading-relaxed mb-5">
+                For contributors interested in hosting low-power ground station receivers to feed raw ADS-B signals to our platform.
+              </p>
+
+              {/* Scarcity Ticker */}
+              <div className="mb-5 bg-white/[0.01] border border-white/[0.04] rounded-2xl p-4">
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className="text-orange-200/50 font-medium">Applications received</span>
+                  <span className="font-mono font-bold text-orange-400">{captainCount} / 500</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="h-full rounded-full bg-orange-400 transition-all duration-1000" style={{ width: `${captainProgress}%` }} />
+                </div>
+                <p className="text-[10px] font-mono text-amber-400 font-bold mt-2">
+                  {captainRemaining > 0 ? `Only ${captainRemaining} applications remaining.` : 'All slots filled!'}
+                </p>
+              </div>
+
+              <h4 className="text-[10px] font-mono font-bold text-orange-200/40 uppercase tracking-widest mb-3">Host Benefits</h4>
+              <ul className="space-y-2 mb-6">
+                {captainBenefits.map((b) => (
+                  <li key={b} className="flex items-center gap-2 text-xs text-sky-100/80">
+                    <CheckCircle2 size={12} className="text-orange-400 shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <Link
+              to="/aerocaptains#apply"
+              onClick={() => trackEvent('captain_signup_started', { trigger: 'pathways_section' })}
+              className="w-full py-3.5 rounded-xl text-black font-bold text-xs uppercase tracking-wider text-center transition-all hover:scale-[1.01] bg-gradient-to-br from-saffron to-gold shadow-[0_0_20px_rgba(255,153,51,0.2)] hover:shadow-[0_0_35px_rgba(255,153,51,0.35)]"
+            >
+              Become an AeroCaptain
+            </Link>
           </div>
         </div>
       </div>
+
+      {/* AeroCadet Signup Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) handleCloseModal(); }}
+          onKeyDown={(e) => { if (e.key === 'Escape') handleCloseModal(); }}
+          role="presentation"
+        >
+          <div
+            className="relative w-full max-w-lg overflow-hidden glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto overscroll-contain"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cadet-modal-title"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 id="cadet-modal-title" className="text-lg font-bold text-white">
+                {registered ? 'Welcome to the Community' : 'Join as Founding AeroCadet'}
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                aria-label="Close"
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {registered ? (
+              <div className="text-center py-4 flex flex-col items-center animate-fade-in">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
+                  <CheckCircle2 size={24} className="text-emerald-400" />
+                </div>
+                <h4 className="text-base font-bold text-white mb-2">Welcome to the AeroSky Community</h4>
+                <p className="text-xs text-sky-200/60 max-w-sm mb-6 leading-relaxed">
+                  Thank you for joining AeroSky as a Founding AeroCadet. You'll receive early product updates, invitations to beta programs, community events, and the India Airspace Report as the platform evolves.
+                </p>
+
+                <BadgeCard role="cadet" memberNumber={assignedCadetNum} name={userName} memberSlug={assignedCadetSlug} />
+
+                <div className="w-full max-w-sm mt-6 text-left space-y-3.5 p-5 rounded-2xl bg-white/[0.01] border border-white/[0.04]">
+                  <h5 className="text-xs font-mono font-bold text-sky-200/70 uppercase tracking-widest mb-1.5">Your Onboarding Checklist</h5>
+
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-4.5 h-4.5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 size={11} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white leading-tight">Claimed Founding Badge</div>
+                      <div className="text-[11px] text-sky-200/50">Your serial is #CAD{assignedCadetNum.replace('CAD', '')}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-4.5 h-4.5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 size={11} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white leading-tight">Welcome Email Sent</div>
+                      <div className="text-[11px] text-sky-200/50">Invitations and monthly airspace reports active.</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 border-t border-white/5 pt-3.5 mt-3">
+                    <div className="w-4.5 h-4.5 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 animate-pulse">
+                      <div className="w-1 h-1 rounded-full bg-amber-400" />
+                    </div>
+                    <div className="flex-1 flex justify-between items-center">
+                      <div>
+                        <div className="text-xs font-bold text-white leading-tight">Next Step: Join Discord</div>
+                        <div className="text-[11px] text-sky-200/70">Estimated Time: 30 seconds</div>
+                      </div>
+                      <a
+                        href="https://discord.gg/aerosky"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded bg-indigo-500 hover:bg-indigo-600 text-[11px] font-mono font-bold text-white uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        Join
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full max-w-sm mt-4 p-5 rounded-2xl bg-white/[0.01] border border-white/[0.04] text-left space-y-4">
+                  <div>
+                    <h5 className="text-xs font-mono font-bold text-sky-200/70 uppercase tracking-widest mb-2">Milestone Upgrade Program</h5>
+                    <p className="text-xs text-sky-200/60 leading-normal">
+                      Invite 3 friends using your referral link to unlock a Free Silver Subscription Upgrade (₹1,499/yr) including historical flight data, 3D tracking, and custom alerts.
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-white/5 grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[11px] text-sky-200/50 uppercase tracking-wider leading-none">Members Invited</div>
+                      <div className="text-base font-mono font-bold text-white mt-1">0 / 3</div>
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-sky-200/50 uppercase tracking-wider leading-none">Reward Status</div>
+                      <div className="text-xs font-bold text-amber-400 mt-1">Locked (0/3)</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-[11px] text-sky-200/70">Private Dashboard:</span>
+                    <Link to={`/member/${assignedCadetSlug || assignedCadetNum}`} className="text-[11px] font-mono font-bold text-sky-400 hover:text-sky-300 flex items-center gap-0.5">
+                      aerosky.ai/member/{assignedCadetSlug || assignedCadetNum} <ArrowRight size={8} />
+                    </Link>
+                  </div>
+                </div>
+
+                <ShareOverlay role="cadet" memberNumber={assignedCadetNum} className="mt-6" memberSlug={assignedCadetSlug} />
+              </div>
+            ) : (
+              <form onSubmit={handleCadetSubmit} className="space-y-4">
+                <input type="text" name="website" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
+                <div className="space-y-1">
+                  <label htmlFor="cadet-name" className="block text-xs font-mono font-bold text-sky-200/70 uppercase tracking-widest">Full Name</label>
+                  <input
+                    id="cadet-name"
+                    required
+                    type="text"
+                    placeholder="Enter your name"
+                    value={userName}
+                    autoComplete="name"
+                    aria-describedby={error ? "cadet-error" : undefined}
+                    onChange={(e) => setUserName(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border text-sm text-white placeholder-sky-400/30 focus:outline-none focus:ring-1 focus:ring-sky-500/20 transition-colors ${
+                      error && !userName
+                        ? 'border-rose-500/50 focus:border-rose-500'
+                        : 'border-white/[0.08] focus:border-sky-500/50'
+                    }`}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="cadet-email" className="block text-xs font-mono font-bold text-sky-200/70 uppercase tracking-widest">Email Address</label>
+                  <input
+                    id="cadet-email"
+                    required
+                    type="email"
+                    placeholder="name@domain.com"
+                    value={userEmail}
+                    autoComplete="email"
+                    aria-describedby={error ? "cadet-error" : undefined}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border text-sm text-white placeholder-sky-400/30 focus:outline-none focus:ring-1 focus:ring-sky-500/20 transition-colors ${
+                      error && (!userEmail || error.includes('email'))
+                        ? 'border-rose-500/50 focus:border-rose-500'
+                        : 'border-white/[0.08] focus:border-sky-500/50'
+                    }`}
+                  />
+                </div>
+
+                <p className="text-xs text-sky-200/60 leading-relaxed pt-2">
+                  By joining, you agree to receive platform updates, monthly intelligence newsletters, and beta notifications. We prioritize data sovereignty and will never share your personal information.
+                </p>
+
+                {error && <p id="cadet-error" className="text-rose-400 text-xs font-mono animate-pulse">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-3.5 mt-4 rounded-xl text-black font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer bg-gradient-to-br from-sky-400 to-sky-500 hover:shadow-[0_0_20px_rgba(56,189,248,0.3)]"
+                >
+                  {submitting ? 'Registering...' : 'Claim My Founding Badge'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -352,36 +653,53 @@ function MissionSection() {
    SECTION 3: AEROCAPTAIN PROGRAM
  ═══════════════════════════════════════════════════════════════ */
 function AeroCaptainProgramSection() {
-  const benefits = [
-    'Founding AeroCaptain Badge',
-    'Early Platform Access',
-    'Community Recognition',
-    'Coverage Leaderboards',
-    'Direct Product Feedback Access',
-    'Future Contributor Rewards'
+  const reasons = [
+    {
+      icon: <Radar size={20} />,
+      title: "Pioneer India's Network",
+      desc: "Be among the first to host an independent ground station receiver, mapping regional coverage and general aviation gaps."
+    },
+    {
+      icon: <BarChart3 size={20} />,
+      title: "Contribute to Aviation Research",
+      desc: "Provide high-fidelity flight data to help local researchers, spotters, and developers optimize routes and airport operations."
+    },
+    {
+      icon: <Award size={20} />,
+      title: "Earn Recognition & Rewards",
+      desc: "Receive permanent Hall of Fame status, active range badges, and priority eligibility for future hardware distributions."
+    }
+  ];
+
+  const tiers = [
+    { title: 'AeroCadet', level: 'L1', desc: 'Enthusiasts & supporters', color: 'sky' },
+    { title: 'AeroCaptain', level: 'L2', desc: 'Ground station hosts', color: 'amber' },
+    { title: 'AeroCommander', level: 'L3', desc: 'High-impact contributors', color: 'orange' },
+    { title: 'AeroMarshal', level: 'L4', desc: 'Elite network builders', color: 'rose' },
   ];
 
   return (
     <section className="relative z-10 section-std">
-      <div className="max-w-5xl mx-auto">
-        <div className="glass rounded-3xl p-8 sm:p-12 relative overflow-hidden border border-white/[0.06] hover:border-amber-500/15 transition-all duration-500">
-          <div className="absolute -right-10 -bottom-10 opacity-[0.05] pointer-events-none">
-            <Antenna size={250} className="text-saffron" />
+      <div className="max-w-6xl mx-auto">
+        {/* Main card */}
+        <div className="glass rounded-3xl p-7 sm:p-10 relative overflow-hidden border border-white/[0.06] hover:border-amber-500/15 transition-all duration-500 mb-6">
+          <div className="absolute -right-10 -bottom-10 opacity-[0.04] pointer-events-none">
+            <Antenna size={220} className="text-saffron" />
           </div>
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-saffron/20 bg-saffron/[0.04] text-saffron text-[10px] font-mono font-bold tracking-widest uppercase mb-4">
                 <Radio size={12} className="text-amber-400 animate-pulse" /> Ground Station Hosting
               </div>
               <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3">Become an AeroCaptain</h2>
               <p className="text-sm text-sky-200/70 mb-4 leading-relaxed">
-                Help build India's independent ADS-B network from the ground up.
+                AeroCaptains are the backbone of our network — contributors who host compact ADS-B ground stations, capture live aircraft transponder signals, and stream flight telemetry to our independent Indian platform.
               </p>
-              <p className="text-xs text-sky-200/60 mb-6 leading-relaxed">
-                AeroCaptains are contributors who host ADS-B ground stations and help expand India's independent airspace intelligence network. By receiving aircraft transponder signals and streaming them to our platform, you directly strengthen aviation transparency.
+              <p className="text-xs text-sky-200/50 mb-6 leading-relaxed">
+                By covering local airspace blind spots, AeroCaptains help build India's first community-powered, sovereignty-first aviation intelligence grid.
               </p>
               <Link
-                to="/aerocaptains"
+                to="/aerocaptains#apply"
                 onClick={() => trackEvent('hero_become_aerocaptain_clicked', { page: '/' })}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 cursor-pointer bg-gradient-to-br from-saffron to-gold"
               >
@@ -390,81 +708,36 @@ function AeroCaptainProgramSection() {
             </div>
 
             <div>
-              <h3 className="text-xs font-mono font-bold text-sky-200/40 uppercase tracking-widest mb-4">Program Benefits</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {benefits.map((b) => (
-                  <div key={b} className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-                    <CheckCircle2 size={13} className="text-amber-400 shrink-0" />
-                    <span className="text-xs font-medium text-sky-100/90">{b}</span>
+              <h3 className="text-xs font-mono font-bold text-sky-200/70 uppercase tracking-widest mb-4">Why Host a Station?</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {reasons.map((r) => (
+                  <div key={r.title} className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:border-amber-500/15 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">{r.icon}</div>
+                    <div>
+                      <div className="text-xs font-bold text-white mb-1">{r.title}</div>
+                      <div className="text-[10px] text-sky-200/50 leading-relaxed">{r.desc}</div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 3.5: WHY BECOME AN AEROCAPTAIN
- ═══════════════════════════════════════════════════════════════ */
-function WhyAeroCaptainSection() {
-  const cards = [
-    {
-      icon: <Radar size={22} />,
-      title: "Improve India's ADS-B Coverage",
-      desc: "Fill critical tracking gaps in local airspace, helping to map low-altitude flights and general aviation where coverage is sparse."
-    },
-    {
-      icon: <Radio size={22} />,
-      title: "Learn SDR & RF Technology",
-      desc: "Gain hands-on experience with Software-Defined Radio, antennas, and unencrypted signal decoding on single-board computers."
-    },
-    {
-      icon: <BookOpen size={22} />,
-      title: "Contribute to Aviation Research",
-      desc: "Provide high-fidelity flight data to help local researchers, spotters, and developers optimize routes and airport operations."
-    },
-    {
-      icon: <Users size={22} />,
-      title: "Join a Community of Builders",
-      desc: "Collaborate directly with hardware engineers, pilots, and radio hobbyists on receiver setups and telemetry tools."
-    },
-    {
-      icon: <Award size={22} />,
-      title: "Earn Recognition & Rewards",
-      desc: "Receive permanent Hall of Fame status, active range badges, and priority eligibility for future hardware distributions."
-    }
-  ];
-
-  return (
-    <section className="relative z-10 section-std bg-black/10">
-      <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-10">
-          <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-4">
-            Why Become an AeroCaptain?
-          </h2>
-          <p className="text-sky-200/70 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Hosting a ground station is more than running a receiver—it is about contributing to India's independent airspace infrastructure.
-          </p>
-        </header>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {cards.slice(0, 3).map((c) => (
-            <div key={c.title} className="glass rounded-2xl p-6 border border-white/[0.04] hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">{c.icon}</div>
-              <h3 className="text-base font-bold text-white mb-2">{c.title}</h3>
-              <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
-            </div>
-          ))}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-5 lg:w-[67%] lg:mx-auto">
-            {cards.slice(3).map((c) => (
-              <div key={c.title} className="glass rounded-2xl p-6 border border-white/[0.04] hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">{c.icon}</div>
-                <h3 className="text-base font-bold text-white mb-2">{c.title}</h3>
-                <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
+        {/* Community Tier Strip */}
+        <div>
+          <div className="text-center mb-5">
+            <span className="text-[10px] font-mono font-bold text-sky-200/70 uppercase tracking-widest">Community Progression Tiers</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {tiers.map((t, i) => (
+              <div
+                key={t.title}
+                className={`relative glass rounded-2xl p-4 border transition-all duration-300 hover:-translate-y-0.5 ${i === 1 ? 'border-amber-500/25 bg-amber-500/[0.03]' : 'border-white/[0.04]'}`}
+              >
+                <div className="absolute top-3 right-3 text-[8px] font-mono font-bold bg-white/5 px-1.5 py-0.5 rounded text-sky-200/70">{t.level}</div>
+                <div className={`text-sm font-bold mb-1 ${i === 1 ? 'text-amber-400' : 'text-white'}`}>{t.title}</div>
+                <div className="text-[10px] text-sky-200/50">{t.desc}</div>
               </div>
             ))}
           </div>
@@ -475,139 +748,80 @@ function WhyAeroCaptainSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 4: COMMUNITY JOURNEY
- ═══════════════════════════════════════════════════════════════ */
-function CommunityJourneySection() {
-  const journeys = [
-    {
-      level: 'Level 1',
-      title: 'AeroCadet',
-      desc: 'Aviation enthusiasts, students and supporters.'
-    },
-    {
-      level: 'Level 2',
-      title: 'AeroCaptain',
-      desc: 'Active ADS-B ground station contributors.'
-    },
-    {
-      level: 'Level 3',
-      title: 'AeroCommander',
-      desc: 'High-impact AeroCaptains helping expand coverage.'
-    },
-    {
-      level: 'Level 4',
-      title: 'AeroMarshal',
-      desc: 'Elite contributors supporting the growth of India\'s aviation intelligence network.'
-    }
-  ];
-
-  return (
-    <section className="relative z-10 section-std">
-      <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Award size={12} className="text-saffron" /> Progression
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
-            Your Journey in the AeroSky Community
-          </h2>
-          <p className="text-sky-200/60 text-xs sm:text-sm max-w-xl mx-auto">
-            From learning hardware basics to supporting regional coverage, grow your contribution tier.
-          </p>
-        </header>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {journeys.map((j) => (
-            <div key={j.title} className="glass rounded-xl p-5 border border-white/[0.04] relative overflow-hidden group hover:border-amber-500/20 transition-all duration-300">
-              <div className="absolute top-0 right-0 px-2 py-0.5 text-[8px] font-mono font-bold bg-amber-500/10 text-amber-400 rounded-bl-lg">
-                {j.level}
-              </div>
-              <h3 className="text-base font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">{j.title}</h3>
-              <p className="text-xs text-sky-200/60 leading-relaxed">{j.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 5: COMMUNITY SECTION
+   SECTION 4: COMMUNITY SECTION
  ═══════════════════════════════════════════════════════════════ */
 interface CommunitySectionProps {
   upcomingEvent: StrapiEvent | null;
 }
 
 function CommunitySection({ upcomingEvent }: CommunitySectionProps) {
-  const topics = [
-    'ADS-B & Ground Stations',
-    'Hardware & SDR Setup',
-    'Aviation Analytics',
+  const categories = [
     'Aircraft Spotting',
     'Student Pilots',
-    'Airport Operations',
-    'Aviation Technology'
+    'Airport Operations'
   ];
 
   return (
-    <section id="community" className="relative z-10 section-std">
+    <section id="community" className="scroll-mt-20 relative z-10 section-std bg-black/10">
       <div className="max-w-5xl mx-auto">
         <div className="glass rounded-3xl p-6 sm:p-10 border border-white/[0.06] bg-gradient-to-br from-sky-950/40 via-sky-950/10 to-transparent">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-400/20 bg-indigo-500/[0.04] text-[10px] font-mono font-bold tracking-widest text-indigo-400 uppercase mb-4">
-                <Users size={12} /> Live Forum
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/25 bg-indigo-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-indigo-400 uppercase mb-4">
+                <Users size={12} /> Flight Enthusiast Network
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Join India's Aviation Data Community</h2>
-              <p className="text-sm text-sky-200/70 mb-6 leading-relaxed">
+              <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3">Join India's Aviation Community</h2>
+              <p className="text-xs sm:text-sm text-sky-200/70 leading-relaxed mb-6">
                 A place for aviation enthusiasts, AeroCaptains, aircraft spotters, SDR hobbyists, student pilots and aviation professionals. Connect and share airspace telemetry, spotting pictures, and receiver builds.
               </p>
 
-              {/* Reusable Trackable Discord CTA */}
-              <DiscordCTA
-                location="home_community_section"
-                buttonName="Join Discord Community"
-                variant="primary"
-                className="mb-6"
-              />
+              <DiscordCTA location="home_community_section" buttonName="Join Discord Community" variant="primary" className="mb-6" />
 
-              {/* Event teaser */}
               {upcomingEvent && (
                 <div className="p-4 rounded-2xl bg-amber-500/[0.02] border border-amber-500/10 animate-fade-in">
                   <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                     Upcoming: {upcomingEvent.title}
                   </div>
-                  <div className="text-xs text-sky-200/80 mb-2">
-                    {upcomingEvent.description}
-                  </div>
+                  <div className="text-xs text-sky-200/80 mb-2">{upcomingEvent.description}</div>
                   {upcomingEvent.registrationUrl && (
                     <a
                       href={upcomingEvent.registrationUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => trackEvent('community_event_registered', { page: '/', kickoff: upcomingEvent.title })}
-                      className="text-[10px] font-mono font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest flex items-center gap-1"
+                      className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider"
                     >
-                      Register for Event <ChevronRight size={10} />
+                      Register for Kickoff <ArrowRight size={10} />
                     </a>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="glass rounded-2xl p-5 border border-white/[0.04]">
-              <h3 className="text-xs font-mono font-bold text-sky-200/40 uppercase tracking-widest mb-3">Active Discussion Channels</h3>
-              <div className="flex flex-col gap-2">
-                {topics.map((t) => (
-                  <div key={t} className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.01] hover:bg-white/[0.03] transition-colors border border-white/[0.03]">
-                    <span className="text-xs font-medium text-sky-100/90 flex items-center gap-2">
-                      <span className="text-amber-500">#</span> {t}
-                    </span>
-                    <ChevronRight size={10} className="text-sky-200/30" />
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-3 gap-2">
+                {categories.map((c) => (
+                  <div key={c} className="glass rounded-xl p-3.5 border border-white/[0.03] text-center">
+                    <div className="text-[10px] font-mono font-bold text-sky-200/60 uppercase tracking-wider">{c}</div>
                   </div>
                 ))}
+              </div>
+              <div className="p-5 rounded-2xl border border-white/[0.04] bg-black/40">
+                <div className="text-[10px] font-mono font-bold text-sky-200/70 uppercase tracking-widest mb-3">Live Network Feed</div>
+                <div className="space-y-2.5">
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span className="text-sky-200/50">#general-chat</span>
+                    <span className="text-sky-200/30">Active discussion on SDR setups</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span className="text-sky-200/50">#receiver-builds</span>
+                    <span className="text-sky-200/30">Share raw antenna diagrams</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span className="text-sky-200/50">#airport-spotting</span>
+                    <span className="text-sky-200/30">Live photos from regional hubs</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -618,141 +832,121 @@ function CommunitySection({ upcomingEvent }: CommunitySectionProps) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 6: COVERAGE PREVIEW
+   SECTION 5: COVERAGE + ROADMAP (Merged)
  ═══════════════════════════════════════════════════════════════ */
-function CoveragePreviewSection() {
-  const statuses = [
-    'Coverage Vision Established',
-    'New Cities Being Added',
-    'Community Driven Growth',
-    'Founding AeroCaptains Joining'
+interface CoverageRoadmapSectionProps {
+  metrics: LaunchMetrics;
+}
+
+function CoverageRoadmapSection({ metrics }: CoverageRoadmapSectionProps) {
+  const phases = [
+    { stage: 'Phase 1', title: 'Community Growth', desc: 'Welcoming founding AeroCaptains and hosting technical briefings.', active: true },
+    { stage: 'Phase 2', title: 'Coverage Expansion', desc: 'Distributing ADS-B kits to hosts in critical flight corridors.' },
+    { stage: 'Phase 3', title: 'Platform Launch', desc: 'Deploying the live map to visualize aircraft transponder streams.' },
+    { stage: 'Phase 4', title: 'Airspace Intelligence', desc: 'Historical route analysis, arrival analytics, and weather overlays.' },
+    { stage: 'Phase 5', title: 'Developer Ecosystem', desc: 'Open-source telemetry decoders and low-latency API access.' },
   ];
 
   return (
     <section className="relative z-10 section-std">
       <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-10">
+        <header className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Radar size={12} className="text-saffron" /> Network Vision
+            <Target size={12} className="text-saffron" /> Network Vision & Roadmap
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
             Building India's Coverage Network
           </h2>
-          <p className="text-sky-200/70 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
-            AeroCaptains help build ADS-B coverage across India, creating a stronger and more transparent aviation intelligence network.
+          <p className="text-sky-200/60 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed">
+            AeroCaptains host ground stations to expand coverage, enabling high-fidelity airspace intelligence for regional airports and corridors.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          {/* Map Preview */}
-          <div className="rounded-2xl border border-white/[0.05] overflow-hidden bg-sky-950/20 backdrop-blur-md relative" style={{ height: '350px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Map preview */}
+          <div className="rounded-2xl border border-white/[0.05] overflow-hidden bg-sky-950/20 backdrop-blur-md relative" style={{ height: '360px' }}>
             <MapBackground className="w-full h-full absolute inset-0 z-0" longitude={78} latitude={22} zoom={3.6} />
-            <div className="absolute inset-0 bg-gradient-to-t from-sky-950 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute bottom-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-[9px] font-mono font-bold text-sky-200/70 uppercase">Visualizing Airspace Gaps</span>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-mono font-bold text-sky-200/40 uppercase tracking-widest mb-4">Platform Growth Parameters</h3>
-            <div className="flex flex-col gap-3">
-              {statuses.map((s) => (
-                <div key={s} className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.01] border border-white/[0.04] hover:border-amber-500/10 transition-colors">
-                  <div className="w-6 h-6 rounded bg-amber-500/10 flex items-center justify-center text-amber-400">
-                    <CheckCircle2 size={14} />
-                  </div>
-                  <span className="text-sm font-semibold text-white">{s}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-sky-950/80 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-[9px] font-mono font-bold text-sky-200/70 uppercase">Visualizing Airspace Gaps</span>
+              </div>
               <Link
                 to="/coverage"
                 onClick={() => trackEvent('coverage_page_viewed', { from: 'home_preview' })}
-                className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-black/60 border border-amber-500/20 text-[9px] font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider transition-colors"
               >
-                Explore Coverage Vision <ArrowRight size={12} />
+                Explore <ArrowRight size={9} />
               </Link>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-  );
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 7: ROADMAP
- ═══════════════════════════════════════════════════════════════ */
-function RoadmapSection() {
-  const phases = [
-    { stage: 'Phase 1', title: 'Community Growth', desc: 'Forming the founding forum, welcoming AeroCaptains, and hosting pre-launch technical briefings.' },
-    { stage: 'Phase 2', title: 'Coverage Expansion', desc: 'Distributing custom ADS-B receiver kits to selected hosts in critical flight corridors and regional airports.' },
-    { stage: 'Phase 3', title: 'Platform Launch', desc: 'Deploying the interactive live map web interface to visualize aircraft transponder streams in real-time.' },
-    { stage: 'Phase 4', title: 'Airspace Intelligence', desc: 'Integrating historical route analysis, arrival analytics, and meteorological overlays into the core dashboard.' },
-    { stage: 'Phase 5', title: 'Developer Ecosystem', desc: 'Releasing open-source telemetry decoders and low-latency API access for builders and researchers.' }
-  ];
-
-  return (
-    <section className="relative z-10 section-std">
-      <div className="max-w-5xl mx-auto">
-        <header className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-            <Target size={12} className="text-saffron" /> Development Path
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-white tracking-tight mb-3">
-            Building India's Aviation Intelligence Network
-          </h2>
-          <p className="text-sky-200/70 text-xs sm:text-sm max-w-xl mx-auto">
-            Our systematic phase timeline to achieve national airspace coverage and deploy analytical APIs.
-          </p>
-        </header>
-
-        {/* Timeline representation */}
-        <div className="relative border-l border-white/[0.05] ml-4 md:ml-10 space-y-6">
-          {phases.map((p, index) => (
-            <div key={p.title} className="relative pl-6 sm:pl-10 group">
-              {/* Dot */}
-              <div className={`absolute -left-[9px] top-1.5 w-4.5 h-4.5 rounded-full border-2 border-[#020617] flex items-center justify-center transition-all ${index === 0 ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]' : 'bg-sky-800'}`} />
-              <div>
-                <div className="flex items-center gap-2.5 mb-1.5">
-                  <span className="text-[10px] font-mono font-bold text-amber-500/80 uppercase">{p.stage}</span>
-                  {index === 0 && <span className="px-1.5 py-0.5 text-[7px] font-mono font-bold bg-amber-500/10 text-amber-400 rounded uppercase">Active</span>}
+          {/* Phase timeline */}
+          <div className="relative border-l border-white/[0.05] ml-4 md:ml-10 space-y-6">
+            {phases.map((p, index) => (
+              <div key={p.title} className="relative pl-6 sm:pl-10 group">
+                {/* Dot */}
+                <div
+                  className={`absolute -left-[9px] top-1.5 w-4.5 h-4.5 rounded-full border-2 border-[#020617] flex items-center justify-center transition-all ${
+                    p.active
+                      ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                      : 'bg-sky-900 border-white/10'
+                  }`}
+                />
+                <div>
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <span className="text-[10px] font-mono font-bold text-amber-500/80 uppercase">{p.stage}</span>
+                    {p.active && (
+                      <span className="px-1.5 py-0.5 text-[7px] font-mono font-bold bg-amber-500/10 text-amber-400 rounded uppercase animate-pulse">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">
+                    {p.title}
+                  </h3>
+                  <p className="text-xs text-sky-200/50 leading-relaxed max-w-xl">{p.desc}</p>
                 </div>
-                <h3 className="text-base font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">{p.title}</h3>
-                <p className="text-xs text-sky-200/60 leading-relaxed max-w-xl">{p.desc}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
-  );
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 8: ABOUT SECTION
- ═══════════════════════════════════════════════════════════════ */
-function AboutSection() {
-  return (
-    <section className="relative z-10 section-std">
-      <div className="max-w-4xl mx-auto">
-        <div className="glass rounded-3xl p-8 sm:p-10 border border-white/[0.05] relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[10px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-4">
-              <Globe size={12} className="text-india-green" /> Sovereignty
-            </div>
-            <h2 className="text-xl sm:text-3xl font-bold text-white mb-3">Built for Indian Skies</h2>
-            <p className="text-sm text-sky-200/70 leading-relaxed max-w-2xl mx-auto mb-6">
-              AeroSky is creating a community-powered aviation intelligence platform designed specifically for India's rapidly growing aviation ecosystem. Built by aviation enthusiasts, engineers and contributors who believe aviation intelligence should be transparent, accessible and community driven.
-            </p>
-            <div className="flex gap-2 justify-center" aria-label="Indian Flag Colors">
-              <div className="w-4 h-1 rounded-sm bg-saffron" />
-              <div className="w-4 h-1 rounded-sm bg-white" />
-              <div className="w-4 h-1 rounded-sm bg-india-green" />
-            </div>
+        {/* Platform Readiness & Network Health Tracker */}
+        <div id="readiness" className="scroll-mt-20 mt-12 glass rounded-3xl p-6 border border-white/[0.05]">
+          <div className="flex items-center gap-2 mb-6">
+            <Target size={16} className="text-saffron animate-pulse" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">Network Health & Platform Readiness</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            {[
+              { id: 'captains', label: 'AeroCaptains', current: metrics.foundingCaptains, target: 500, unit: 'Nodes' },
+              { id: 'cities', label: 'Cities', current: metrics.citiesRegistered, target: 20, unit: 'Cities' },
+              { id: 'states', label: 'States', current: metrics.statesRepresented, target: 15, unit: 'States' },
+              { id: 'subscribers', label: 'Subscribers', current: metrics.newsletterSubscribers, target: 100, unit: 'Subscribers' },
+              { id: 'community', label: 'Community', current: metrics.communityMembers, target: 200, unit: 'Members' }
+            ].map((m) => {
+              const progress = Math.min(Math.round((m.current / m.target) * 100), 100);
+              return (
+                <div key={m.id} className={`space-y-2 ${m.id === 'community' ? 'col-span-2 md:col-span-1' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-sky-200/70 uppercase tracking-wide">{m.label}</span>
+                    <span className="text-[10px] font-mono text-amber-400 font-bold">{progress}%</span>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.04] overflow-hidden p-[0.5px] border border-white/[0.02]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-saffron to-gold"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-sky-200/50 font-mono">
+                    {m.current} / {m.target} {m.unit}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -761,140 +955,7 @@ function AboutSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 9: NEWSLETTER SECTION ("India Airspace Report")
- ═══════════════════════════════════════════════════════════════ */
-function NewsletterSection() {
-  const [subscribed, setSubscribed] = useState(false);
-  const [email, setEmail] = useState('');
-  const [honeypot, setHoneypot] = useState('');
-  const [error, setError] = useState('');
-  const [started, setStarted] = useState(false);
-
-  const handleInputFocus = () => {
-    if (!started) {
-      setStarted(true);
-      trackEvent('newsletter_signup_started', { page: '/' });
-    }
-  };
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    // Spam Protection: Honeypot Check
-    if (isBotSubmission(honeypot)) {
-      console.log('[Security] Honeypot triggered. Silently ignoring submission.');
-      setSubscribed(true);
-      return;
-    }
-
-    // Input Sanitization and Validation
-    const cleanEmail = sanitizeInput(email);
-    if (!validateEmail(cleanEmail)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    // Rate Limiting Check
-    if (isRateLimited('newsletter_signup', 10)) {
-      setError('Too many attempts. Please wait 10 seconds before trying again.');
-      return;
-    }
-
-    const referralCode = localStorage.getItem('aerosky_ref') || '';
-    
-    // DB Lead Capture
-    const success = await addNewsletterSubscription({
-      email: cleanEmail,
-      source_page: 'Home',
-      referral_code: referralCode
-    });
-
-    if (success) {
-      trackEvent('newsletter_signup_completed', {
-        email: cleanEmail,
-        sourcePage: 'Home',
-        referralCode: referralCode
-      });
-      setSubscribed(true);
-    } else {
-      setError('You are already registered or an error occurred. Please try again.');
-    }
-  };
-
-  return (
-    <section id="newsletter" className="relative z-10 section-std bg-black/10">
-      <div className="max-w-2xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-4">
-          <Mail size={12} /> Monthly Intelligence
-        </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">India Airspace Report</h2>
-        <p className="text-xs sm:text-sm text-sky-200/60 max-w-md mx-auto mb-4 leading-relaxed">
-          Receive monthly insights on Indian aviation, community progress, network expansion, and AeroSky development.
-        </p>
-
-        {/* Newsletter Agenda Bullets */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6 max-w-lg mx-auto animate-slide-up">
-          {[
-            'Aviation insights',
-            'Community milestones',
-            'Receiver telemetry updates',
-            'Network expansion reports'
-          ].map((agenda) => (
-            <span key={agenda} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.01] border border-white/[0.04] text-[10px] text-sky-200/60 font-mono">
-              <CheckCircle2 size={10} className="text-amber-500" /> {agenda}
-            </span>
-          ))}
-        </div>
-
-        {subscribed ? (
-          <div className="glass rounded-xl p-6 border border-emerald-500/20 bg-emerald-500/[0.02] animate-fade-in max-w-md mx-auto">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-3">
-              <CheckCircle2 size={20} className="text-emerald-400" />
-            </div>
-            <h3 className="text-sm font-bold text-white mb-1">Subscribed Successfully!</h3>
-            <p className="text-xs text-sky-200/50">You will receive the next India Airspace Report in your inbox.</p>
-          </div>
-        ) : (
-          <div className="max-w-md mx-auto">
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2">
-              {/* Invisible Honeypot Field */}
-              <input
-                type="text"
-                name="website"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-                style={{ display: 'none' }}
-                tabIndex={-1}
-                autoComplete="off"
-              />
-
-              <input
-                type="email"
-                required
-                aria-label="Email address for monthly report"
-                placeholder="Enter your email address"
-                value={email}
-                onFocus={handleInputFocus}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs sm:text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
-              />
-              <button type="submit" className="px-6 py-3 rounded-xl text-black font-bold text-xs sm:text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 cursor-pointer bg-gradient-to-br from-saffron to-gold">
-                Subscribe
-              </button>
-            </form>
-            {error && (
-              <p className="text-rose-400 text-xs font-mono mt-2 text-left sm:text-center animate-pulse">{error}</p>
-            )}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   SECTION 10: LATEST ARTICLES SECTION
+   SECTION 6: LATEST ARTICLES SECTION (Academy Publications)
  ═══════════════════════════════════════════════════════════════ */
 interface LatestArticlesSectionProps {
   articles: StrapiArticle[];
@@ -904,13 +965,28 @@ interface LatestArticlesSectionProps {
 function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps) {
   if (loading) {
     return (
-      <section className="section-std max-w-5xl mx-auto">
-        <div className="animate-pulse space-y-6">
-          <div className="h-6 w-48 bg-white/5 rounded mx-auto" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="h-48 bg-white/5 rounded-2xl" />
-            <div className="h-48 bg-white/5 rounded-2xl" />
-            <div className="h-48 bg-white/5 rounded-2xl" />
+      <section className="section-std bg-black/10">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-6 animate-pulse">
+            <div className="h-6 w-36 bg-white/5 rounded-full mx-auto mb-3" />
+            <div className="h-8 w-48 bg-white/5 rounded-lg mx-auto mb-2" />
+            <div className="h-4 w-72 bg-white/5 rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="glass rounded-2xl overflow-hidden border border-white/[0.04] p-5 flex flex-col justify-between min-h-[220px] animate-pulse">
+                <div>
+                  <div className="w-full h-32 bg-white/5 rounded-xl mb-4" />
+                  <div className="h-5 bg-white/5 rounded-md w-3/4 mb-2.5" />
+                  <div className="h-3 bg-white/5 rounded w-full mb-1.5" />
+                  <div className="h-3 bg-white/5 rounded w-5/6" />
+                </div>
+                <div className="border-t border-white/5 pt-3 mt-4 flex justify-between items-center">
+                  <div className="h-3 w-10 bg-white/5 rounded" />
+                  <div className="h-3 w-16 bg-white/5 rounded" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -922,7 +998,7 @@ function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps
   return (
     <section className="section-std bg-black/10">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-3">
             <BookOpen size={12} /> Academy Publications
           </div>
@@ -958,9 +1034,8 @@ function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps
                       {post.excerpt}
                     </p>
                   </div>
-
                   <div className="border-t border-white/5 pt-3 flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-[9px] font-mono text-sky-200/40">
+                    <span className="flex items-center gap-1 text-[9px] font-mono text-sky-200/70">
                       <Clock size={10} /> {readTime}
                     </span>
                     <Link
@@ -977,10 +1052,7 @@ function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps
         </div>
 
         <div className="text-center">
-          <Link
-            to="/insights"
-            className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-widest"
-          >
+          <Link to="/insights" className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-widest">
             Explore Academy Hub <ArrowRight size={12} />
           </Link>
         </div>
@@ -989,7 +1061,6 @@ function LatestArticlesSection({ articles, loading }: LatestArticlesSectionProps
   );
 }
 
-// Simple helper to calculate reading time inside LatestArticlesSection
 function calculateReadingTime(text: string): string {
   if (!text) return '1 min';
   const words = text.trim().split(/\s+/).length;
@@ -998,7 +1069,7 @@ function calculateReadingTime(text: string): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SECTION 11: HOMEPAGE FAQ SECTION
+   SECTION 7: FAQ (conditional — only if CMS has data)
  ═══════════════════════════════════════════════════════════════ */
 interface FAQSectionProps {
   faqs: StrapiFAQ[];
@@ -1010,45 +1081,62 @@ function FAQSection({ faqs, loading }: FAQSectionProps) {
 
   if (loading) {
     return (
-      <section className="section-std max-w-3xl mx-auto animate-pulse space-y-3">
-        <div className="h-6 w-32 bg-white/5 rounded mx-auto mb-6" />
-        {[1, 2, 3].map(i => (
-          <div key={i} className="h-12 bg-white/5 rounded-xl" />
-        ))}
+      <section className="section-std bg-black/10">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-2 justify-center mb-8 animate-pulse">
+            <div className="w-4 h-4 bg-white/5 rounded-full" />
+            <div className="h-6 w-56 bg-white/5 rounded-lg" />
+          </div>
+          <div className="space-y-2.5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-4 flex justify-between items-center animate-pulse">
+                <div className="h-4 bg-white/5 rounded w-2/3" />
+                <div className="w-4 h-4 bg-white/5 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     );
   }
-
   if (faqs.length === 0) return null;
 
   return (
-    <section className="section-std">
+    <section className="section-std bg-black/10">
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-2 justify-center mb-6">
+        <div className="flex items-center gap-2 justify-center mb-8">
           <HelpCircle size={14} className="text-amber-400" />
           <h2 className="text-lg font-bold text-white uppercase tracking-wider">Frequently Asked Questions</h2>
         </div>
         <div className="space-y-2.5">
-          {faqs.map((faq, i) => (
-            <div key={faq.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden">
-              <button
-                onClick={() => setOpenIdx(openIdx === i ? null : i)}
-                aria-expanded={openIdx === i}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
-              >
-                <span className="text-sm font-medium text-white pr-4">{faq.question}</span>
-                <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
-              </button>
-              {openIdx === i && (
-                <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed pt-2 border-t border-white/5">
-                  {faq.answer}
-                </p>
-              )}
-            </div>
-          ))}
+          {faqs.map((faq, i) => {
+            const isOpen = openIdx === i;
+            return (
+              <div key={faq.id} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden transition-all duration-300 hover:border-white/10">
+                <button
+                  onClick={() => setOpenIdx(isOpen ? null : i)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors cursor-pointer"
+                >
+                  <span className="text-sm font-medium text-white pr-4">{faq.question}</span>
+                  <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <div
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isOpen ? 'max-h-96 opacity-100 border-t border-white/5 p-4 bg-white/[0.005]' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed pt-1">
+                    {faq.answer}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
+export default Home;

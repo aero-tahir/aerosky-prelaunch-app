@@ -10,6 +10,7 @@ interface SEOProps {
   ogImage?: string;
   ogUrl?: string;
   twitterCard?: 'summary' | 'summary_large_image' | 'app' | 'player';
+  noindex?: boolean;
 }
 
 const SEO: React.FC<SEOProps> = ({
@@ -19,7 +20,8 @@ const SEO: React.FC<SEOProps> = ({
   ogDescription,
   ogImage,
   ogUrl,
-  twitterCard = 'summary_large_image'
+  twitterCard = 'summary_large_image',
+  noindex
 }) => {
   const siteSettings = useSiteSettings();
 
@@ -31,8 +33,8 @@ const SEO: React.FC<SEOProps> = ({
     // 1. Explicitly passed image (if it's not the generic asset)
     // 2. CMS Default OG Image
     // 3. Fallback static asset
-    let resolvedImage = 'https://aerosky.in/assets/og-image.jpg';
-    if (ogImage && ogImage !== 'https://aerosky.in/assets/og-image.jpg') {
+    let resolvedImage = 'https://aerosky.ai/assets/og-image.jpg';
+    if (ogImage && ogImage !== 'https://aerosky.ai/assets/og-image.jpg') {
       resolvedImage = formatImageUrl(ogImage) || ogImage;
     } else if (siteSettings.defaultOgImage) {
       resolvedImage = formatImageUrl(siteSettings.defaultOgImage) || resolvedImage;
@@ -55,6 +57,16 @@ const SEO: React.FC<SEOProps> = ({
     // 2. Standard Meta Tags
     setMetaTag('name', 'description', finalDescription);
     
+    // Robots Noindex Meta Tag
+    if (noindex) {
+      setMetaTag('name', 'robots', 'noindex, nofollow');
+    } else {
+      const el = document.querySelector('meta[name="robots"]');
+      if (el) {
+        el.setAttribute('content', 'index, follow');
+      }
+    }
+    
     // 3. OpenGraph Tags
     setMetaTag('property', 'og:title', ogTitle || finalTitle);
     setMetaTag('property', 'og:description', ogDescription || finalDescription);
@@ -73,7 +85,7 @@ const SEO: React.FC<SEOProps> = ({
         // Enforce lowercase pathname, strip trailing slash except for root, and prepend sovereign domain
         const pathname = window.location.pathname.toLowerCase();
         const cleanPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-        cleanUrl = `https://aerosky.in${cleanPath}`;
+        cleanUrl = `https://aerosky.ai${cleanPath}`;
       }
 
       let element = document.querySelector('link[rel="canonical"]');

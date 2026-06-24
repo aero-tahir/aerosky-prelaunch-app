@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
-import { initClarity } from './utils/analytics';
+import { initClarity, initGTM, initGoogleVerification } from './utils/analytics';
 import { initDB } from './utils/db';
 import { CMSProvider } from './context/CMSContext';
 
@@ -21,6 +21,8 @@ try {
 
 // Initialize growth scripts & database schema
 initClarity();
+initGTM();
+initGoogleVerification();
 initDB().catch(err => {
   console.error('[Database] Failed to verify prelaunch schema:', err);
 });

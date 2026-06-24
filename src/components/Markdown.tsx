@@ -12,7 +12,7 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
   const blocks = content.split(/\n\n+/);
 
   return (
-    <div className={`space-y-4 text-sky-200/80 leading-relaxed ${className}`}>
+    <div className={`space-y-5 text-sky-200/80 leading-relaxed ${className}`}>
       {blocks.map((block, i) => {
         const trimmed = block.trim();
         if (!trimmed) return null;
@@ -22,7 +22,7 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
           const lines = trimmed.split('\n');
           const codeLines = lines.slice(1, lines.length - 1).join('\n');
           return (
-            <pre key={i} className="bg-black/50 p-4 rounded-xl border border-white/5 font-mono text-xs text-emerald-400 overflow-x-auto my-4">
+            <pre key={i} className="bg-sky-900/40 p-4 rounded-2xl border border-white/[0.05] font-mono text-xs text-emerald-400 overflow-x-auto my-6 shadow-[inset_0_1px_4px_rgba(0,0,0,0.6)]">
               <code>{codeLines}</code>
             </pre>
           );
@@ -30,23 +30,30 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
 
         // Headings
         if (trimmed.startsWith('# ')) {
+          const text = trimmed.replace('# ', '').trim();
           return (
-            <h1 key={i} className="text-2xl sm:text-3xl font-bold text-white mt-6 mb-3">
-              {trimmed.replace('# ', '')}
+            <h1 key={i} className="text-2xl sm:text-3xl font-bold text-white mt-8 mb-4 tracking-tight">
+              {text}
             </h1>
           );
         }
         if (trimmed.startsWith('## ')) {
+          const text = trimmed.replace('## ', '').trim();
+          const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
+          const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           return (
-            <h2 key={i} className="text-xl sm:text-2xl font-bold text-white mt-5 mb-2">
-              {trimmed.replace('## ', '')}
+            <h2 key={i} id={id} className="text-xl sm:text-2xl font-bold text-white mt-8 mb-4 border-b border-white/5 pb-2 scroll-mt-24">
+              {text}
             </h2>
           );
         }
         if (trimmed.startsWith('### ')) {
+          const text = trimmed.replace('### ', '').trim();
+          const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
+          const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
           return (
-            <h3 key={i} className="text-lg sm:text-xl font-bold text-white mt-4 mb-2">
-              {trimmed.replace('### ', '')}
+            <h3 key={i} id={id} className="text-lg sm:text-xl font-bold text-white mt-6 mb-3 scroll-mt-24">
+              {text}
             </h3>
           );
         }
@@ -55,9 +62,9 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           const items = trimmed.split('\n').map(item => item.replace(/^[-*]\s+/, ''));
           return (
-            <ul key={i} className="list-disc list-inside space-y-1.5 pl-4 text-sky-200/85">
+            <ul key={i} className="list-none space-y-2.5 pl-6 my-5 text-sky-200/85">
               {items.map((item, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(item) }} />
+                <li key={idx} className="relative before:content-[''] before:w-1.5 before:h-1.5 before:bg-saffron before:rounded-full before:absolute before:-left-5 before:top-2.5" dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(item) }} />
               ))}
             </ul>
           );
@@ -67,9 +74,9 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
         if (/^\d+\.\s+/.test(trimmed)) {
           const items = trimmed.split('\n').map(item => item.replace(/^\d+\.\s+/, ''));
           return (
-            <ol key={i} className="list-decimal list-inside space-y-1.5 pl-4 text-sky-200/85">
+            <ol key={i} className="list-decimal list-inside space-y-2.5 pl-4 text-sky-200/85 my-5 marker:text-saffron marker:font-mono marker:font-bold">
               {items.map((item, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(item) }} />
+                <li key={idx} className="pl-1" dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(item) }} />
               ))}
             </ol>
           );
@@ -79,7 +86,7 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
         if (trimmed.startsWith('>')) {
           const quoteText = trimmed.replace(/^>\s*/gm, '').trim();
           return (
-            <blockquote key={i} className="pl-4 border-l-2 border-amber-500/40 italic text-sky-200/70 my-3">
+            <blockquote key={i} className="pl-5 border-l-4 border-saffron/40 italic text-sky-200/70 my-6 py-1 bg-white/[0.01] rounded-r-2xl">
               <span dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(quoteText) }} />
             </blockquote>
           );
@@ -87,7 +94,7 @@ export const Markdown: React.FC<MarkdownProps> = ({ content, className = '' }) =
 
         // Normal Paragraph
         return (
-          <p key={i} dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(trimmed) }} />
+          <p key={i} className="mb-4 text-sky-200/85 leading-relaxed text-sm sm:text-base last:mb-0" dangerouslySetInnerHTML={{ __html: parseInlineMarkdown(trimmed) }} />
         );
       })}
     </div>

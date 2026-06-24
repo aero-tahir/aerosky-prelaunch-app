@@ -17,6 +17,15 @@ export interface StrapiSiteSettings {
   defaultSeoDescription?: string;
   defaultOgImage?: any; // Media object or string url
   socialLinks?: any; // JSON or object representation
+  launchPhase?: string;
+}
+
+export interface StrapiCategory {
+  id: number;
+  documentId: string;
+  name: string;
+  slug: string;
+  description?: string;
 }
 
 export interface StrapiArticle {
@@ -31,6 +40,7 @@ export interface StrapiArticle {
   seoTitle?: string;
   seoDescription?: string;
   status?: 'Draft' | 'Published';
+  category?: StrapiCategory;
 }
 
 export interface StrapiEvent {

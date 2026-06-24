@@ -1,43 +1,46 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Award, Zap, Radio, Clock, Shield, ArrowLeft } from 'lucide-react';
+import { Award, Zap, Radio, Clock, Shield, ArrowLeft, Trophy } from 'lucide-react';
 import SEO from '../components/SEO';
 import Schema from '../components/Schema';
 import { trackEvent } from '../utils/analytics';
 
-const INDIA_ORANGE = '#FF9933';
-
 const HallOfFame: React.FC = () => {
   const placeholders = [
     {
-      title: 'Reserved for Longest Range',
-      desc: 'This space will honor the ground station node that achieves the highest validated signal reception range in nautical miles.',
-      icon: <Award className="text-sky-400/40" size={24} />
+      title: 'Longest Signal Range',
+      criteria: 'Validated signal reception range in nautical miles (NM).',
+      desc: 'Awarded to the ground station node that achieves the highest validated signal reception range. Requires high-gain directional antennas, low-loss RF cables, and clear elevation horizons.',
+      icon: <Award className="text-sky-400" size={24} />
     },
     {
-      title: 'Reserved for Highest Uptime',
-      desc: 'Dedicated to the ground station demonstrating continuous telemetry streaming and node availability over a 30-day window.',
-      icon: <Clock className="text-emerald-400/40" size={24} />
+      title: 'Highest Stream Uptime',
+      criteria: 'Telemetry stream availability over a continuous 30-day window.',
+      desc: 'Honoring nodes demonstrating near-100% streaming reliability and network packet delivery. Requires stable power supplies, UPS backups, and robust ethernet backhaul.',
+      icon: <Clock className="text-emerald-400" size={24} />
     },
     {
-      title: 'Reserved for Most Aircraft Tracked',
-      desc: 'Acknowledging the node that processes the highest cumulative count of unique aircraft transponder signals.',
-      icon: <Radio className="text-amber-500/40" size={24} />
+      title: 'Telemetry Volume Pioneer',
+      criteria: 'Cumulative count of unique aircraft transponder signals processed.',
+      desc: 'Acknowledging the station processing the highest count of unique aircraft frames and MLAT updates, particularly in high-density airspace corridors.',
+      icon: <Radio className="text-amber-400" size={24} />
     },
     {
-      title: 'Reserved for Community Contributor',
-      desc: 'Honoring developers and organizers who write open-source receiver configurations, scripts, or support community hardware setups.',
-      icon: <Zap className="text-purple-400/40" size={24} />
+      title: 'Coverage Expansion Pioneer',
+      criteria: 'Close critical low-altitude blind spots in tier-2/3 or remote areas.',
+      desc: 'Dedicated to hosts establishing ground stations in underserved, mountainous, or coastal regions, significantly expanding the collective radio horizon.',
+      icon: <Shield className="text-rose-400" size={24} />
     },
     {
-      title: 'Reserved for Coverage Expansion',
-      desc: 'Dedicated to hosts who establish stations in key underserved regions, helping to close critical low-altitude blind spots.',
-      icon: <Shield className="text-rose-400/40" size={24} />
+      title: 'Community Code Contributor',
+      criteria: 'Open-source configurations, decoders, or integration scripts.',
+      desc: 'Honoring developers who build open-source receiver setups, custom decoder scripts, or dashboard integrations shared with the wider AeroSky community.',
+      icon: <Zap className="text-purple-400" size={24} />
     }
   ];
 
   return (
-    <div className="relative pt-24 pb-16 px-4 sm:px-6 md:px-12 lg:px-24">
+    <div className="relative pt-20 pb-10 px-4 sm:px-6 md:px-12 lg:px-24">
       <SEO
         title="Founding AeroCaptain Hall of Fame | AeroSky"
         description="Honor roll celebrating the pioneering ground station hosts and telemetry developers mapping Indian skies with AeroSky."
@@ -46,9 +49,9 @@ const HallOfFame: React.FC = () => {
         type="BreadcrumbList"
         data={{
           itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.in/' },
-            { '@type': 'ListItem', position: 2, name: 'AeroCaptains', item: 'https://aerosky.in/aerocaptains' },
-            { '@type': 'ListItem', position: 3, name: 'Hall of Fame', item: 'https://aerosky.in/aerocaptains/hall-of-fame' }
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.ai/' },
+            { '@type': 'ListItem', position: 2, name: 'AeroCaptains', item: 'https://aerosky.ai/aerocaptains' },
+            { '@type': 'ListItem', position: 3, name: 'Hall of Fame', item: 'https://aerosky.ai/aerocaptains/hall-of-fame' }
           ]
         }}
       />
@@ -60,44 +63,47 @@ const HallOfFame: React.FC = () => {
         </Link>
 
         {/* Header */}
-        <header className="mb-12">
+        <header className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/20 bg-amber-500/[0.04] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-4 animate-pulse-glow">
-            <Award size={12} /> Recognition Core
+            <Trophy size={12} /> Founding Contributors
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold text-white tracking-tight mb-3">
             AeroCaptain <span className="text-saffron">Hall of Fame</span>
           </h1>
-          <p className="text-sm sm:text-base text-sky-200/60 leading-relaxed max-w-2xl">
-            Honoring the contributors establishing airspace coverage. Once ground stations go live, active nodes will be listed here with verified metrics for range, throughput, and system uptime.
+          <p className="text-sm sm:text-base text-sky-200/70 leading-relaxed max-w-2xl">
+            Honoring the contributors establishing India's airspace intelligence network. Once the pre-launch ground stations go live, active nodes will be registered here based on verified telemetry metrics.
           </p>
-          <div className="mt-5 p-4 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 text-xs text-amber-400/90 leading-relaxed font-semibold max-w-2xl flex items-center gap-3">
+          <div className="mt-5 p-4 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 text-xs text-amber-400 leading-relaxed font-semibold max-w-2xl flex items-center gap-3">
             <Shield size={16} className="shrink-0 animate-pulse text-amber-400" />
-            <span>The Hall of Fame registry will activate immediately upon verification of the first live ground stations.</span>
+            <span>Registry Registry Registry: Activating immediately upon verification of the first live ground stations.</span>
           </div>
         </header>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {placeholders.map((p) => (
-            <div key={p.title} className="glass rounded-2xl p-6 border border-dashed border-white/10 hover:border-amber-500/30 transition-all duration-300 flex flex-col justify-between min-h-[180px]">
+            <div key={p.title} className="glass rounded-2xl p-6 border border-white/[0.05] hover:border-amber-500/20 transition-all duration-300 flex flex-col justify-between min-h-[220px]">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-white/[0.01] border border-white/5 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-white/[0.02] border border-white/10 flex items-center justify-center">
                     {p.icon}
                   </div>
-                  <h2 className="text-sm sm:text-base font-bold text-white/50">{p.title}</h2>
+                  <h2 className="text-sm sm:text-base font-bold text-white leading-tight">{p.title}</h2>
                 </div>
-                <p className="text-xs text-sky-200/40 leading-relaxed">{p.desc}</p>
+                <div className="text-[10px] font-mono text-amber-400/80 uppercase tracking-wider mb-2">
+                  Metric: {p.criteria}
+                </div>
+                <p className="text-xs text-sky-200/60 leading-relaxed">{p.desc}</p>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono text-amber-500/40 uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500/20" /> Awaiting Activation
+              <div className="mt-4 flex items-center gap-1.5 text-[9px] font-mono text-amber-400 uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Registry Launch Phase
               </div>
             </div>
           ))}
         </div>
 
         {/* Call to action */}
-        <div className="glass rounded-2xl p-8 text-center border border-white/[0.05]">
+        <div className="glass rounded-2xl p-6 text-center border border-white/[0.05]">
           <Shield size={24} className="text-saffron mx-auto mb-3" />
           <h3 className="text-lg font-bold text-white mb-2">Want to see your station here?</h3>
           <p className="text-xs text-sky-200/60 max-w-sm mx-auto mb-5 leading-relaxed">
