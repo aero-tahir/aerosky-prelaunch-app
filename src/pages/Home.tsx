@@ -268,6 +268,13 @@ function CommunityPathwaysSection({ metrics }: CommunityPathwaysSectionProps) {
   const cadetProgress = Math.min(Math.round((cadetCount / 500) * 100), 100);
   const captainProgress = Math.min(Math.round((captainCount / 500) * 100), 100);
 
+  const getInputCls = (isInvalid: boolean) =>
+    `w-full px-4 py-3 rounded-xl bg-white/[0.04] border text-sm text-white placeholder-sky-400/30 focus:outline-none focus:ring-1 focus:ring-sky-500/20 transition-colors ${
+      isInvalid
+        ? 'border-rose-500/50 focus:border-rose-500'
+        : 'border-white/[0.08] focus:border-sky-500/50'
+    }`;
+
   const handleCadetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -600,11 +607,7 @@ function CommunityPathwaysSection({ metrics }: CommunityPathwaysSectionProps) {
                     autoComplete="name"
                     aria-describedby={error ? "cadet-error" : undefined}
                     onChange={(e) => setUserName(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border text-sm text-white placeholder-sky-400/30 focus:outline-none focus:ring-1 focus:ring-sky-500/20 transition-colors ${
-                      error && !userName
-                        ? 'border-rose-500/50 focus:border-rose-500'
-                        : 'border-white/[0.08] focus:border-sky-500/50'
-                    }`}
+                    className={getInputCls(!!error && !userName)}
                   />
                 </div>
 
@@ -619,11 +622,7 @@ function CommunityPathwaysSection({ metrics }: CommunityPathwaysSectionProps) {
                     autoComplete="email"
                     aria-describedby={error ? "cadet-error" : undefined}
                     onChange={(e) => setUserEmail(e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border text-sm text-white placeholder-sky-400/30 focus:outline-none focus:ring-1 focus:ring-sky-500/20 transition-colors ${
-                      error && (!userEmail || error.includes('email'))
-                        ? 'border-rose-500/50 focus:border-rose-500'
-                        : 'border-white/[0.08] focus:border-sky-500/50'
-                    }`}
+                    className={getInputCls(!!error && (!userEmail || error.includes('email')))}
                   />
                 </div>
 
