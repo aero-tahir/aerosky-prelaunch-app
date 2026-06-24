@@ -116,7 +116,7 @@ interface HeroSectionProps {
 function HeroSection({ metrics }: HeroSectionProps) {
   const siteSettings = useSiteSettings();
 
-  const titleText = siteSettings.heroTitle || "Independent|Airspace|Intelligence";
+  const titleText = siteSettings.heroTitle || "Community-Powered|Airspace|Intelligence";
   const subtitleText = siteSettings.heroSubtitle || "Get early access to India's next airspace intelligence platform. Join the founding community as an AeroCadet to access delay analytics or host a receiver node as an AeroCaptain to help expand regional coverage.";
   const bannerText = siteSettings.announcementBanner || "COMMUNITY-POWERED AIRSPACE INTELLIGENCE FOR INDIA";
 
@@ -156,14 +156,35 @@ function HeroSection({ metrics }: HeroSectionProps) {
             {bannerText}
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.08] mb-5 animate-slide-up delay-150">
-            {titleText.split('|').map((part, index) => (
-              <span key={index} className="block">
-                {part === 'Intelligence' ? (
-                  <span className="text-saffron bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent">{part}</span>
-                ) : part}
-              </span>
-            ))}
+          <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight leading-[1.08] mb-5 animate-slide-up delay-150 select-none">
+            {titleText.split('|').map((part, index) => {
+              if (index === 0) {
+                return (
+                  <span key={index} className="block text-india-green bg-gradient-to-r from-emerald-400 to-india-green bg-clip-text text-transparent">
+                    {part}
+                  </span>
+                );
+              }
+              if (index === 1) {
+                return (
+                  <span key={index} className="block text-white">
+                    {part}
+                  </span>
+                );
+              }
+              if (index === 2) {
+                return (
+                  <span key={index} className="block text-saffron bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent">
+                    {part}
+                  </span>
+                );
+              }
+              return (
+                <span key={index} className="block text-white">
+                  {part}
+                </span>
+              );
+            })}
           </h1>
 
           <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed max-w-lg mb-6 animate-slide-up delay-200">

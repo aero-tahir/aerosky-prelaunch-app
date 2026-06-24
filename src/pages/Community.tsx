@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  MessageCircle, Send, Instagram, Linkedin, Twitter, Youtube, Facebook, BookOpen, HelpCircle, Briefcase, Zap,
+  MessageCircle, MessageSquare, Send, Instagram, Linkedin, Twitter, Youtube, Facebook, BookOpen, HelpCircle, Briefcase, Zap,
   Users, Radio, Plane, Code, ArrowRight, Award, Globe, CheckCircle2
 } from 'lucide-react';
 import SEO from '../components/SEO';

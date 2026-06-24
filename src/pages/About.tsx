@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, ArrowRight, Radio } from 'lucide-react';
+import {
+  Globe, ArrowRight, Radio, Shield, Radar, Cpu,
+  Users, CheckCircle2, Award
+} from 'lucide-react';
 import SEO from '../components/SEO';
 import Schema from '../components/Schema';
 import { trackEvent } from '../utils/analytics';
@@ -45,6 +48,147 @@ The network grows block by block, receiver by receiver. You can participate in t
   updatedAt: new Date().toISOString()
 };
 
+interface ParsedItem {
+  title: string;
+  desc: string;
+}
+
+interface ParsedSection {
+  title: string;
+  intro: string;
+  items: ParsedItem[];
+}
+
+interface ParsedContent {
+  intro: string;
+  whyItMatters: ParsedSection | null;
+  whyTrust: ParsedSection | null;
+  howToContribute: ParsedSection | null;
+  isStructured: boolean;
+}
+
+// Robust markdown parser to extract sections for the premium layout
+function parseMarkdownContent(content: string): ParsedContent {
+  const result: ParsedContent = {
+    intro: '',
+    whyItMatters: null,
+    whyTrust: null,
+    howToContribute: null,
+    isStructured: false,
+  };
+
+  try {
+    if (!content) return result;
+
+    const sections = content.split(/(?=^##\s+)/m);
+    let introText = '';
+    let mattersSection: ParsedSection | null = null;
+    let trustSection: ParsedSection | null = null;
+    let contributeSection: ParsedSection | null = null;
+
+    for (const sec of sections) {
+      const lines = sec.split('\n');
+      const headerLine = lines[0] || '';
+      const bodyLines = lines.slice(1);
+
+      const headingMatch = headerLine.match(/^##\s+(.*)$/);
+      if (!headingMatch) {
+        introText += sec + '\n';
+        continue;
+      }
+
+      const title = headingMatch[1].trim();
+      const body = bodyLines.join('\n').trim();
+
+      const parseBullets = (text: string): ParsedItem[] => {
+        const items: ParsedItem[] = [];
+        const bulletLines = text.split('\n');
+        let currentItem: ParsedItem | null = null;
+
+        for (const line of bulletLines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          // Matches "* **Title**: Description" or "1. **Title**\nDescription"
+          const bulletMatch = trimmed.match(/^[*-\d.]+\s+\*\*([^*]+)\*\*[:\s]*(.*)$/);
+          if (bulletMatch) {
+            if (currentItem) items.push(currentItem);
+            currentItem = {
+              title: bulletMatch[1].trim(),
+              desc: bulletMatch[2].trim()
+            };
+          } else if (trimmed.startsWith('*') || trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
+            const plainMatch = trimmed.match(/^[*-\d.]+\s+(.*)$/);
+            if (plainMatch) {
+              if (currentItem) items.push(currentItem);
+              currentItem = {
+                title: '',
+                desc: plainMatch[1].trim()
+              };
+            }
+          } else {
+            if (currentItem) {
+              currentItem.desc += ' ' + trimmed;
+            }
+          }
+        }
+        if (currentItem) items.push(currentItem);
+        return items;
+      };
+
+      const getSectionIntro = (text: string): string => {
+        const bulletIndex = text.search(/^[*-\d.]+/m);
+        if (bulletIndex === -1) return text;
+        return text.substring(0, bulletIndex).trim();
+      };
+
+      const getSectionBulletsText = (text: string): string => {
+        const bulletIndex = text.search(/^[*-\d.]+/m);
+        if (bulletIndex === -1) return '';
+        return text.substring(bulletIndex).trim();
+      };
+
+      const cleanTitle = title.toLowerCase().replace(/[^a-z0-9\s]/g, '');
+      if (cleanTitle.includes('airspace intelligence network') || cleanTitle.includes('about')) {
+        introText += body + '\n';
+      } else if (cleanTitle.includes('why it matters')) {
+        mattersSection = {
+          title,
+          intro: getSectionIntro(body),
+          items: parseBullets(getSectionBulletsText(body))
+        };
+      } else if (cleanTitle.includes('why trust')) {
+        trustSection = {
+          title,
+          intro: getSectionIntro(body),
+          items: parseBullets(getSectionBulletsText(body))
+        };
+      } else if (cleanTitle.includes('how you can contribute') || cleanTitle.includes('how to contribute') || cleanTitle.includes('contribute')) {
+        contributeSection = {
+          title,
+          intro: getSectionIntro(body),
+          items: parseBullets(getSectionBulletsText(body))
+        };
+      }
+    }
+
+    result.intro = introText.trim();
+    result.whyItMatters = mattersSection;
+    result.whyTrust = trustSection;
+    result.howToContribute = contributeSection;
+
+    // Consider it structured if we have successfully parsed sections and items
+    if (mattersSection && mattersSection.items.length > 0) {
+      result.isStructured = true;
+    }
+  } catch (err) {
+    console.error('Failed to parse markdown content:', err);
+    result.isStructured = false;
+  }
+
+  return result;
+}
+
 const About: React.FC = () => {
   const [page, setPage] = useState<StrapiPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,7 +214,7 @@ const About: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="relative pt-24 pb-16 px-4 sm:px-6 md:px-12 lg:px-24 max-w-3xl mx-auto animate-pulse space-y-6">
+      <div className="min-h-screen bg-[#020617] relative pt-24 pb-16 px-4 sm:px-6 md:px-12 lg:px-24 max-w-3xl mx-auto animate-pulse space-y-6">
         <div className="h-8 w-48 bg-white/5 rounded mx-auto" />
         <div className="h-64 bg-white/5 rounded-3xl animate-pulse" />
       </div>
@@ -79,15 +223,17 @@ const About: React.FC = () => {
 
   if (!page) {
     return (
-      <div className="relative pt-24 pb-16 px-4 sm:px-6 md:px-12 lg:px-24 text-center">
+      <div className="min-h-screen bg-[#020617] relative pt-24 pb-16 px-4 sm:px-6 md:px-12 lg:px-24 text-center">
         <SEO title="About Us | AeroSky" description="AeroSky airspace intelligence network" />
         <div className="text-sky-200/50 text-sm">About page is currently unavailable.</div>
       </div>
     );
   }
 
+  const parsedContent = parseMarkdownContent(page.content);
+
   return (
-    <div className="relative pt-16">
+    <div className="relative bg-[#020617] min-h-screen overflow-hidden text-[#e2e8f0]">
       <SEO
         title={page.seoTitle || `${page.title} | AeroSky`}
         description={page.seoDescription || "AeroSky: India's independent airspace intelligence infrastructure."}
@@ -102,47 +248,231 @@ const About: React.FC = () => {
         }}
       />
 
-      {/* Hero */}
-      <section className="relative py-10 sm:py-14 px-4 sm:px-6 md:px-12 lg:px-24 text-center overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/[0.03] rounded-full blur-[120px]" />
-        </div>
+      {/* Ambient background glows */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-saffron/[0.02] rounded-full blur-[120px]" />
+        <div className="absolute top-[30%] right-[-10%] w-[60%] h-[60%] bg-amber-500/[0.02] rounded-full blur-[150px]" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] bg-emerald-500/[0.01] rounded-full blur-[120px]" />
+      </div>
+
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-12 px-4 sm:px-6 md:px-12 lg:px-24 text-center overflow-hidden z-10" aria-label="About Hero">
         <div className="relative z-10 max-w-4xl mx-auto animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-xs font-mono font-bold tracking-wider uppercase mb-6 animate-pulse-glow">
-            <Globe size={14} /> About AeroSky
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.08] text-saffron text-[11px] font-mono font-bold tracking-[0.15em] mb-6 animate-pulse-glow uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-saffron animate-pulse" />
+            <Globe size={12} /> About AeroSky
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1] mb-3">
-            <span className="text-white">{page.title}</span>
+          
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+            <span className="text-white">Independent Airspace</span>
+            <span className="block text-saffron bg-gradient-to-r from-saffron to-gold bg-clip-text text-transparent">
+              Intelligence Infrastructure
+            </span>
           </h1>
+          
+          {parsedContent.isStructured && parsedContent.intro && (
+            <p className="text-xs sm:text-sm md:text-base text-sky-200/70 max-w-2xl mx-auto leading-relaxed">
+              AeroSky is building <strong>India's independent, community-powered airspace intelligence network</strong>. By deploying a distributed grid of citizen-hosted receiver stations, we are creating a resilient, high-fidelity tracking infrastructure for Indian skies.
+            </p>
+          )}
         </div>
       </section>
 
-      {/* Content */}
-      <section className="section-std !pt-4 pb-24">
-        <div className="max-w-4xl mx-auto">
-          <div className="glass rounded-2xl p-6 sm:p-8 border border-white/[0.05]">
-            <Markdown content={page.content} />
-            
-            {/* Action buttons at the bottom of dynamic about content */}
-            <div className="border-t border-white/5 pt-5 mt-5 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/aerocaptains"
-                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'about_cta' })}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 bg-gradient-to-br from-saffron to-gold"
-              >
-                <Radio size={16} /> Become an AeroCaptain
-              </Link>
-              <a
-                href="/#pathways"
-                onClick={() => trackEvent('newsletter_signup_started', { page: '/about', trigger: 'about_founding_cta' })}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-white font-bold text-sm transition-all hover:-translate-y-0.5"
-              >
-                Join Founding Members <ArrowRight size={16} />
-              </a>
+      {/* Conditional Layout: Premium Structured or Beautiful Markdown Fallback */}
+      <div className="relative z-10">
+        {parsedContent.isStructured ? (
+          <>
+            {/* Why it Matters Section */}
+            {parsedContent.whyItMatters && (
+              <section className="section-std !py-10 border-t border-white/[0.03]" aria-label={parsedContent.whyItMatters.title}>
+                <div className="max-w-6xl mx-auto">
+                  <div className="text-center max-w-3xl mx-auto mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                      {parsedContent.whyItMatters.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed">
+                      {parsedContent.whyItMatters.intro}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {parsedContent.whyItMatters.items.map((item, idx) => {
+                      let Icon = Radar;
+                      let iconColor = 'text-saffron bg-saffron/[0.08] border-saffron/20';
+                      if (idx === 1) {
+                        Icon = Shield;
+                        iconColor = 'text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/20';
+                      } else if (idx === 2) {
+                        Icon = Globe;
+                        iconColor = 'text-sky-400 bg-sky-500/[0.08] border-sky-500/20';
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className="glass rounded-2xl p-6 sm:p-8 border border-white/[0.05] hover:border-white/10 hover:-translate-y-1 transition-all duration-300 flex flex-col group"
+                        >
+                          <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mb-5 ${iconColor} group-hover:scale-105 transition-transform`}>
+                            <Icon size={20} />
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-white mb-2">
+                            {item.title}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-sky-200/50 leading-relaxed flex-1">
+                            {item.desc}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Why Trust Section */}
+            {parsedContent.whyTrust && (
+              <section className="section-std !py-12 bg-white/[0.01] border-y border-white/[0.03]" aria-label={parsedContent.whyTrust.title}>
+                <div className="max-w-6xl mx-auto">
+                  <div className="text-center max-w-3xl mx-auto mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                      {parsedContent.whyTrust.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed">
+                      {parsedContent.whyTrust.intro || "Our network is built on engineering credibility, community collaboration, and absolute transparency."}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {parsedContent.whyTrust.items.map((item, idx) => {
+                      let Icon = Cpu;
+                      let iconColor = 'text-amber-400 bg-amber-500/[0.08] border-amber-500/20';
+                      if (idx === 1) {
+                        Icon = Users;
+                        iconColor = 'text-indigo-400 bg-indigo-500/[0.08] border-indigo-500/20';
+                      } else if (idx === 2) {
+                        Icon = Award;
+                        iconColor = 'text-saffron bg-saffron/[0.08] border-saffron/20';
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className="glass rounded-2xl p-6 sm:p-8 border border-white/[0.05] hover:border-white/10 hover:-translate-y-1 transition-all duration-300 flex flex-col group"
+                        >
+                          <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mb-5 ${iconColor} group-hover:scale-105 transition-transform`}>
+                            <Icon size={20} />
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-white mb-2">
+                            {item.title}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-sky-200/50 leading-relaxed flex-1">
+                            {item.desc}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* How You Can Contribute Section */}
+            {parsedContent.howToContribute && (
+              <section className="section-std !py-12 pb-24" aria-label={parsedContent.howToContribute.title}>
+                <div className="max-w-5xl mx-auto">
+                  <div className="text-center max-w-3xl mx-auto mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                      {parsedContent.howToContribute.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed">
+                      {parsedContent.howToContribute.intro}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {parsedContent.howToContribute.items.map((item, idx) => {
+                      const isCaptain = item.title.toLowerCase().includes('aerocaptain');
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`relative glass rounded-2xl p-6 sm:p-8 border transition-all duration-300 flex flex-col justify-between overflow-hidden group ${
+                            isCaptain
+                              ? 'border-saffron/25 hover:border-saffron/40 hover:shadow-[0_0_30px_rgba(255,153,51,0.06)]'
+                              : 'border-white/[0.05] hover:border-white/10'
+                          }`}
+                        >
+                          {isCaptain && (
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-saffron/[0.02] rounded-full blur-xl pointer-events-none" />
+                          )}
+
+                          <div>
+                            <div className="flex items-center justify-between mb-6">
+                              <div className={`w-12 h-12 rounded-xl border flex items-center justify-center ${
+                                isCaptain
+                                  ? 'text-saffron bg-saffron/[0.08] border-saffron/20'
+                                  : 'text-sky-400 bg-sky-500/[0.08] border-sky-500/20'
+                              }`}>
+                                {isCaptain ? <Radio size={20} className="animate-pulse" /> : <Users size={20} />}
+                              </div>
+                              <span className={`text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
+                                isCaptain
+                                  ? 'text-saffron bg-saffron/10 border-saffron/20'
+                                  : 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+                              }`}>
+                                {isCaptain ? 'Hardware' : 'Software / Community'}
+                              </span>
+                            </div>
+
+                            <h3 className="text-lg sm:text-xl font-bold text-white mb-3">
+                              {item.title}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-sky-200/50 leading-relaxed mb-8">
+                              {item.desc}
+                            </p>
+                          </div>
+
+                          <div>
+                            {isCaptain ? (
+                              <Link
+                                to="/aerocaptains"
+                                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'about_cta' })}
+                                className="inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 bg-gradient-to-br from-saffron to-gold"
+                              >
+                                <Radio size={14} /> Become an AeroCaptain
+                              </Link>
+                            ) : (
+                              <a
+                                href="/#pathways"
+                                onClick={() => trackEvent('newsletter_signup_started', { page: '/about', trigger: 'about_founding_cta' })}
+                                className="inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-white font-bold text-sm transition-all hover:-translate-y-0.5"
+                              >
+                                Join Founding Members <ArrowRight size={14} />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
+          </>
+        ) : (
+          /* Premium Styled Markdown Fallback if CMS content format is fully custom */
+          <section className="section-std !pt-4 pb-24">
+            <div className="max-w-3xl mx-auto">
+              <div className="glass rounded-3xl p-8 sm:p-12 border border-white/[0.05] shadow-[0_4px_30px_rgba(0,0,0,0.4)] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-saffron/[0.01] rounded-full blur-2xl pointer-events-none" />
+                <article className="prose prose-invert max-w-none prose-headings:text-white prose-headings:font-bold prose-p:text-sky-200/75 prose-p:leading-relaxed prose-a:text-saffron hover:prose-a:text-gold prose-strong:text-white prose-li:text-sky-200/70">
+                  <Markdown content={page.content} />
+                </article>
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        )}
+      </div>
     </div>
   );
 };

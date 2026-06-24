@@ -430,7 +430,7 @@ const AeroCaptains: React.FC = () => {
                         placeholder="Tell us about your interest in aviation or airspace intelligence..."
                         value={formData.motivation}
                         onChange={(e) => setFormData(p => ({ ...p, motivation: e.target.value }))}
-                        className={inputCls + ' resize-none'}
+                        className={getInputCls(false) + ' resize-none'}
                       />
                     </div>
 

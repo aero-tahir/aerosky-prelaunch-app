@@ -8,11 +8,19 @@ const routes = [
   '/aerocaptains',
   '/aerocaptains/hall-of-fame',
   '/coverage',
-  '/blog',
-  '/about'
+  '/insights',
+  '/about',
+  '/support'
 ];
 
+const artifactDir = 'C:\\Users\\AeroLytics\\.gemini\\antigravity\\brain\\190770c4-4f96-47ce-8e19-cfa2820d012a';
+
 (async () => {
+  // Ensure artifact directory exists
+  if (!fs.existsSync(artifactDir)) {
+    fs.mkdirSync(artifactDir, { recursive: true });
+  }
+
   const browser = await puppeteer.launch({
     executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     headless: 'new',
@@ -53,10 +61,11 @@ const routes = [
     // Save HTML snippet
     const content = await page.content();
     const cleanRouteName = route.replace(/\//g, '_') || 'index';
-    fs.writeFileSync(`C:\\Users\\AeroLytics\\.gemini\\antigravity\\brain\\f6dbc1bc-e4bb-484b-b993-74d3b3acdc38\\page_${cleanRouteName}.html`, content);
+    const htmlPath = path.join(artifactDir, `page_${cleanRouteName}.html`);
+    fs.writeFileSync(htmlPath, content);
 
     // Take screenshot
-    const screenshotPath = `C:\\Users\\AeroLytics\\.gemini\\antigravity\\brain\\f6dbc1bc-e4bb-484b-b993-74d3b3acdc38\\screenshot_${cleanRouteName}.png`;
+    const screenshotPath = path.join(artifactDir, `screenshot_${cleanRouteName}.png`);
     await page.screenshot({ path: screenshotPath, fullPage: true });
     console.log(`[${route}] Screenshot saved to: ${screenshotPath}`);
 
