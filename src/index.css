@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
+  /* ─── Softer White to reduce glare ─── */
+  --color-white: #e2e8f0;
+
   /* ─── India Tricolor Palette ─── */
   --color-saffron: #FF9933;
   --color-india-green: #138808;
@@ -68,17 +71,6 @@ body {
 /* ═══════════════════════════════════════════
    ANIMATIONS
 ═══════════════════════════════════════════ */
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-}
 
 @keyframes pulse-glow {
 
@@ -94,15 +86,6 @@ body {
   }
 }
 
-@keyframes radar-sweep {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
 
 @keyframes fade-in-up {
   from {
@@ -150,31 +133,12 @@ body {
   }
 }
 
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-  }
 
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
 
 .animate-pulse-glow {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-.animate-radar {
-  animation: radar-sweep 8s linear infinite;
-}
 
 .animate-fade-in-up {
   animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -193,10 +157,6 @@ body {
   opacity: 0;
 }
 
-.animate-gradient {
-  animation: gradient-shift 8s ease infinite;
-  background-size: 200% 200%;
-}
 
 .delay-100 {
   animation-delay: 0.1s;
@@ -272,3 +232,96 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══════════════════════════════════════════
+   STANDARD PAGE WRAPPERS & SECTIONS
+   Enforces identical margins, paddings, gutters across routes
+═══════════════════════════════════════════ */
+.section-std {
+  padding-top: 2rem; /* py-8 — tight, responsive spacing on mobile */
+  padding-bottom: 2rem;
+  padding-left: 1rem; /* px-4 */
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .section-std {
+    padding-left: 1.5rem; /* sm:px-6 */
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .section-std {
+    padding-top: 3.5rem; /* md:py-14 */
+    padding-bottom: 3.5rem;
+    padding-left: 3rem; /* md:px-12 */
+    padding-right: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-std {
+    padding-top: 5rem; /* lg:py-20 — premium spacing on desktop */
+    padding-bottom: 5rem;
+    padding-left: 6rem; /* lg:px-24 */
+    padding-right: 6rem;
+  }
+}
+
+.section-compact {
+  padding-top: 1.5rem; /* py-6 — tight on mobile */
+  padding-bottom: 1.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .section-compact {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .section-compact {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-compact {
+    padding-left: 6rem;
+    padding-right: 6rem;
+  }
+}
+
+.section-hero {
+  padding-top: 5rem; /* py-20 */
+  padding-bottom: 4rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .section-hero {
+    padding-top: 7rem; /* sm:py-28 */
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .section-hero {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-hero {
+    padding-left: 6rem;
+    padding-right: 6rem;
+  }
+}

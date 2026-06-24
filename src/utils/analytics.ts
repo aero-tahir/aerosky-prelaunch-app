@@ -59,3 +59,53 @@ export function trackEvent(eventName: string, params: Record<string, any> = {}):
     console.error('[Analytics] Error logging event to dataLayer:', err);
   }
 }
+
+/**
+ * Initializes Google Tag Manager dynamically if a valid VITE_GTM_ID is provided.
+ */
+export function initGTM(): void {
+  const gtmId = import.meta.env.VITE_GTM_ID;
+  if (!gtmId || gtmId.startsWith('%VITE_') || gtmId === 'GTM-XXXXXXX' || gtmId.trim() === '') {
+    console.log('[Analytics] Google Tag Manager initialization skipped (no valid VITE_GTM_ID env var)');
+    return;
+  }
+
+  try {
+    console.log(`[Analytics] Initializing Google Tag Manager with Container ID: ${gtmId}`);
+    (window as any).dataLayer = (window as any).dataLayer || [];
+    (window as any).dataLayer.push({
+      'gtm.start': new Date().getTime(),
+      event: 'gtm.js'
+    });
+    const f = document.getElementsByTagName('script')[0];
+    const j = document.createElement('script') as HTMLScriptElement;
+    j.async = true;
+    j.src = 'https://www.googletagmanager.com/gtm.js?id=' + gtmId;
+    f.parentNode?.insertBefore(j, f);
+  } catch (err) {
+    console.error('[Analytics] Error initializing Google Tag Manager:', err);
+  }
+}
+
+/**
+ * Injects Google Search Console verification meta tag dynamically if the environment variable is provided.
+ */
+export function initGoogleVerification(): void {
+  const code = import.meta.env.VITE_GOOGLE_VERIFICATION_CODE;
+  if (!code || code.startsWith('%VITE_') || code.includes('your_google') || code.trim() === '') {
+    return;
+  }
+
+  try {
+    if (document.querySelector('meta[name="google-site-verification"]')) {
+      return;
+    }
+    const meta = document.createElement('meta');
+    meta.name = 'google-site-verification';
+    meta.content = code.trim();
+    document.head.appendChild(meta);
+    console.log('[SEO] Google Search Console verification tag injected.');
+  } catch (err) {
+    console.error('[SEO] Error injecting Google verification tag:', err);
+  }
+}

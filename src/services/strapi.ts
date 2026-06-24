@@ -101,7 +101,14 @@ function mapRawArticleToStrapiArticle(item: any): StrapiArticle {
     featured: flat.featured === true || flat.isFeatured === true,
     seoTitle: flat.seoTitle || flat.title || '',
     seoDescription: flat.seoDescription || excerptText,
-    status: flat.publishedAt ? 'Published' : 'Draft'
+    status: flat.publishedAt ? 'Published' : 'Draft',
+    category: flat.category ? {
+      id: flat.category.id,
+      documentId: flat.category.documentId,
+      name: flat.category.name,
+      slug: flat.category.slug,
+      description: flat.category.description
+    } : undefined
   };
 }
 

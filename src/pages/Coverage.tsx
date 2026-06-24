@@ -6,98 +6,44 @@ import { TowerControl, Radio, Radar, Signal, ArrowRight, Cpu, Zap, Globe, Chevro
 import SEO from '../components/SEO';
 import Schema from '../components/Schema';
 import { trackEvent } from '../utils/analytics';
-import { getLaunchMetrics, LaunchMetrics } from '../utils/db';
+import { getLaunchMetrics, LaunchMetrics, getAirports, AirportTarget } from '../utils/db';
 import { getFAQs } from '../services/strapi';
 import { StrapiFAQ } from '../types/strapi';
 
-const INDIA_ORANGE = '#FF9933';
-const INDIA_GREEN = '#138808';
 const OLA_API_KEY = import.meta.env.VITE_OLA_MAP_API_KEY || '';
 const OLA_STYLE_URL = `https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json`;
 
-/* Active ground stations (blue) */
-const ACTIVE_AIRPORTS = [
-  { name: 'DEL', lat: 28.556, lng: 77.100 },
-  { name: 'BOM', lat: 19.089, lng: 72.865 },
-  { name: 'BLR', lat: 13.198, lng: 77.706 },
-  { name: 'PNQ', lat: 18.582, lng: 73.919 },
-  { name: 'SSE', lat: 17.625, lng: 75.934 }, // Solapur
-  { name: 'GBI', lat: 17.520, lng: 76.820 }, // Gulbarga
-];
-
-/* Needed ground stations (red) - major Indian airports without coverage */
-const NEEDED_AIRPORTS = [
-  { name: 'HYD', lat: 17.231, lng: 78.429 },
-  { name: 'MAA', lat: 12.994, lng: 80.170 },
-  { name: 'CCU', lat: 22.654, lng: 88.446 },
-  { name: 'AMD', lat: 23.077, lng: 72.634 },
-  { name: 'COK', lat: 10.152, lng: 76.401 },
-  { name: 'JAI', lat: 26.824, lng: 75.812 },
-  { name: 'LKO', lat: 26.760, lng: 80.889 },
-  { name: 'GOI', lat: 15.380, lng: 73.831 },
-  { name: 'GAU', lat: 26.106, lng: 91.585 },
-  { name: 'PAT', lat: 25.591, lng: 85.087 },
-  { name: 'SXR', lat: 33.987, lng: 74.774 },
-  { name: 'IXC', lat: 30.673, lng: 76.788 },
-  { name: 'NAG', lat: 21.092, lng: 79.047 },
-  { name: 'VNS', lat: 25.452, lng: 82.859 },
-  { name: 'TRV', lat: 8.482, lng: 76.920 },
-  { name: 'IXB', lat: 26.681, lng: 88.328 },
-  { name: 'BBI', lat: 20.244, lng: 85.817 },
-  { name: 'IDR', lat: 22.721, lng: 75.801 },
-  { name: 'RPR', lat: 21.180, lng: 81.738 },
-  { name: 'IXR', lat: 23.314, lng: 85.321 },
-  { name: 'VTZ', lat: 17.721, lng: 83.224 },
-  { name: 'IXM', lat: 9.834, lng: 78.093 },
-  { name: 'CJB', lat: 11.030, lng: 77.043 },
-  { name: 'CCJ', lat: 11.136, lng: 75.955 },
-  { name: 'IXE', lat: 12.961, lng: 74.890 },
-  { name: 'STV', lat: 21.114, lng: 72.741 },
-  { name: 'RAJ', lat: 22.309, lng: 70.779 },
-  { name: 'BHO', lat: 23.287, lng: 77.337 },
-  { name: 'DEP', lat: 24.432, lng: 87.232 },
-  { name: 'IMF', lat: 24.760, lng: 93.896 },
-  { name: 'DIB', lat: 27.483, lng: 95.016 },
-  { name: 'JRH', lat: 26.731, lng: 94.175 },
-  { name: 'IXA', lat: 23.886, lng: 91.240 },
-  { name: 'AJL', lat: 23.746, lng: 92.619 },
-  { name: 'DMU', lat: 25.883, lng: 93.771 },
-  { name: 'IXS', lat: 24.912, lng: 92.978 },
-  { name: 'PYB', lat: 12.274, lng: 76.624 },
-  { name: 'HBX', lat: 15.361, lng: 75.084 },
-  { name: 'BEK', lat: 25.240, lng: 86.971 },
-  { name: 'DED', lat: 30.189, lng: 78.180 },
-  { name: 'KUU', lat: 31.876, lng: 77.154 },
-  { name: 'DHM', lat: 32.165, lng: 76.263 },
-  { name: 'IXL', lat: 34.135, lng: 77.546 },
-  { name: 'ATQ', lat: 31.706, lng: 74.797 },
-  { name: 'JLR', lat: 23.177, lng: 80.052 },
-  { name: 'GWL', lat: 26.293, lng: 78.227 },
-  { name: 'KLH', lat: 18.218, lng: 77.917 },
-  { name: 'TIR', lat: 13.632, lng: 79.543 },
-  { name: 'RJA', lat: 17.110, lng: 81.818 },
-  { name: 'CDP', lat: 10.936, lng: 79.253 },
-];
 
 const Coverage: React.FC = () => {
   const [metrics, setMetrics] = useState<LaunchMetrics>({
-    foundingCaptains: 31,
-    citiesRegistered: 14,
-    statesRepresented: 8,
-    newsletterSubscribers: 57,
-    communityMembers: 142
+    foundingCaptains: 0,
+    citiesRegistered: 0,
+    statesRepresented: 0,
+    newsletterSubscribers: 0,
+    communityMembers: 0
   });
 
+  const [activeAirports, setActiveAirports] = useState<AirportTarget[]>([]);
+  const [neededAirports, setNeededAirports] = useState<AirportTarget[]>([]);
+
   useEffect(() => {
-    async function loadMetrics() {
+    async function loadData() {
       try {
         const data = await getLaunchMetrics();
         setMetrics(data);
       } catch (e) {
         console.error('Failed to load coverage metrics:', e);
       }
+
+      try {
+        const airportsData = await getAirports();
+        setActiveAirports(airportsData.active);
+        setNeededAirports(airportsData.needed);
+      } catch (e) {
+        console.error('Failed to load airports data:', e);
+      }
     }
-    loadMetrics();
+    loadData();
   }, []);
 
   return (
@@ -110,8 +56,8 @@ const Coverage: React.FC = () => {
         type="BreadcrumbList"
         data={{
           itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.in/' },
-            { '@type': 'ListItem', position: 2, name: 'Coverage', item: 'https://aerosky.in/coverage' }
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.ai/' },
+            { '@type': 'ListItem', position: 2, name: 'Coverage', item: 'https://aerosky.ai/coverage' }
           ]
         }}
       />
@@ -156,9 +102,10 @@ const Coverage: React.FC = () => {
       />
 
       <HeroSection />
-      <CoverageMap />
+      <CoverageMap activeAirports={activeAirports} neededAirports={neededAirports} />
       <StatusStrip />
       <GapSection />
+      <HowCoverageWorksSection />
       <AeroCaptainCTA />
       <FAQSection />
     </div>
@@ -175,11 +122,11 @@ function HeroSection() {
     'Coverage Vision Established',
     'Targeting Underserved Corridors',
     'Community Driven Network',
-    'Founding AeroCaptains Joining'
+    'AeroCaptain Applications Open'
   ];
 
   return (
-    <section className="relative py-16 sm:py-24 px-4 sm:px-6 md:px-12 lg:px-24 overflow-hidden">
+    <section className="relative py-10 sm:py-16 px-4 sm:px-6 md:px-12 lg:px-24 overflow-hidden">
       <div className="absolute inset-0 opacity-[0.02]" style={{
         backgroundImage: `linear-gradient(rgba(255,153,51,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,153,51,0.3) 1px, transparent 1px)`,
         backgroundSize: '50px 50px'
@@ -192,12 +139,12 @@ function HeroSection() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.05] mb-4">
-            <span className="text-white">Our Sovereign</span><br />
-            <span style={{ color: INDIA_ORANGE }}>Coverage Vision</span>
+            <span className="text-white">Airspace Coverage</span><br />
+            <span className="text-saffron">Vision Grid</span>
           </h1>
 
           <p className="text-sm sm:text-base text-sky-200/70 max-w-xl mb-6 leading-relaxed">
-            Our goal is to build India's independent, community-powered aviation data network. We are mapping critical target zones to place our first ground stations and eliminate airspace tracking blind spots.
+            We are mapping target zones across major domestic corridors and tier-2 hubs. Our objective is to deploy fifty founding receiver nodes, eliminating low-altitude blind spots.
           </p>
 
           {/* Status Indicators list */}
@@ -214,8 +161,7 @@ function HeroSection() {
             <Link
               to="/aerocaptains"
               onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'coverage_hero' })}
-              className="px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 text-center cursor-pointer"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              className="px-6 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 text-center cursor-pointer bg-gradient-to-br from-saffron to-gold"
             >
               Become a Founding AeroCaptain
             </Link>
@@ -232,56 +178,100 @@ function HeroSection() {
 /* ═══════════════════════════════════════════
    INTEREST MAP: Ola Maps with React GL
 ═══════════════════════════════════════════ */
-function CoverageMap() {
+function CoverageMap({ activeAirports, neededAirports }: { activeAirports: AirportTarget[], neededAirports: AirportTarget[] }) {
+  const [hoveredAirport, setHoveredAirport] = useState<AirportTarget | null>(null);
+
   return (
-    <section id="map" className="py-8 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section id="map" className="section-compact">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Target Airspace Coverage Vision</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-white mb-1 font-sans">Target Airspace Coverage Vision</h2>
           <p className="text-xs text-sky-200/50 font-mono uppercase tracking-wider">Proposed Founding AeroCaptain Nodes & Target Regions Map</p>
         </div>
 
         {/* Map */}
-        <div className="rounded-2xl border border-white/[0.04] overflow-hidden" style={{ height: '480px' }}>
-          <Map
-            initialViewState={{ longitude: 79, latitude: 22, zoom: 3.5 }}
-            style={{ width: '100%', height: '100%' }}
-            mapStyle={OLA_STYLE_URL}
-            interactive={false}
-            attributionControl={false}
-            transformRequest={(url: string) => {
-              if (url.includes('olamaps.io')) {
-                const sep = url.includes('?') ? '&' : '?';
-                return { url: `${url}${sep}api_key=${OLA_API_KEY}` };
-              }
-              return { url };
-            }}
-          >
-            {/* Primary Targets - Orange TowerControl */}
-            {ACTIVE_AIRPORTS.map((airport) => (
-              <Marker key={airport.name} longitude={airport.lng} latitude={airport.lat} anchor="center">
-                <div className="relative flex items-center justify-center group">
-                  <div className="absolute w-6 h-6 rounded-full border border-amber-400/30 animate-signal-ring" />
-                  <div className="relative w-5 h-5 rounded-full bg-amber-500 border border-white/80 shadow-[0_0_8px_rgba(245,158,11,0.6)] flex items-center justify-center">
-                    <TowerControl size={10} color="#ffffff" />
+        <div className="rounded-2xl border border-white/[0.04] overflow-hidden relative bg-sky-950/[0.03]" style={{ height: '480px' }}>
+          {!OLA_API_KEY ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-black/60 backdrop-blur-sm z-10">
+              <AlertTriangle className="text-amber-500 mb-3 animate-pulse" size={40} />
+              <h3 className="text-lg font-bold text-white mb-2 font-sans">Airspace Map Offline</h3>
+              <p className="text-xs text-sky-200/60 max-w-md leading-relaxed mb-4 font-sans">
+                The airspace telemetry mapping server is currently offline or the OLA Maps API key is unconfigured. 
+                Please configure the <code className="text-amber-400 font-mono">VITE_OLA_MAP_API_KEY</code> environment variable to activate the live visualizer.
+              </p>
+              <div className="text-[10px] font-mono text-sky-200/30 uppercase tracking-widest">
+                AeroSky Independent Telemetry Network
+              </div>
+            </div>
+          ) : (
+            <Map
+              initialViewState={{ longitude: 79, latitude: 22, zoom: 3.5 }}
+              style={{ width: '100%', height: '100%' }}
+              mapStyle={OLA_STYLE_URL}
+              interactive={false}
+              attributionControl={false}
+              transformRequest={(url: string) => {
+                if (url.includes('olamaps.io')) {
+                  const sep = url.includes('?') ? '&' : '?';
+                  return { url: `${url}${sep}api_key=${OLA_API_KEY}` };
+                }
+                return { url };
+              }}
+            >
+              {activeAirports.map((airport) => (
+                <Marker key={airport.name} longitude={airport.lng} latitude={airport.lat} anchor="center">
+                  <div 
+                    className="relative flex items-center justify-center group cursor-pointer"
+                    onMouseEnter={() => setHoveredAirport(airport)}
+                    onMouseLeave={() => setHoveredAirport(null)}
+                  >
+                    {/* Concentric Coverage Range Rings */}
+                    <div className="absolute w-24 h-24 rounded-full bg-saffron/[0.03] border border-saffron/10 pointer-events-none" />
+                    <div className="absolute w-48 h-48 rounded-full bg-saffron/[0.01] border border-saffron/[0.04] pointer-events-none" />
+                    
+                    <div className="absolute w-6 h-6 rounded-full border border-amber-400/30 animate-signal-ring" />
+                    <div className="relative w-5 h-5 rounded-full bg-amber-500 border border-white/80 shadow-[0_0_8px_rgba(245,158,11,0.6)] flex items-center justify-center">
+                      <TowerControl size={10} color="#ffffff" />
+                    </div>
                   </div>
-                  <span className="absolute top-6 left-1/2 -translate-x-1/2 text-[7px] font-mono font-bold text-amber-400 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">{airport.name}</span>
-                </div>
-              </Marker>
-            ))}
+                </Marker>
+              ))}
 
-            {/* Secondary Targets - Light Amber TowerControl */}
-            {NEEDED_AIRPORTS.map((airport) => (
-              <Marker key={airport.name} longitude={airport.lng} latitude={airport.lat} anchor="center">
-                <div className="relative flex items-center justify-center group">
-                  <div className="relative w-4 h-4 rounded-full bg-amber-500/40 border border-amber-300/20 flex items-center justify-center">
-                    <TowerControl size={8} color="#fef3c7" />
+              {neededAirports.map((airport) => (
+                <Marker key={airport.name} longitude={airport.lng} latitude={airport.lat} anchor="center">
+                  <div 
+                    className="relative flex items-center justify-center group cursor-pointer"
+                    onMouseEnter={() => setHoveredAirport(airport)}
+                    onMouseLeave={() => setHoveredAirport(null)}
+                  >
+                    {/* Potential/Desired Coverage Range Ring (Dashed) */}
+                    <div className="absolute w-20 h-20 rounded-full border border-dashed border-amber-500/10 pointer-events-none" />
+                    
+                    <div className="relative w-4 h-4 rounded-full bg-amber-500/40 border border-amber-300/20 flex items-center justify-center">
+                      <TowerControl size={8} color="#fef3c7" />
+                    </div>
                   </div>
-                  <span className="absolute top-5 left-1/2 -translate-x-1/2 text-[7px] font-mono font-bold text-amber-400/50 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">{airport.name}</span>
-                </div>
-              </Marker>
-            ))}
-          </Map>
+                </Marker>
+              ))}
+            </Map>
+          )}
+
+          {/* Premium Tooltip overlay */}
+          {hoveredAirport && (
+            <div className="absolute bottom-4 left-4 z-20 glass p-4 rounded-xl border border-white/10 shadow-xl max-w-xs animate-fade-in pointer-events-none bg-sky-950/80 backdrop-blur-md">
+              <div className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-wider mb-1">
+                {hoveredAirport.status === 'active' ? '★ Primary Target Zone' : '☆ Secondary Target Zone'}
+              </div>
+              <div className="text-sm font-bold text-white mb-0.5 font-sans">
+                Airport: {hoveredAirport.name}
+              </div>
+              <div className="text-[10px] text-sky-200/60 leading-normal font-sans">
+                {hoveredAirport.status === 'active' 
+                  ? 'Active ground station telemetry streaming target. High priority sector.'
+                  : 'Proposed ground station node. Seeking AeroCaptains to close coverage gap.'}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Legend */}
@@ -300,12 +290,9 @@ function CoverageMap() {
   );
 }
 
-/* ═══════════════════════════════════════════
-   STATUS STRIP
-═══════════════════════════════════════════ */
 function StatusStrip() {
   return (
-    <section className="py-6 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Primary Targets */}
@@ -344,16 +331,27 @@ function StatusStrip() {
 ═══════════════════════════════════════════ */
 function GapSection() {
   return (
-    <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Why India Needs More ADS-B Coverage</h2>
-          <p className="text-sm text-sky-200/70 max-w-2xl mx-auto leading-relaxed mb-4">
-            Most commercial flight tracking services rely on foreign-hosted servers. Crucially, vast segments of Indian airspace, especially low-altitude zones in tier-2/3 cities, mountainous border terrains, and coastal pathways, remain completely unmonitored. 
+        <div className="text-center mb-5">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Addressing India's Coverage Gaps</h2>
+          <p className="text-sm text-sky-200/70 max-w-2xl mx-auto leading-relaxed mb-3">
+            Most tracking networks operate remote servers beyond Indian borders. Crucially, low-altitude airspace in tier-2/3 cities, coastal airways, and remote border corridors contain significant tracking blind spots.
           </p>
-          <p className="text-xs text-sky-200/50 max-w-2xl mx-auto leading-relaxed">
-            By hosting low-power ground station receivers locally, Founding AeroCaptains capture raw 1090 MHz transponder broadcasts directly from the sky, feeding sovereign data back to Indian servers and closing critical regional blind spots.
+          <p className="text-xs text-sky-200/60 max-w-2xl mx-auto leading-relaxed mb-4">
+            By hosting local ground stations, contributors capture raw 1090 MHz transponder broadcasts directly from overhead aircraft. This telemetry feeds domestic databases, building a highly redundant and independent mapping infrastructure.
           </p>
+
+          {/* Aviation & Educational Disclaimer card */}
+          <div className="max-w-2xl mx-auto p-4 rounded-xl bg-white/[0.01] border border-white/[0.05] text-left flex items-start gap-3">
+            <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={16} />
+            <div>
+              <div className="text-xs font-bold text-white mb-0.5">Educational Use & Non-Navigational Notice</div>
+              <div className="text-[11px] text-sky-200/50 leading-normal">
+                AeroSky is an independent community project. Telemetry displays and flight vectors are processed for academic, hobbyist, and testing purposes. This utility is not certified for air traffic management, flight routing, or safety-critical navigation operations.
+              </div>
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
@@ -378,19 +376,18 @@ function GapSection() {
 ═══════════════════════════════════════════ */
 function AeroCaptainCTA() {
   return (
-    <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3">
           Your City Needs an AeroCaptain
         </h2>
         <p className="text-sm text-sky-200/60 max-w-lg mx-auto mb-6">
-          If you live near any Indian airport or flight corridor, you can help feed sovereign data. AeroSky provides setup support and receiver kits to qualified applicants.
+          If you live near any Indian airport or flight corridor, you can help stream real-time flight telemetry. AeroSky provides setup support and receiver kits to qualified applicants.
         </p>
         <Link
           to="/aerocaptains"
           onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'coverage_cta' })}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_25px_rgba(255,153,51,0.3)] hover:-translate-y-0.5"
-          style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_25px_rgba(255,153,51,0.3)] hover:-translate-y-0.5 bg-gradient-to-br from-saffron to-gold"
         >
           Become a Founding AeroCaptain <ArrowRight size={16} />
         </Link>
@@ -399,7 +396,7 @@ function AeroCaptainCTA() {
             { icon: <Cpu size={12} />, text: 'Free Hardware Kits to Selected Hosts' },
             { icon: <Zap size={12} />, text: 'DIY Raspberry Pi setups fully supported' },
             { icon: <Radio size={12} />, text: 'Founding AeroCaptain badge' },
-            { icon: <MapPin size={12} />, text: 'Fuzzed location coordinates for privacy' },
+            { icon: <MapPin size={12} />, text: 'Fuzzed public coordinates for host privacy' },
           ].map((t) => (
             <span key={t.text} className="flex items-center gap-1.5 text-[10px] font-mono text-sky-200/50 uppercase tracking-wider">
               <span className="text-amber-400">{t.icon}</span> {t.text}
@@ -412,8 +409,54 @@ function AeroCaptainCTA() {
 }
 
 /* ═══════════════════════════════════════════
+   HOW COVERAGE WORKS
+ ═══════════════════════════════════════════ */
+function HowCoverageWorksSection() {
+  const parameters = [
+    { title: "Line of Sight", desc: "ADS-B signals operate at 1090 MHz, which is a high-frequency band requiring an unobstructed visual line of sight between the aircraft and the ground station antenna." },
+    { title: "Terrain Profiles", desc: "Mountains, buildings, and local hills block signals. Ground stations at higher elevations or in flat plains capture streams from much further away." },
+    { title: "Antenna Elevation", desc: "Placing your antenna on a rooftop or mounting mast significantly increases the radio horizon, extending target range up to 250 miles." },
+    { title: "Aircraft Altitude", desc: "Cruising commercial airliners at 35,000 feet transmit signals that carry much further than low-altitude flights." },
+    { title: "Receiver Sensitivity", desc: "Using high-quality RTL-SDR dongles equipped with Low Noise Amplifiers (LNA) and bandpass filters filters out local RF noise, improving packet yields." }
+  ];
+
+  return (
+    <section className="section-compact bg-black/10">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-3">
+            <Signal size={12} className="text-amber-500" /> Radio Science
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">How Airspace Coverage Works</h2>
+          <p className="text-xs sm:text-sm text-sky-200/60 max-w-xl mx-auto">
+            ADS-B signal propagation is governed by physics. Understanding these five parameters helps optimize ground station positioning.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {parameters.slice(0, 3).map((item) => (
+            <div key={item.title} className="p-5 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-amber-500/15 transition-all">
+              <h3 className="text-sm font-bold text-white mb-1.5">{item.title}</h3>
+              <p className="text-xs text-sky-200/60 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-5 lg:w-[67%] lg:mx-auto">
+            {parameters.slice(3).map((item) => (
+              <div key={item.title} className="p-5 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-amber-500/15 transition-all">
+                <h3 className="text-sm font-bold text-white mb-1.5">{item.title}</h3>
+                <p className="text-xs text-sky-200/60 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════
    FAQ
-═══════════════════════════════════════════ */
+ ═══════════════════════════════════════════ */
 function FAQSection() {
   const [faqs, setFaqs] = useState<StrapiFAQ[]>([]);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
@@ -439,22 +482,37 @@ function FAQSection() {
   }, []);
 
   return (
-    <section className="py-10 px-4 sm:px-6 md:px-12 lg:px-24">
+    <section className="section-compact">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-2 justify-center mb-6">
           <HelpCircle size={14} className="text-amber-400" />
-          <h2 className="text-base font-bold text-white">Coverage FAQ</h2>
+          <h2 className="text-base font-bold text-white uppercase tracking-wider">Coverage FAQ</h2>
         </div>
-        <div className="space-y-2">
-          {faqs.map((faq, i) => (
-            <div key={faq.id || i} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden">
-              <button onClick={() => setOpenIdx(openIdx === i ? null : i)} aria-expanded={openIdx === i} className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.01] transition-colors">
-                <span className="text-sm font-medium text-white pr-4">{faq.question}</span>
-                <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
-              </button>
-              {openIdx === i && <p className="px-4 pb-4 text-sm text-sky-200/60 leading-relaxed pt-2 border-t border-white/5">{faq.answer}</p>}
-            </div>
-          ))}
+        <div className="space-y-2.5">
+          {faqs.map((faq, i) => {
+            const isOpen = openIdx === i;
+            return (
+              <div key={faq.id || i} className="rounded-xl border border-white/[0.04] bg-white/[0.01] overflow-hidden transition-all duration-300 hover:border-white/10">
+                <button 
+                  onClick={() => setOpenIdx(isOpen ? null : i)} 
+                  aria-expanded={isOpen} 
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors cursor-pointer"
+                >
+                  <span className="text-sm font-medium text-white pr-4">{faq.question}</span>
+                  <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <div
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    isOpen ? 'max-h-96 opacity-100 border-t border-white/5 p-4 bg-white/[0.005]' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <p className="text-xs sm:text-sm text-sky-200/60 leading-relaxed pt-1">
+                    {faq.answer}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

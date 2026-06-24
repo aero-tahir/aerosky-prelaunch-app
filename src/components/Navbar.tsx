@@ -3,13 +3,11 @@ import { NavLink, Link } from 'react-router-dom';
 import { Menu, X, Plane, Radio, ChevronDown } from 'lucide-react';
 import { useSiteSettings } from '../context/CMSContext';
 
-const INDIA_ORANGE = '#FF9933';
-const INDIA_GREEN = '#138808';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/community', label: 'Community' },
-  { to: '/aerocaptains', label: 'AeroCaptains', badge: 'Founding Open' },
+  { to: '/aerocaptains', label: 'AeroCaptains', badge: 'Apply Now' },
   { to: '/coverage', label: 'Coverage' },
   { to: '/insights', label: 'Insights' },
   { to: '/about', label: 'About' },
@@ -26,16 +24,69 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const ctaLink = siteSettings.primaryCtaLink || "/#newsletter";
-  const ctaText = siteSettings.primaryCtaText || "Join Founding Members";
+  const [istTime, setIstTime] = useState(() =>
+    new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })
+  );
+
+  useEffect(() => {
+    const tick = () =>
+      setIstTime(
+        new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })
+      );
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Focus trap and Escape key handler for mobile drawer
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const drawer = document.querySelector('[role="dialog"]');
+        if (!drawer) return;
+
+        const focusables = drawer.querySelectorAll('button, [href], input, select, textarea, [tabIndex="0"]');
+        if (focusables.length === 0) return;
+        
+        const first = focusables[0] as HTMLElement;
+        const last = focusables[focusables.length - 1] as HTMLElement;
+
+        if (!e.shiftKey && document.activeElement === last) {
+          first.focus();
+          e.preventDefault();
+        } else if (e.shiftKey && document.activeElement === first) {
+          last.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    
+    const closeBtn = document.querySelector('[aria-label="Close menu"]') as HTMLElement;
+    if (closeBtn) {
+      setTimeout(() => closeBtn.focus(), 50);
+    }
+
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
+
+  const ctaLink = siteSettings.primaryCtaLink || "/aerocaptains";
+  const ctaText = siteSettings.primaryCtaText || "Become an AeroCaptain";
 
   return (
     <>
       {/* ── Tricolor Top Accent ── */}
       <div className="fixed top-0 left-0 right-0 z-[60] h-[3px] flex" aria-hidden="true">
-        <div className="flex-1" style={{ background: INDIA_ORANGE }} />
+        <div className="flex-1 bg-saffron" />
         <div className="flex-1 bg-white" />
-        <div className="flex-1" style={{ background: INDIA_GREEN }} />
+        <div className="flex-1 bg-india-green" />
       </div>
 
       {/* ── Desktop Header ── */}
@@ -58,8 +109,8 @@ const Navbar: React.FC = () => {
                 <span className="text-sm font-bold tracking-tight text-white leading-none">
                   {siteSettings.siteName || 'Aero'}<span className="text-amber-400">{siteSettings.siteName ? '' : 'Sky'}</span>
                 </span>
-                <span className="text-[7px] text-sky-200/60 tracking-[0.15em] uppercase leading-none mt-0.5">
-                  Bharat Airspace
+                <span className="text-[9px] text-sky-200/60 tracking-[0.15em] uppercase leading-none mt-0.5">
+                  India Airspace Network
                 </span>
               </div>
             </Link>
@@ -75,7 +126,7 @@ const Navbar: React.FC = () => {
                   to={link.to}
                   end={link.to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide uppercase transition-all duration-300 relative ${
+                    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide uppercase transition-all duration-300 relative ${
                       isActive
                         ? 'text-amber-400 bg-amber-500/10'
                         : 'text-sky-100/70 hover:text-white hover:bg-white/[0.06]'
@@ -84,7 +135,7 @@ const Navbar: React.FC = () => {
                 >
                   <span>{link.label}</span>
                   {link.badge && (
-                    <span className="absolute -top-1.5 -right-2 px-1 py-0.5 text-[5px] font-extrabold bg-amber-500 text-black rounded uppercase tracking-wider scale-90 origin-bottom-left animate-pulse">
+                    <span className="absolute -top-1.5 -right-2 px-1 py-0.5 text-[9px] font-extrabold bg-amber-500 text-black rounded uppercase tracking-wider scale-90 origin-bottom-left">
                       {link.badge}
                     </span>
                   )}
@@ -99,13 +150,13 @@ const Navbar: React.FC = () => {
             <div className="hidden xl:flex items-center gap-2 bg-white/[0.02] border border-white/[0.04] rounded-lg px-3 py-1.5">
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-[9px] text-amber-400/80 font-medium tracking-wide uppercase">
-                  {siteSettings.announcementBanner || "Pre-Launch"}
+                <span className="text-xs text-amber-400 font-medium tracking-wide uppercase">
+                  {siteSettings.launchPhase || "Phase 1: Genesis"}
                 </span>
               </div>
               <div className="w-px h-3 bg-white/[0.06]" />
-              <span className="text-[9px] text-sky-200/60 font-mono">
-                {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })} IST
+              <span className="text-xs text-sky-200/60 font-mono">
+                {istTime} IST
               </span>
             </div>
 
@@ -115,19 +166,17 @@ const Navbar: React.FC = () => {
                 href={ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)]"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] bg-gradient-to-r from-saffron to-gold"
               >
                 {ctaText}
               </a>
             ) : (
-              <a
-                href={ctaLink}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)]"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              <Link
+                to={ctaLink}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold tracking-wide uppercase text-black transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] bg-gradient-to-r from-saffron to-gold"
               >
                 {ctaText}
-              </a>
+              </Link>
             )}
           </div>
 
@@ -138,19 +187,19 @@ const Navbar: React.FC = () => {
                 href={ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-black"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-black bg-gradient-to-r from-saffron to-gold"
               >
-                {ctaText}
+                <span className="hidden sm:inline">{ctaText}</span>
+                <span className="inline sm:hidden">Join Network</span>
               </a>
             ) : (
-              <a
-                href={ctaLink}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-black"
-                style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+              <Link
+                to={ctaLink}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-black bg-gradient-to-r from-saffron to-gold"
               >
-                {ctaText}
-              </a>
+                <span className="hidden sm:inline">{ctaText}</span>
+                <span className="inline sm:hidden">Join Network</span>
+              </Link>
             )}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -215,7 +264,7 @@ const Navbar: React.FC = () => {
                 <span className="text-sm font-semibold flex items-center gap-2">
                   {link.label}
                   {link.badge && (
-                    <span className="px-1.5 py-0.5 text-[7px] font-extrabold bg-amber-500 text-black rounded uppercase tracking-wider animate-pulse">
+                    <span className="px-1.5 py-0.5 text-[9px] font-extrabold bg-amber-500 text-black rounded uppercase tracking-wider">
                       {link.badge}
                     </span>
                   )}
@@ -230,20 +279,18 @@ const Navbar: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black"
-                  style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                  className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black bg-gradient-to-r from-saffron to-gold"
                 >
                   {ctaText}
                 </a>
               ) : (
-                <a
-                  href={ctaLink}
+                <Link
+                  to={ctaLink}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black"
-                  style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
+                  className="block px-4 py-3 rounded-2xl text-sm font-bold text-center text-black bg-gradient-to-r from-saffron to-gold"
                 >
                   {ctaText}
-                </a>
+                </Link>
               )}
             </div>
           </div>
@@ -252,18 +299,18 @@ const Navbar: React.FC = () => {
           <div className="p-5 border-t border-white/[0.04] bg-white/[0.01]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[10px] font-bold text-sky-200/60 uppercase tracking-widest mb-1">Status</div>
+                <div className="text-xs font-bold text-sky-200/60 uppercase tracking-widest mb-1">Status</div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span className="text-xs font-bold text-amber-400/80">
-                    {siteSettings.announcementBanner || "Pre-Launch"}
+                  <span className="text-xs font-bold text-amber-400">
+                    {siteSettings.launchPhase || "Phase 1: Genesis"}
                   </span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] font-bold text-sky-200/60 uppercase tracking-widest mb-1">Time</div>
+                <div className="text-xs font-bold text-sky-200/60 uppercase tracking-widest mb-1">Time</div>
                 <div className="text-xs font-mono font-bold text-sky-200/60">
-                  IST {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Kolkata' })}
+                  IST {istTime}
                 </div>
               </div>
             </div>

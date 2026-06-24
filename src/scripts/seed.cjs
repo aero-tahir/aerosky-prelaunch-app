@@ -44,20 +44,20 @@ if (!STRAPI_API_KEY) {
 
 const siteSettingsData = {
   siteName: "AeroSky",
-  tagline: "India's community-powered airspace intelligence and flight tracking network",
-  heroTitle: "India's Own|Airspace|Intelligence",
-  heroSubtitle: "Help build India's independent aviation intelligence network. Join our founding community to host ground receiver nodes, decode transponder feeds, and map Indian airspace together.",
-  announcementBanner: "Pre-Launch Community Open",
+  tagline: "Community-powered airspace intelligence for India.",
+  heroTitle: "Community-Powered|Airspace|Intelligence",
+  heroSubtitle: "Help build India's independent aviation intelligence network by hosting a low-power ADS-B ground station. Contribute real-world flight data, expand coverage, and become part of a growing community of aviation enthusiasts and engineers.",
+  announcementBanner: "Airspace Grid Onboarding",
   discordInviteUrl: "https://discord.gg/aerosky",
-  communityUrl: "https://aerosky.in/community",
+  communityUrl: "https://aerosky.ai/community",
   newsletterCta: "India Airspace Report",
-  primaryCtaText: "Become a Founding AeroCaptain",
+  primaryCtaText: "Become an AeroCaptain",
   primaryCtaLink: "/aerocaptains",
-  secondaryCtaText: "Join the Founding Community",
-  secondaryCtaLink: "#community",
+  secondaryCtaText: "Join Community",
+  secondaryCtaLink: "https://discord.gg/aerosky",
   footerCopyright: "© 2026 AeroSky - AeroLytics Intelligence Pvt. Ltd. | Made in India",
-  defaultSeoTitle: "India's Airspace Intelligence Network | AeroSky",
-  defaultSeoDescription: "AeroSky is India's community-powered airspace intelligence and flight tracking network. Host a receiver ground station or join our airspace data forums.",
+  defaultSeoTitle: "Community-powered airspace intelligence for India | AeroSky",
+  defaultSeoDescription: "AeroSky is building India's community-powered airspace intelligence network. Host an ADS-B receiver ground station or join our airspace data forums.",
   socialLinks: { github: "https://github.com/AeroLytics", discord: "https://discord.gg/aerosky" }
 };
 
@@ -65,121 +65,120 @@ const articlesData = [
   {
     slug: 'what-is-adsb-guide',
     title: 'What is ADS-B? A Beginner\'s Guide to Tracking Flights',
-    excerpt: 'Automatic Dependent Surveillance-Broadcast explained. Learn how modern aircraft broadcast their speed, altitude, and position.',
+    excerpt: 'Automatic Dependent Surveillance-Broadcast explained. Learn how aircraft transmit state vector packets on 1090 MHz.',
     featured: true,
     publishedDate: '2026-06-18',
     seoTitle: 'What is ADS-B? A Beginner\'s Guide | AeroSky Insights',
-    seoDescription: 'Learn how modern aircraft transmit their coordinates via ADS-B frequencies and how AeroSky tracks sovereign flights.',
+    seoDescription: 'Learn how modern aircraft transmit their coordinates via ADS-B frequencies and how AeroSky tracks flights.',
     status: 'Published',
-    description: `Automatic Dependent Surveillance-Broadcast (ADS-B) is a foundational technology in modern aviation traffic surveillance. Unlike traditional radar which queries aircraft position by bouncing radio pulses (primary radar) or interrogating transponders (secondary radar), ADS-B is entirely dependent and broadcast-based.
+    description: `Automatic Dependent Surveillance-Broadcast (ADS-B) is a key surveillance technology in modern air traffic management. Unlike legacy radar, which queries aircraft position by bouncing radio pulses (primary radar) or interrogating transponders (secondary surveillance radar), ADS-B is automatic and broadcast-based.
 
-## How ADS-B Works
+## Technical Architecture
 
-1. **Determine Position:** The aircraft uses onboard GPS/GNSS receivers to compute its exact latitude, longitude, altitude, and velocity.
-2. **Transmit Broadcast:** An onboard transponder automatically broadcasts this position data, along with callsigns and squawk codes, on the 1090 MHz radio frequency.
-3. **Ground Capture:** Ground stations receive these transmissions and stream them to air traffic control displays and flight tracking networks like AeroSky.
+1. **State Vector Computation:** The aircraft uses onboard GNSS systems to calculate its high-precision coordinates, altitude, velocity, and vector data.
+2. **RF Broadcast:** A Mode S transponder broadcasts this state vector at a frequency of 1090 MHz using Pulse Position Modulation (PPM).
+3. **Receiver Capture:** Local ground stations capture these RF broadcasts, decode the Mode S frames (Downlink Format 17), and stream the JSON payload to local servers.
 
-## Why it Matters for India
+## Airspace Integration in India
 
-As Indian airspace becomes busier, dense ADS-B receiver grids help monitor flight corridors, track low-altitude helicopters, and optimize arrival queues at high-density hubs like Delhi and Mumbai. Building independent, locally-hosted grids ensures our skies remain mapped on sovereign servers.`,
-    // Fallback field in case content is the primary body field in their schema
-    content: `Automatic Dependent Surveillance-Broadcast (ADS-B) is a foundational technology in modern aviation traffic surveillance. Unlike traditional radar which queries aircraft position by bouncing radio pulses (primary radar) or interrogating transponders (secondary radar), ADS-B is entirely dependent and broadcast-based.
+As Indian airspace density scales, building an independent ADS-B ground grid provides critical tracking coverage, particularly for low-altitude traffic, general aviation, and remote valleys. Capturing and hosting these streams locally ensures airspace data remains processed on secure Indian servers.`,
+    content: `Automatic Dependent Surveillance-Broadcast (ADS-B) is a key surveillance technology in modern air traffic management. Unlike legacy radar, which queries aircraft position by bouncing radio pulses (primary radar) or interrogating transponders (secondary surveillance radar), ADS-B is automatic and broadcast-based.
 
-## How ADS-B Works
+## Technical Architecture
 
-1. **Determine Position:** The aircraft uses onboard GPS/GNSS receivers to compute its exact latitude, longitude, altitude, and velocity.
-2. **Transmit Broadcast:** An onboard transponder automatically broadcasts this position data, along with callsigns and squawk codes, on the 1090 MHz radio frequency.
-3. **Ground Capture:** Ground stations receive these transmissions and stream them to air traffic control displays and flight tracking networks like AeroSky.
+1. **State Vector Computation:** The aircraft uses onboard GNSS systems to calculate its high-precision coordinates, altitude, velocity, and vector data.
+2. **RF Broadcast:** A Mode S transponder broadcasts this state vector at a frequency of 1090 MHz using Pulse Position Modulation (PPM).
+3. **Receiver Capture:** Local ground stations capture these RF broadcasts, decode the Mode S frames (Downlink Format 17), and stream the JSON payload to local servers.
 
-## Why it Matters for India
+## Airspace Integration in India
 
-As Indian airspace becomes busier, dense ADS-B receiver grids help monitor flight corridors, track low-altitude helicopters, and optimize arrival queues at high-density hubs like Delhi and Mumbai. Building independent, locally-hosted grids ensures our skies remain mapped on sovereign servers.`
+As Indian airspace density scales, building an independent ADS-B ground grid provides critical tracking coverage, particularly for low-altitude traffic, general aviation, and remote valleys. Capturing and hosting these streams locally ensures airspace data remains processed on secure Indian servers.`
   },
   {
     slug: 'setup-adsb-receiver-guide',
     title: 'Setting Up Your First DIY ADS-B Station with RTL-SDR',
-    excerpt: 'A step-by-step guide to building your own aircraft tracking station with a Raspberry Pi and RTL-SDR in India.',
+    excerpt: 'A technical guide to configuring an unencrypted 1090 MHz receiver using dump1090-fa or readsb and an RTL-SDR dongle.',
     featured: false,
     publishedDate: '2026-06-18',
     seoTitle: 'Build Your Own DIY ADS-B Ground Station | AeroSky Academy',
-    seoDescription: 'Follow our hardware installation guide to capture flight telemetry in India using RTL-SDR blog dongles.',
+    seoDescription: 'Follow our hardware installation guide to capture flight telemetry in India using RTL-SDR dongles.',
     status: 'Published',
-    description: `Building your own ADS-B ground station is a rewarding project for SDR hobbyists, student pilots, and aviation geeks. Here is how you can set up a receiver node in under 30 minutes.
+    description: `Configuring a localized ADS-B ground station is straightforward using commercial off-the-shelf software-defined radio (SDR) hardware. This guide outlines the setup for a low-power receiver node.
 
-## Required Hardware
+## Hardware Requirements
 
-- **Microcontroller:** Raspberry Pi (3B+ or newer) or Orange Pi running a Linux distro.
-- **USB SDR Dongle:** RTL-SDR Blog V3 or V4 dongle tuned to 1090 MHz.
-- **Antenna:** A 1090 MHz omni-directional outdoor antenna.
-- **Cabling:** Low-loss SMA coaxial cable (e.g. RG58 or LMR200).
+- **SBC Unit:** Raspberry Pi (3B+ or newer) or similar single-board computer running headless Debian.
+- **SDR Receiver:** RTL-SDR Blog V3 or V4 dongle equipped with an internal 1090 MHz LNA and SAW filter.
+- **Antenna:** An omni-directional antenna tuned specifically to the 1090 MHz band.
+- **Transmission Line:** Low-loss coaxial cable (e.g., LMR-200 or RG-58) with SMA male connectors.
 
-## Step-by-Step Installation
+## Installation Workflow
 
-1. **Flash OS:** Flash Raspberry Pi OS Lite onto a MicroSD card using Raspberry Pi Imager. Enable SSH and configure local WiFi.
-2. **Connect Dongle:** Plug the RTL-SDR dongle into a USB port on the Pi, and connect it to your antenna.
-3. **Install Decoder:** Install dump1090-fa or readsb to decode the raw 1090 MHz signals by running:
+1. **Flash OS:** Flash Debian/Raspberry Pi OS Lite onto a high-end MicroSD card. Enable SSH daemon and configure static IP or local interface bindings.
+2. **Dongle Interface:** Connect the RTL-SDR dongle to a USB 2.0/3.0 port and hook it up to the outdoor coaxial transmission line.
+3. **Install Decoder Daemon:** Deploy \`readsb\` to decode the raw Mode S frames:
 \`\`\`bash
 sudo bash -c "$(wget -O - https://github.com/wiedehopf/adsb-scripts/raw/master/readsb-install.sh)"
 \`\`\`
-4. **Verify Stream:** Open a web browser on your local network and point to http://<your-pi-ip>/tar1090 to view live flights captured by your antenna.`,
-    content: `Building your own ADS-B ground station is a rewarding project for SDR hobbyists, student pilots, and aviation geeks. Here is how you can set up a receiver node in under 30 minutes.
+4. **Telemetry Check:** Navigate to \`http://<your-pi-ip>/tar1090\` to audit captured flight coordinates, message rates, and polar reception ranges.`,
+    content: `Configuring a localized ADS-B ground station is straightforward using commercial off-the-shelf software-defined radio (SDR) hardware. This guide outlines the setup for a low-power receiver node.
 
-## Required Hardware
+## Hardware Requirements
 
-- **Microcontroller:** Raspberry Pi (3B+ or newer) or Orange Pi running a Linux distro.
-- **USB SDR Dongle:** RTL-SDR Blog V3 or V4 dongle tuned to 1090 MHz.
-- **Antenna:** A 1090 MHz omni-directional outdoor antenna.
-- **Cabling:** Low-loss SMA coaxial cable (e.g. RG58 or LMR200).
+- **SBC Unit:** Raspberry Pi (3B+ or newer) or similar single-board computer running headless Debian.
+- **SDR Receiver:** RTL-SDR Blog V3 or V4 dongle equipped with an internal 1090 MHz LNA and SAW filter.
+- **Antenna:** An omni-directional antenna tuned specifically to the 1090 MHz band.
+- **Transmission Line:** Low-loss coaxial cable (e.g., LMR-200 or RG-58) with SMA male connectors.
 
-## Step-by-Step Installation
+## Installation Workflow
 
-1. **Flash OS:** Flash Raspberry Pi OS Lite onto a MicroSD card using Raspberry Pi Imager. Enable SSH and configure local WiFi.
-2. **Connect Dongle:** Plug the RTL-SDR dongle into a USB port on the Pi, and connect it to your antenna.
-3. **Install Decoder:** Install dump1090-fa or readsb to decode the raw 1090 MHz signals by running:
+1. **Flash OS:** Flash Debian/Raspberry Pi OS Lite onto a high-end MicroSD card. Enable SSH daemon and configure static IP or local interface bindings.
+2. **Dongle Interface:** Connect the RTL-SDR dongle to a USB 2.0/3.0 port and hook it up to the outdoor coaxial transmission line.
+3. **Install Decoder Daemon:** Deploy \`readsb\` to decode the raw Mode S frames:
 \`\`\`bash
 sudo bash -c "$(wget -O - https://github.com/wiedehopf/adsb-scripts/raw/master/readsb-install.sh)"
 \`\`\`
-4. **Verify Stream:** Open a web browser on your local network and point to http://<your-pi-ip>/tar1090 to view live flights captured by your antenna.`
+4. **Telemetry Check:** Navigate to \`http://<your-pi-ip>/tar1090\` to audit captured flight coordinates, message rates, and polar reception ranges.`
   },
   {
     slug: 'behind-aerosky-indian-network',
-    title: 'Behind AeroSky: Building India\'s Sovereign Airspace Network',
-    excerpt: 'The story of why we started AeroSky and the critical need for locally-hosted, community-powered airspace intelligence.',
+    title: 'Behind AeroSky: Building India\'s Independent Airspace Network',
+    excerpt: 'The engineering logic driving the creation of India\'s community-powered airspace intelligence network.',
     featured: false,
     publishedDate: '2026-06-18',
-    seoTitle: 'AeroSky: Sovereign Aviation Data Network | Mission',
-    seoDescription: 'Discover why localized, independent flight telemetry servers are critical for data sovereignty in India.',
+    seoTitle: 'AeroSky: Independent Aviation Data Network | Mission',
+    seoDescription: 'Discover why localized, independent flight telemetry servers are critical for data custody in India.',
     status: 'Published',
-    description: `India is the world's fastest-growing domestic aviation market, yet the tracking data and intelligence of its airspace have historically relied on foreign platforms. AeroSky was founded to solve this infrastructure gap.
+    description: `India is the world's fastest-growing domestic aviation sector. However, flight tracking infrastructure has historically relied on third-party offshore networks. AeroSky was founded to close this data sovereignty and coverage gap.
 
-## The Sovereign Data Deficit
+## The Coverage and Data Custody Gap
 
-Currently, the vast majority of ADS-B data from flights over India is streamed to servers hosted outside the country. This creates a data sovereignty gap for local aviation intelligence, route optimization research, and domestic defense audits.
+Currently, the vast majority of aircraft transponder signals received in India are streamed to servers outside the country. This limits accessibility for domestic researchers, aviation developers, and academic institutions seeking high-resolution local data.
 
-## The AeroSky Vision
+## Building the Grid
 
-By placing physical nodes hosted by local AeroCaptains across India's tier-1 and tier-2 corridors, AeroSky is constructing an independent airspace telemetry grid. We process, decode, and cache every transponder package on physical servers located in Pune and Maharashtra. This ensures local developers and researchers have free, low-latency, sovereign access to the airspace data mapping our skies.`,
-    content: `India is the world's fastest-growing domestic aviation market, yet the tracking data and intelligence of its airspace have historically relied on foreign platforms. AeroSky was founded to solve this infrastructure gap.
+AeroSky is creating an independent airspace telemetry grid by deploying community-powered ground stations hosted by local AeroCaptains. We decode, clean, and cache these flight paths on domestic servers located in Pune and Maharashtra. This ensures local developers have low-latency, open access to high-fidelity airspace data while protecting the location privacy of our hosts.`,
+    content: `India is the world's fastest-growing domestic aviation sector. However, flight tracking infrastructure has historically relied on third-party offshore networks. AeroSky was founded to close this data sovereignty and coverage gap.
 
-## The Sovereign Data Deficit
+## The Coverage and Data Custody Gap
 
-Currently, the vast majority of ADS-B data from flights over India is streamed to servers hosted outside the country. This creates a data sovereignty gap for local aviation intelligence, route optimization research, and domestic defense audits.
+Currently, the vast majority of aircraft transponder signals received in India are streamed to servers outside the country. This limits accessibility for domestic researchers, aviation developers, and academic institutions seeking high-resolution local data.
 
-## The AeroSky Vision
+## Building the Grid
 
-By placing physical nodes hosted by local AeroCaptains across India's tier-1 and tier-2 corridors, AeroSky is constructing an independent airspace telemetry grid. We process, decode, and cache every transponder package on physical servers located in Pune and Maharashtra. This ensures local developers and researchers have free, low-latency, sovereign access to the airspace data mapping our skies.`
+AeroSky is creating an independent airspace telemetry grid by deploying community-powered ground stations hosted by local AeroCaptains. We decode, clean, and cache these flight paths on domestic servers located in Pune and Maharashtra. This ensures local developers have low-latency, open access to high-fidelity airspace data while protecting the location privacy of our hosts.`
   }
 ];
 
 const eventsData = [
   {
     slug: 'aerosky-community-kickoff',
-    title: 'AeroSky Community Kickoff',
-    description: 'Meet the team online on July 25, 2026 at 19:00 IST. Learn how to setup your SDR receiver.',
+    title: 'Pre-Launch Technical Briefing',
+    description: 'Join the engineering team online on July 25, 2026 at 19:00 IST. We will discuss SDR receiver architecture, kit distribution guidelines, and live telemetry integrations.',
     startDate: '2026-07-25T19:00:00+05:30',
     endDate: '2026-07-25T21:00:00+05:30',
     online: true,
-    location: 'Online (Discord)',
+    location: 'Discord Voice/Stage',
     registrationUrl: 'https://discord.gg/aerosky',
     status: 'Upcoming'
   }
@@ -205,28 +204,31 @@ const pagesData = [
     slug: 'about',
     title: 'Built For Indian Skies',
     seoTitle: 'About Us - Built For Indian Skies | AeroSky',
-    seoDescription: 'AeroSky is building sovereign, independent airspace tracking infrastructure in India, powered by aviation enthusiasts.',
+    seoDescription: 'AeroSky is building independent airspace tracking infrastructure in India, powered by aviation enthusiasts.',
     published: true,
-    content: `# Built for Indian Skies
+    content: `# About AeroSky
 
-AeroSky is creating a community-powered aviation intelligence platform designed specifically for India's rapidly growing aviation ecosystem. Built by aviation enthusiasts, engineers, and contributors who believe airspace intelligence should be transparent, accessible, and community-driven.
+AeroSky is building India's community-powered airspace intelligence and flight tracking network. We believe that airspace telemetry is a public utility that should be transparent, accessible, and processed locally on domestic servers.
 
 ## Our Mission
 
-AeroSky exists to democratize airspace intelligence in India. We believe that understanding the skies above us shouldn't rely on expensive proprietary software systems or foreign data pipelines.
-
-By building a community-powered network of ADS-B ground stations across India, we are creating comprehensive, real-time airspace visibility that is owned by the community, processed on local infrastructure, and accessible to everyone.
-
-India represents one of the largest domestic aviation growth corridors globally, yet lacks independent airspace data infrastructure. AeroSky is filling this gap, one ground station at a time.
+AeroSky exists to make India's airspace more transparent, accessible, and community-powered. By placing compact receiver nodes across major flight corridors and remote regional areas, we are creating a high-resolution airspace grid owned and hosted by local contributors.
 
 ## Core Principles
 
-- **Data Sovereignty:** Indian flight statistics and logs should remain on domestic soil, processed by Indian servers.
-- **Community Ownership:** No single corporation should control airspace visibility. The community builds, hosts, and feeds the network.
-- **Universal Access:** Democratizing airspace data for aviation enthusiasts, academic researchers, and local developers alike.
-- **Low-Altitude Coverage:** Shoring up coverage holes in remote or mountainous terrains that lack standard ground receivers today.
-- **Real-Time Telemetry:** Streaming sub-second transponder updates, not delayed data feeds, for accurate regional awareness.
-- **India-First Innovation:** Optimized for Indian airports, airlines, flight safety regulations, and local timezone metrics.`
+- **Transparency:** We believe airspace telemetry should be open and verifiable by the public.
+- **Community Collaboration:** The network is powered by aviation enthusiasts, pilots, spotters, and hardware builders sharing receiver feeds.
+- **Open Standards:** Exposing free, low-latency APIs to empower local developers and researchers.
+- **Privacy First:** We implement strict coordinate fuzzing on public maps to safeguard host locations.
+- **Reliability:** Deploying robust local databases to ensure network persistence and data integrity.
+
+## Built in Public
+
+AeroSky is being built openly with feedback from the aviation community. Our roadmap, milestones, and community discussions help shape the platform as it evolves. We publish our progress, system metrics, and architectural decisions transparently.
+
+## Educational Notice & Disclaimer
+
+AeroSky data is compiled from unencrypted, public ADS-B and Mode S transponder broadcasts. It is intended solely for educational, research, and hobbyist analysis. AeroSky is not a certified air traffic management utility and must not be used for safety-critical navigation or flight dispatch operations.`
   },
   {
     slug: 'privacy',
@@ -255,7 +257,7 @@ Airspace mapping requires geographical reference tags. To safeguard the privacy 
 AeroSky integrates industry-standard optimization plugins to review layout usage, load metrics, and site performance:
 
 - **Google Tag Manager (GTM):** Handles active marketing triggers and tag distribution.
-- **Google Analytics (GA4):** Analyzes search conversions, page flows, and geographic user groupings.
+- **Google Analytics (GA4):** Analyzes search conversions, geographic user groupings, and page flows.
 - **Microsoft Clarity:** Records visual heatmaps to identify design hurdles and render failures.
 
 ## 4. Security & Data Sovereignty
@@ -284,9 +286,9 @@ Founding AeroCaptains hosting receiver nodes and DIY feeders who choose to strea
 - Provide stable hardware availability to the best of their ability to support network statistics.
 - Acknowledge that raw transponder data feeds submitted to our server coordinates are granted under a universal, royalty-free, perpetual license to map airspace metrics.
 
-## 3. Service Scope & Limitations
+## 3. Educational & Safety Disclaimer
 
-AeroSky is not a primary source of official, safety-critical navigation flight routing controls. It should not be used as a replacement for official air traffic management radars, airline dispatch systems, or state civil aviation channels.
+AeroSky is not a primary source of official, safety-critical navigation flight routing controls. It should not be used as a replacement for official air traffic management radars, airline dispatch systems, or state civil aviation channels. Users are solely responsible for verifying flight paths through certified aeronautical publications.
 
 ## 4. General Terms
 
@@ -330,18 +332,18 @@ Reach out to the appropriate team for hardware assistance, data access, partners
 
 ## Contact Directory
 
-- **Support & AeroCaptains:** support@aerosky.in
+- **Support & AeroCaptains:** support@aerosky.ai
   *Hardware configurations, RTL-SDR setups, receiver kit deliveries, and connection logs.*
-- **Press & Media:** press@aerosky.in
+- **Press & Media:** press@aerosky.ai
   *Airspace data requests, media publications, and pre-launch report citations.*
-- **Partnerships:** partners@aerosky.in
+- **Partnerships:** partners@aerosky.ai
   *Academic research collaborations, commercial airspace analytics, and local database integrations.*
-- **Security (VDP):** security@aerosky.in
+- **Security (VDP):** security@aerosky.ai
   *Report transponder decode issues, network vulnerabilities, or data leakage reports.*
-- **General Administrative:** contact@aerosky.in
+- **General Administrative:** contact@aerosky.ai
   *General inquiries, corporate details, parent organization (AeroLytics) correspondence.*
 
-For institutional queries or official business correspondence, please email contact@aerosky.in.`
+For institutional queries or official business correspondence, please email contact@aerosky.ai.`
   }
 ];
 

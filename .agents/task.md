@@ -1,0 +1,24 @@
+# Implementation Tasks — Product Audit Refinements
+
+- `[x]` 1. Core Layout & Accessibility Upgrades (WCAG 2.1 AA)
+  - `[x]` Add skip-to-content in `Layout.tsx` and `id="main-content"` on `main`
+  - `[x]` Clean up color constants and add explicit `aria-current` NavLinks in `Navbar.tsx`
+  - `[x]` Clean up color constants and redirect `/launch` to `/#readiness` in `Footer.tsx`
+- `[x]` 2. Design System & CSS Purging
+  - `[x]` Purge dead keyframes and classes (`animate-float`, `animate-radar`, `animate-gradient`) from `index.css`
+- `[x]` 3. Page-Level Refinements & Forms UX
+  - `[x]` Home.tsx: Clean up color constants, replace "Make in India" branding
+  - `[x]` Home.tsx: Add autocomplete, validation error borders, and `aria-describedby` to Cadet modal
+  - `[x]` Home.tsx: Integrate database-backed Platform Readiness Tracker widget at `id="readiness"`
+  - `[x]` AeroCaptains.tsx: Add autocomplete, validation error borders, `aria-describedby` linkage, and clean up color constants
+  - `[x]` Coverage.tsx: Overlay concentric range rings for active stations and dashed circles for needed targets, clean up color constants
+  - `[x]` Insights.tsx: Upgrade text contrast (sky-200/40 to sky-200/70) and replace public-facing "Sovereign" usage
+  - `[x]` About.tsx & Community.tsx: Clean up color constants
+- `[x]` 4. Routing, Sitemap, & Page Decommissioning
+  - `[x]` Delete `Launch.tsx`
+  - `[x]` Remove `/launch` route and import from `App.tsx`
+  - `[x]` Remove `/launch` from `sitemap.xml` and update dates
+- `[x]` 5. Verification
+  - `[x]` Run production build to ensure clean compilation
+  - `[x]` Verify skip-to-content, form highlights, range rings, and homepage widget
+  - `[x]` Write walkthrough of changes in `walkthrough.md`

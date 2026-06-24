@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Radio, Cpu, Antenna, Wifi, Shield, BarChart3, Zap,
-  Radar, ArrowRight, CheckCircle2, Plane, Flag, Users, Target, Globe,
-  HelpCircle, ChevronDown, Award, Signal, MapPin, Eye
+  Radar, ArrowRight, CheckCircle2, Plane, Users, Target,
+  HelpCircle, ChevronDown, Award, Signal, MapPin, Star
 } from 'lucide-react';
 import SEO from '../components/SEO';
 import Schema from '../components/Schema';
@@ -12,17 +12,17 @@ import { submitAeroCaptainApplication, getAeroCaptainsDirectory } from '../utils
 import { sanitizeInput, validateEmail, isBotSubmission, isRateLimited } from '../utils/security';
 import { getFAQs } from '../services/strapi';
 import { StrapiFAQ } from '../types/strapi';
-
-const INDIA_ORANGE = '#FF9933';
-const INDIA_GREEN = '#138808';
+import { BadgeCard } from '../components/BadgeCard';
+import { ShareOverlay } from '../components/ShareOverlay';
 
 const AeroCaptains: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [assignedNumber, setAssignedNumber] = useState('');
+  const [assignedSlug, setAssignedSlug] = useState('');
   const [error, setError] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [startedTracking, setStartedTracking] = useState(false);
-  
+
   const [directory, setDirectory] = useState<{ num: string; state: string; status: string }[]>([]);
   const [faqs, setFaqs] = useState<StrapiFAQ[]>([]);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -31,7 +31,6 @@ const AeroCaptains: React.FC = () => {
     name: '',
     email: '',
     city: '',
-    coordinates: '',
     placement: '',
     internet: '',
     hardware: [] as string[],
@@ -42,8 +41,7 @@ const AeroCaptains: React.FC = () => {
     async function loadDirectory() {
       try {
         const data = await getAeroCaptainsDirectory();
-        // Take the latest 10 reserved positions for preview
-        setDirectory(data.slice(-10));
+        setDirectory(data.slice(-8));
       } catch (err) {
         console.error('Failed to load captains directory:', err);
       }
@@ -51,7 +49,6 @@ const AeroCaptains: React.FC = () => {
     async function loadFAQs() {
       try {
         const data = await getFAQs();
-        // Filter FAQs for AeroCaptains
         const filtered = data.filter(faq => {
           const q = faq.question.toLowerCase();
           const a = faq.answer.toLowerCase();
@@ -91,15 +88,12 @@ const AeroCaptains: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    // Spam Protection: Honeypot check
     if (isBotSubmission(honeypot)) {
-      console.log('[Security] Honeypot field filled. Silently ignoring.');
       setAssignedNumber('AC999');
       setSubmitted(true);
       return;
     }
 
-    // Input sanitization
     const cleanName = sanitizeInput(formData.name);
     const cleanEmail = sanitizeInput(formData.email);
     const cleanCityRaw = sanitizeInput(formData.city);
@@ -108,31 +102,26 @@ const AeroCaptains: React.FC = () => {
     const cleanMotivation = sanitizeInput(formData.motivation);
 
     if (!cleanName || !cleanEmail || !cleanCityRaw || !cleanPlacement || !cleanInternet) {
-      setError('Please fill in all required fields marked with *');
+      setError('Please fill in all required fields.');
       return;
     }
-
     if (!validateEmail(cleanEmail)) {
       setError('Please enter a valid email address.');
       return;
     }
-
-    // Client-side rate-limiting check
     if (isRateLimited('aerocaptain_apply', 15)) {
-      setError('Too many attempts. Please wait 15 seconds before submitting again.');
+      setError('Too many attempts. Please wait 15 seconds.');
       return;
     }
 
-    // Parse City and State (input format: "Pune, Maharashtra")
     const parts = cleanCityRaw.split(',').map(s => s.trim());
     const city = parts[0] || 'Pune';
     const state = parts[1] || 'Maharashtra';
     const country = parts[2] || 'India';
-
     const referralCode = localStorage.getItem('aerosky_ref') || '';
 
     try {
-      const code = await submitAeroCaptainApplication({
+      const result = await submitAeroCaptainApplication({
         name: cleanName,
         email: cleanEmail,
         city,
@@ -143,500 +132,459 @@ const AeroCaptains: React.FC = () => {
         existing_hardware: formData.hardware,
         referral_code: referralCode
       });
+      setAssignedNumber(result.code);
+      setAssignedSlug(result.slug);
 
-      setAssignedNumber(code);
-      trackEvent('aerocaptain_application_submitted', {
-        foundingNumber: code,
-        city,
-        state,
-        referralCode
-      });
+      // Store in session storage for frictionless instant access
+      if (result.slug) {
+        sessionStorage.setItem(`verified_member_email_${result.slug}`, cleanEmail);
+      }
+      if (result.code) {
+        sessionStorage.setItem(`verified_member_email_${result.code}`, cleanEmail);
+      }
+
+      trackEvent('aerocaptain_application_submitted', { foundingNumber: result.code, city, state, referralCode });
       setSubmitted(true);
     } catch (err) {
-      setError('An error occurred during submission. Please try again.');
+      setError('An error occurred. Please try again.');
     }
   };
+
+  /* ─── Input style shared ─── */
+  const getInputCls = (isInvalid: boolean) =>
+    `w-full px-3 py-2.5 rounded-xl bg-white/[0.06] border text-sm text-white placeholder-sky-400/30 focus:outline-none transition-all ${
+      isInvalid
+        ? 'border-rose-500/50 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20'
+        : 'border-white/[0.10] focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30'
+    }`;
+  const labelCls = "block text-xs font-bold text-sky-200/60 uppercase tracking-widest mb-1";
 
   return (
     <div className="relative pt-16">
       <SEO
         title="Become an AeroCaptain | AeroSky"
-        description="Apply to host an independent ground station receiver and join the founding AeroCaptain program."
+        description="Apply to host an independent ADS-B ground station receiver and join India's founding airspace intelligence network."
       />
       <Schema
         type="BreadcrumbList"
         data={{
           itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.in/' },
-            { '@type': 'ListItem', position: 2, name: 'Become an AeroCaptain', item: 'https://aerosky.in/aerocaptains' }
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://aerosky.ai/' },
+            { '@type': 'ListItem', position: 2, name: 'Become an AeroCaptain', item: 'https://aerosky.ai/aerocaptains' }
           ]
         }}
       />
 
-      {/* Hero */}
-      <section className="relative min-h-[65vh] flex items-center justify-center overflow-hidden px-4 sm:px-6">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: `radial-gradient(circle, rgba(255,153,51,0.4) 1px, transparent 1px)`, backgroundSize: '30px 30px' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-amber-500/[0.03] rounded-full blur-[100px]" />
-        </div>
-        <div className="relative z-10 max-w-4xl mx-auto text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-mono font-bold tracking-wider uppercase mb-5 animate-pulse-glow" style={{ background: 'rgba(255,153,51,0.08)', borderColor: 'rgba(255,153,51,0.3)', color: INDIA_ORANGE }}>
-            <Antenna size={14} /> Founding AeroCaptain Program Open
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-[1.05] mb-4">
-            <span className="text-white">Become an AeroSky AeroCaptain.</span><br />
-            <span style={{ color: INDIA_ORANGE }}>Help Build India's Airspace Network.</span>
-          </h1>
-          <p className="text-sm sm:text-base text-sky-200/60 max-w-2xl mx-auto mb-3 leading-relaxed">
-            Become one of the first AeroCaptains helping build India's independent aviation intelligence network. Host a small, low-power receiver node and feed real-time airspace telemetry.
-          </p>
-          <p className="text-xs text-sky-200/50 max-w-lg mx-auto mb-6">
-            Early contributors receive Founding AeroCaptain status, leaderboard recognition, premium platform features, and future hardware rewards.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-            <a
-              href="#apply"
-              onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'hero_cta', action: 'scroll_to_apply' })}
-              className="px-7 py-3 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_30px_rgba(255,153,51,0.3)] hover:-translate-y-0.5"
-              style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}
-            >
-              Apply to Become an AeroCaptain
-            </a>
-            <a
-              href="#hardware"
-              className="px-7 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition-all hover:-translate-y-0.5"
-            >
-              Explore Hardware
-            </a>
-            <Link
-              to="/aerocaptains/hall-of-fame"
-              onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'hero_cta', action: 'go_to_hall_of_fame' })}
-              className="px-7 py-3 rounded-xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold text-sm transition-all hover:-translate-y-0.5 flex items-center gap-1.5"
-            >
-              <Award size={14} /> Hall of Fame
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* ═══════════════════════════════════════════════════════
+          HERO — Two-column: Left headline · Right floating form
+      ═══════════════════════════════════════════════════════ */}
+      <section className="relative min-h-[calc(100vh-4rem)] flex items-center overflow-hidden px-4 sm:px-6 md:px-12 lg:px-20 py-10">
 
-      {/* Core Info */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24 space-y-8">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* Vision */}
-          <div>
-            <div className="flex justify-center mb-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-                <Flag size={12} style={{ color: INDIA_ORANGE }} /> Our Vision
-              </div>
+        {/* Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 opacity-[0.018]" style={{ backgroundImage: `radial-gradient(circle, rgba(255,153,51,0.5) 1px, transparent 1px)`, backgroundSize: '28px 28px' }} />
+          <div className="absolute -left-40 top-1/3 w-[600px] h-[600px] bg-amber-500/[0.04] rounded-full blur-[120px]" />
+          <div className="absolute right-0 bottom-0 w-[400px] h-[400px] bg-sky-500/[0.02] rounded-full blur-[100px]" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-16 items-center">
+
+          {/* ── LEFT: Hero copy ── */}
+          <div className="animate-fade-in-up">
+
+            {/* Badge pill */}
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-saffron/30 bg-saffron/[0.07] text-saffron text-[10px] font-mono font-bold tracking-widest uppercase mb-5 animate-pulse-glow">
+              <Antenna size={12} /> Founding Program · Applications Open
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-6">A Community-Powered <span style={{ color: INDIA_GREEN }}>Airspace Intelligence Network</span></h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-6xl font-bold tracking-tight leading-[1.04] mb-5">
+              <span className="text-white">Become a<br />Founding</span>{' '}
+              <span className="bg-gradient-to-r from-saffron via-amber-400 to-gold bg-clip-text text-transparent">AeroCaptain.</span>
+              <br />
+              <span className="text-sky-200/80 text-3xl sm:text-4xl lg:text-[2.5rem] font-semibold">Host a Ground Station<br />for India.</span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-sky-200/60 max-w-lg leading-relaxed mb-6">
+              Place a compact ADS-B receiver on your rooftop and stream live airspace telemetry into India's sovereign aviation intelligence grid. No RF experience needed.
+            </p>
+
+            {/* Trust indicators */}
+            <div className="flex flex-wrap gap-3 mb-7">
               {[
-                { icon: <Globe size={22} />, title: 'Coverage Vision', desc: 'Expanding ADS-B coverage across metros, tier-2 cities, coastal regions, and underserved airspace to close low-altitude tracking gaps.' },
-                { icon: <Users size={22} />, title: 'Community Powered', desc: 'Powered by aviation enthusiasts, engineers, students, spotters, and contributors across India.' },
-                { icon: <Shield size={22} />, title: 'Sovereign Infrastructure', desc: 'Indian-hosted, community-driven telemetry and transparent aviation intelligence.' },
-              ].map((c) => (
-                <div key={c.title} className="glass rounded-xl p-5 hover:border-amber-500/15 transition-all duration-300">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mb-3">{c.icon}</div>
-                  <h3 className="text-sm font-bold text-white mb-1">{c.title}</h3>
-                  <p className="text-xs text-sky-200/60 leading-relaxed">{c.desc}</p>
+                { icon: <Star size={12} />, text: 'Founding Badge' },
+                { icon: <Zap size={12} />, text: 'Platinum Subscription' },
+                { icon: <Shield size={12} />, text: 'No Experience Needed' },
+                { icon: <MapPin size={12} />, text: 'Setup in 30 Minutes' },
+              ].map((t) => (
+                <div key={t.text} className="flex items-center gap-1.5 text-[11px] font-semibold text-sky-200/70 bg-white/[0.03] border border-white/[0.06] rounded-full px-3 py-1">
+                  <span className="text-amber-400">{t.icon}</span>{t.text}
                 </div>
               ))}
             </div>
+
+            {/* Founding directory strip */}
+            {directory.length > 0 && (
+              <div className="mb-6">
+                <div className="text-[10px] font-mono text-sky-200/70 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Users size={10} className="text-amber-400" /> {directory.length} Founding nodes registered
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {directory.map((node, i) => (
+                    <div key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.02] border border-white/[0.04] text-[9px]">
+                      <span className="font-mono font-bold text-amber-400">{node.num}</span>
+                      <span className="text-sky-200/50">{node.state}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Secondary CTAs */}
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center gap-2 text-xs font-bold text-sky-200/60 hover:text-amber-400 transition-colors uppercase tracking-wider"
+              >
+                How It Works <ArrowRight size={12} />
+              </a>
+              <span className="text-white/15">|</span>
+              <Link
+                to="/aerocaptains/hall-of-fame"
+                onClick={() => trackEvent('hero_become_aerocaptain_clicked', { from: 'hero_cta', action: 'hall_of_fame' })}
+                className="inline-flex items-center gap-2 text-xs font-bold text-amber-400/70 hover:text-amber-300 transition-colors uppercase tracking-wider"
+              >
+                <Award size={12} /> Hall of Fame
+              </Link>
+            </div>
           </div>
 
-          {/* What is an AeroCaptain + How It Works */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* What is an AeroCaptain */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-3">What is an AeroSky AeroCaptain?</h3>
-              <p className="text-sm text-sky-200/60 leading-relaxed mb-3">
-                AeroCaptains are the foundation of our network. By hosting a small, low-power ADS-B receiver, they pick up high-frequency signals broadcasted by aircraft transponders (speed, altitude, squawk, position) and securely stream this telemetry back to the AeroSky central server.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {['Telemetry Feed', 'Rooftop Antenna', 'Low Power', '1090 MHz', 'Sovereign Data'].map((t) => (
-                  <span key={t} className="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 font-medium">{t}</span>
-                ))}
-              </div>
-              <p className="text-xs text-sky-200/50 italic">No radio frequency experience required. Setup and deployment can be completed in under 30 minutes.</p>
-            </div>
+          {/* ── RIGHT: Floating Application Form ── */}
+          <div className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
+            {submitted ? (
+              /* ── SUCCESS STATE ── */
+              <div className="relative rounded-3xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/[0.06] to-black/40 backdrop-blur-xl p-6 shadow-[0_0_60px_rgba(16,185,129,0.08)] flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-4">
+                  <CheckCircle2 size={28} className="text-emerald-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Application Received!</h3>
+                <p className="text-xs text-sky-200/60 max-w-xs mb-5 leading-relaxed">
+                  Our team will review your coordinates and reach out regarding onboarding and hardware recommendations.
+                </p>
 
-            {/* How It Works */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-3">How It Works</h3>
-              <div className="space-y-3">
+                <BadgeCard role="captain" memberNumber={assignedNumber} name={formData.name} memberSlug={assignedSlug} />
+
+                <div className="w-full mt-5 text-left space-y-2.5 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                  <div className="text-[10px] font-mono font-bold text-sky-200/70 uppercase tracking-widest mb-2">Next Steps</div>
+                  {[
+                    { done: true, label: 'Badge Provisioned', sub: `Serial #${assignedNumber}` },
+                    { done: false, label: 'Verification Pending', sub: 'Team assessing your coverage coordinates' },
+                  ].map((step) => (
+                    <div key={step.label} className="flex items-start gap-2.5">
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${step.done ? 'bg-emerald-500/20' : 'bg-amber-500/10 border border-amber-500/20 animate-pulse'}`}>
+                        {step.done ? <CheckCircle2 size={10} className="text-emerald-400" /> : <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">{step.label}</div>
+                        <div className="text-[9px] text-sky-200/50">{step.sub}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-1">
+                    <div>
+                      <div className="text-xs font-bold text-white">Join Discord</div>
+                      <div className="text-[9px] text-sky-200/70">~30 seconds</div>
+                    </div>
+                    <a href="https://discord.gg/aerosky" target="_blank" rel="noopener noreferrer"
+                      className="px-3 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-[10px] font-bold text-white transition-colors">Join</a>
+                  </div>
+                </div>
+
+                {/* Referral upgrade */}
+                <div className="w-full mt-4 p-4 rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 text-left space-y-2">
+                  <div className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">Milestone Upgrade</div>
+                  <p className="text-[10px] text-sky-200/60 leading-normal">
+                    Invite 3 engineers → unlock <strong className="text-amber-400">Free Business API</strong> (raw telemetry stream access).
+                  </p>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <span className="text-[9px] text-sky-200/70">Your dashboard:</span>
+                    <Link to={`/member/${assignedSlug || assignedNumber}`} className="text-[9px] font-mono font-bold text-sky-400 hover:text-sky-300 flex items-center gap-0.5">
+                      aerosky.ai/member/{assignedSlug || assignedNumber} <ArrowRight size={8} />
+                    </Link>
+                  </div>
+                </div>
+
+                <ShareOverlay role="captain" memberNumber={assignedNumber} className="mt-5 w-full" memberSlug={assignedSlug} />
+
+                <div className="mt-5 flex justify-center gap-4 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <Link to="/" className="text-amber-400 hover:text-amber-300">← Home</Link>
+                  <span className="text-white/15">|</span>
+                  <a href="https://discord.gg/aerosky" target="_blank" rel="noopener noreferrer" className="text-sky-300 hover:text-sky-200">Discord</a>
+                </div>
+              </div>
+            ) : (
+              /* ── APPLICATION FORM ── */
+              <div id="apply" className="scroll-mt-24 relative rounded-3xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-2xl shadow-[0_8px_80px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden">
+                {/* Glow border accent */}
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-saffron/50 to-transparent" />
+
+                <div className="p-6 sm:p-7">
+                  {/* Form header */}
+                  <div className="mb-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">Founding Application</span>
+                    </div>
+                    <h2 className="text-lg font-bold text-white leading-tight">Reserve your AeroCaptain node.</h2>
+                    <p className="text-[11px] text-sky-200/50 mt-0.5">Takes 60 seconds. Be part of India's airspace intelligence movement.</p>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-3.5">
+                    {/* Honeypot */}
+                    <input type="text" name="phone_number" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
+                    {/* Name + Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="ac-name" className={labelCls}>Full Name *</label>
+                        <input id="ac-name" required type="text" placeholder="Your name" value={formData.name}
+                          autoComplete="name"
+                          aria-describedby={error ? "ac-error" : undefined}
+                          onFocus={handleInputFocus} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+                          className={getInputCls(!!error && !formData.name)} />
+                      </div>
+                      <div>
+                        <label htmlFor="ac-email" className={labelCls}>Email *</label>
+                        <input id="ac-email" required type="email" placeholder="you@email.com" value={formData.email}
+                          autoComplete="email"
+                          aria-describedby={error ? "ac-error" : undefined}
+                          onFocus={handleInputFocus} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
+                          className={getInputCls(!!error && (!formData.email || error.includes('email')))} />
+                      </div>
+                    </div>
+
+                    {/* City */}
+                    <div>
+                      <label htmlFor="ac-city" className={labelCls}>City, State *</label>
+                      <input id="ac-city" required type="text" placeholder="e.g. Pune, Maharashtra" value={formData.city}
+                        autoComplete="address-level2"
+                        aria-describedby={error ? "ac-error" : undefined}
+                        onFocus={handleInputFocus} onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
+                        className={getInputCls(!!error && !formData.city)} />
+                    </div>
+
+                    {/* Placement + Internet */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="relative">
+                        <label htmlFor="ac-placement" className={labelCls}>Antenna Placement *</label>
+                        <select id="ac-placement" required value={formData.placement}
+                          aria-describedby={error ? "ac-error" : undefined}
+                          onChange={(e) => setFormData(p => ({ ...p, placement: e.target.value }))}
+                          className={getInputCls(!!error && !formData.placement) + ' appearance-none cursor-pointer'}>
+                          <option value="" className="bg-[#0c1222]">Select</option>
+                          <option value="rooftop" className="bg-[#0c1222]">Rooftop / Mast</option>
+                          <option value="balcony" className="bg-[#0c1222]">Balcony / Window</option>
+                          <option value="indoor" className="bg-[#0c1222]">Indoor</option>
+                          <option value="none" className="bg-[#0c1222]">Unsure</option>
+                        </select>
+                        <svg className="pointer-events-none absolute right-3 top-[2.3rem] w-4 h-4 text-sky-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                      <div className="relative">
+                        <label htmlFor="ac-internet" className={labelCls}>Internet Type *</label>
+                        <select id="ac-internet" required value={formData.internet}
+                          aria-describedby={error ? "ac-error" : undefined}
+                          onChange={(e) => setFormData(p => ({ ...p, internet: e.target.value }))}
+                          className={getInputCls(!!error && !formData.internet) + ' appearance-none cursor-pointer'}>
+                          <option value="" className="bg-[#0c1222]">Select</option>
+                          <option value="fiber" className="bg-[#0c1222]">Fiber / Broadband</option>
+                          <option value="cellular" className="bg-[#0c1222]">4G / 5G</option>
+                          <option value="other" className="bg-[#0c1222]">Other</option>
+                        </select>
+                        <svg className="pointer-events-none absolute right-3 top-[2.3rem] w-4 h-4 text-sky-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
+
+                    {/* Hardware checkboxes */}
+                    <div>
+                      <label className={labelCls}>Hardware you own</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { val: 'has_pi', label: 'Raspberry Pi / SBC' },
+                          { val: 'has_sdr', label: 'RTL-SDR' },
+                          { val: 'need_kit', label: 'Need AeroSky Kit' },
+                        ].map((hw) => (
+                          <label key={hw.val} className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.07] cursor-pointer hover:border-amber-500/30 transition-all text-[11px] text-sky-200/70 select-none">
+                            <input type="checkbox" value={hw.val} checked={formData.hardware.includes(hw.val)} onChange={handleCheckboxChange}
+                              className="w-3 h-3 rounded border-white/20 bg-white/[0.04] text-amber-500 focus:ring-amber-500/20" />
+                            {hw.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Motivation */}
+                    <div>
+                      <label htmlFor="ac-motivation" className={labelCls}>Why do you want to join? (optional)</label>
+                      <textarea
+                        id="ac-motivation"
+                        rows={2}
+                        placeholder="Tell us about your interest in aviation or airspace intelligence..."
+                        value={formData.motivation}
+                        onChange={(e) => setFormData(p => ({ ...p, motivation: e.target.value }))}
+                        className={inputCls + ' resize-none'}
+                      />
+                    </div>
+
+                    {/* CTA */}
+                    <button type="submit"
+                      className="w-full py-3.5 rounded-2xl text-black font-bold text-sm transition-all duration-200 hover:shadow-[0_0_30px_rgba(255,153,51,0.35)] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 cursor-pointer bg-gradient-to-br from-saffron via-amber-400 to-gold mt-1">
+                      Reserve My AeroCaptain Node →
+                    </button>
+
+                    {error && <p id="ac-error" className="text-rose-400 text-xs font-mono text-center">{error}</p>}
+
+                    {/* Social proof micro-footer */}
+                    <div className="flex items-center justify-center gap-4 pt-1 border-t border-white/[0.05]">
+                      <span className="text-xs text-sky-200/50 font-mono">🇮🇳 Your data stays in India</span>
+                      <span className="text-white/10">·</span>
+                      <span className="text-xs text-sky-200/50 font-mono">Free to apply</span>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ═══════════════ SECTION 2 — HOW IT WORKS + HARDWARE ═══════════════ */}
+      <section id="how-it-works" className="scroll-mt-20 section-compact border-t border-white/[0.04]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase mb-2">
+              <Radio size={12} className="text-saffron" /> Ground Station Setup
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">
+              From your rooftop to <span className="text-saffron">India's airspace grid</span> — in 30 minutes.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="glass rounded-2xl p-6 border border-white/[0.05]">
+              <div className="flex items-center gap-2 mb-4">
+                <Signal size={16} className="text-saffron shrink-0" />
+                <h3 className="text-sm font-bold text-white">How It Works</h3>
+              </div>
+              <div className="space-y-3.5">
                 {[
                   { n: '01', title: 'Aircraft broadcasts telemetry on 1090 MHz', icon: <Plane size={14} /> },
                   { n: '02', title: 'Your outdoor antenna receives the signal', icon: <Antenna size={14} /> },
                   { n: '03', title: 'Raspberry Pi & RTL-SDR decode the data stream', icon: <Cpu size={14} /> },
-                  { n: '04', title: 'Telemetry feeds directly into India\'s airspace network', icon: <Wifi size={14} /> },
+                  { n: '04', title: "Telemetry feeds into India's sovereign airspace network", icon: <Wifi size={14} /> },
                 ].map((s) => (
                   <div key={s.n} className="flex items-center gap-3">
-                    <span className="text-[10px] font-mono text-amber-400/50 font-bold w-5">{s.n}</span>
+                    <span className="text-[10px] font-mono text-amber-400/50 font-bold w-5 shrink-0">{s.n}</span>
                     <div className="w-7 h-7 rounded bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0">{s.icon}</div>
-                    <span className="text-sm text-sky-200/60">{s.title}</span>
+                    <span className="text-sm text-sky-200/70">{s.title}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-sky-200/50 mt-3">Every new receiver increases redundancy and lowers low-altitude blind spots.</p>
-            </div>
-          </div>
-
-          {/* Hardware */}
-          <div id="hardware" className="pt-4">
-            <div className="flex justify-center mb-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-                <Cpu size={12} className="text-amber-400" /> Hardware Configuration
-              </div>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-5">Simple Hardware. National Coverage.</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[
-                { icon: <Cpu size={24} />, name: 'Raspberry Pi / Orange Pi', desc: 'Computes and processes telemetry logs' },
-                { icon: <Radio size={24} />, name: 'RTL-SDR USB Dongle', desc: 'Tuned specifically to 1090 MHz' },
-                { icon: <Antenna size={24} />, name: 'Omni-Directional Antenna', desc: 'Captures signals up to 250 miles' },
-                { icon: <Wifi size={24} />, name: 'Ethernet / WiFi Connection', desc: 'Streams data to Indian servers' },
-              ].map((hw) => (
-                <div key={hw.name} className="glass rounded-xl p-4 text-center hover:border-amber-500/15 transition-all">
-                  <div className="w-11 h-11 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mx-auto mb-2">{hw.icon}</div>
-                  <h4 className="text-xs font-bold text-white">{hw.name}</h4>
-                  <p className="text-[10px] text-sky-200/50 mt-1">{hw.desc}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-4">
-              {['LNA + SAW filters', 'SMA coax cables', 'Waterproof enclosure', 'Rooftop mounting mast'].map((u) => (
-                <span key={u} className="text-[10px] px-2.5 py-1 rounded bg-white/[0.03] border border-white/[0.06] text-sky-200/50">+ {u}</span>
-              ))}
-            </div>
-            <p className="text-xs text-sky-200/60 text-center mt-4 max-w-xl mx-auto">
-              AeroSky provides custom receiver kits to qualified hosting applicants in key coverage regions. We also fully support DIY users using their own pre-existing RTL-SDR and Raspberry Pi configurations.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <div>
-            <div className="flex justify-center mb-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-                <Zap size={12} style={{ color: INDIA_ORANGE }} /> Program Rewards
-              </div>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-5">AeroCaptain Benefits</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {[
-                { icon: <Award size={18} />, title: 'Founding AeroCaptain Badge', desc: 'Permanent digital token displayed on your profile and the AeroCaptain Hall of Fame' },
-                { icon: <BarChart3 size={18} />, title: 'Advanced Dashboard', desc: 'Real-time telemetry, range polar plots, uptime charts, and MLAT contribution stats' },
-                { icon: <Zap size={18} />, title: 'Early Platform Access', desc: 'Complimentary premium access to live flight visibility features and analytics tools' },
-                { icon: <Target size={18} />, title: 'Coverage Leaderboards', desc: 'Compete on signal range, message count, and station uptime metrics' },
-                { icon: <Radar size={18} />, title: 'Direct Product Feedback', desc: 'Direct channel to engineering team to suggest enhancements and test new builds' },
-                { icon: <Shield size={18} />, title: 'Future Contributor Rewards', desc: 'Access to future community programs, token systems, and advanced hardware kits' },
-              ].map((b) => (
-                <div key={b.title} className="glass rounded-xl p-4 hover:border-amber-500/15 transition-all">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 mb-2">{b.icon}</div>
-                  <h4 className="text-xs font-bold text-white mb-0.5">{b.title}</h4>
-                  <p className="text-[10px] text-sky-200/60 leading-relaxed">{b.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Dash preview */}
-          <div className="glass rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Eye size={16} style={{ color: INDIA_ORANGE }} className="shrink-0" />
-              <h3 className="text-base font-bold text-white">Contributor Analytics Dashboard</h3>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              {['Signal quality indicators', 'Coverage polar graphs', 'Daily messages count', 'MLAT tracking share', 'Receiver temperature logs', 'Uptime percentage tracking'].map((f) => (
-                <div key={f} className="flex items-center gap-2 p-2 rounded bg-white/[0.02] border border-white/[0.04]">
-                  <CheckCircle2 size={10} className="text-amber-400 shrink-0" />
-                  <span className="text-[11px] text-sky-200/60">{f}</span>
-                </div>
-              ))}
-            </div>
-            <div className="p-3 rounded-lg bg-amber-500/[0.05] border border-amber-500/20">
-              <p className="text-xs text-amber-400/80 italic">"Founding AeroCaptain dashboard analytics will be deployed to all active hosts as we enter our Phase 2 beta."</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Community Hierarchy */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex justify-center mb-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-              <Award size={12} className="text-amber-400" /> Progression System
-            </div>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-6">Your Journey in the AeroSky Community</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { level: 'Level 1', title: 'AeroCadet', desc: 'Aviation enthusiasts, students and supporters learning the basics.' },
-              { level: 'Level 2', title: 'AeroCaptain', desc: 'Active ADS-B ground station contributors hosting receivers.' },
-              { level: 'Level 3', title: 'AeroCommander', desc: 'High-impact AeroCaptains helping expand regional coverage networks.' },
-              { level: 'Level 4', title: 'AeroMarshal', desc: 'Elite contributors supporting the growth of India\'s aviation intelligence network.' },
-            ].map((journey) => (
-              <div key={journey.title} className="glass rounded-xl p-5 border border-white/[0.04] relative overflow-hidden group hover:border-amber-500/20 transition-all">
-                <div className="absolute top-0 right-0 px-2.5 py-1 text-[8px] font-mono font-bold bg-amber-500/10 text-amber-400 rounded-bl-lg">
-                  {journey.level}
-                </div>
-                <h3 className="text-base font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">{journey.title}</h3>
-                <p className="text-xs text-sky-200/60 leading-relaxed">{journey.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Founding Directory */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-center mb-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-              <Users size={12} className="text-amber-400" /> Active Directory
-            </div>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-3">Founding AeroCaptain Directory</h2>
-          <p className="text-xs text-sky-200/60 text-center mb-6 max-w-sm mx-auto">
-            Anonymized log of confirmed pre-launch nodes and verified local station registrations.
-          </p>
-
-          {directory.length === 0 ? (
-            <div className="p-6 rounded-xl border border-white/[0.04] bg-white/[0.01] text-center max-w-md mx-auto">
-              <p className="text-xs text-sky-200/50">The Founding Directory is currently empty. Be one of the first to apply and reserve your station's position.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {directory.map((node, i) => (
-                <div key={i} className="p-3 rounded-xl bg-white/[0.01] border border-white/[0.03] text-center hover:border-amber-500/10 transition-colors">
-                  <div className="text-xs font-mono font-bold text-amber-400">{node.num}</div>
-                  <div className="text-[10px] text-sky-200/60 mt-0.5">{node.state}</div>
-                  <div className={`text-[8px] font-mono mt-1.5 uppercase tracking-wider ${node.status === 'Reserved' ? 'text-emerald-400/80' : 'text-amber-400/80'}`}>
-                    {node.status}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-8 md:py-10 px-4 sm:px-6 md:px-12 lg:px-24">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex justify-center mb-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
-              <HelpCircle size={12} className="text-amber-400" /> FAQ
-            </div>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-6">Frequently Asked Questions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {faqs.map((faq, i) => (
-              <div key={faq.id || i} className="glass rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
-                  aria-expanded={openFaqIndex === i}
-                  className="w-full flex items-center justify-between p-4 text-left border-b border-transparent hover:bg-white/[0.01] transition-colors"
-                >
-                  <span className="text-xs font-bold text-white pr-3">{faq.question}</span>
-                  <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openFaqIndex === i ? 'rotate-180' : ''}`} />
-                </button>
-                {openFaqIndex === i && (
-                  <p className="px-4 pb-4 text-xs text-sky-200/60 leading-relaxed border-t border-white/5 pt-2">
-                    {faq.answer}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Application Form */}
-      <section id="apply" className="py-12 px-4 sm:px-6 md:px-12 lg:px-24 bg-black/20">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">AeroCaptain Application Form</h2>
-            <p className="text-sm text-sky-200/60">
-              Apply to join the Founding Program and help host an independent ADS-B ground station in India.
-            </p>
-          </div>
-
-          {submitted ? (
-            <div className="glass rounded-2xl p-8 text-center border-t-2 border-emerald-500 animate-fade-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 size={32} className="text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-1">Application Received!</h3>
-              <div className="inline-block px-3.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-mono font-bold text-amber-400 mb-4 uppercase tracking-wider">
-                Registration Queue: Founding AeroCaptain #{assignedNumber.replace('AC', '')} (Pending verification)
-              </div>
-              <p className="text-sm text-sky-200/60 max-w-md mx-auto">
-                Thank you for applying to become a founding AeroCaptain. We will review your location coordinates and reach out within 7-10 business days regarding kit availability or setup instructions.
+              <p className="text-xs text-sky-200/70 mt-4 italic border-t border-white/5 pt-3">
+                Every new receiver closes low-altitude blind spots across Indian airspace.
               </p>
-              <div className="mt-6 flex justify-center gap-4">
-                <Link to="/" className="text-xs font-mono font-bold text-amber-400 hover:text-amber-300 uppercase tracking-wider">
-                  Back to Home
-                </Link>
-                <span className="text-white/20">|</span>
-                <Link to="/community" className="text-xs font-mono font-bold text-sky-300 hover:text-sky-200 uppercase tracking-wider">
-                  Join Discord
-                </Link>
-              </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="glass rounded-2xl p-6 sm:p-8 space-y-5">
-              {/* Invisible Honeypot field for bot mitigation */}
-              <input
-                type="text"
-                name="phone_number"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-                style={{ display: 'none' }}
-                tabIndex={-1}
-                autocomplete="off"
-              />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="ac-name" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">Full Name *</label>
-                  <input
-                    id="ac-name"
-                    required
-                    type="text"
-                    placeholder="Enter your name"
-                    value={formData.name}
-                    onFocus={handleInputFocus}
-                    onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ac-email" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">Email Address *</label>
-                  <input
-                    id="ac-email"
-                    required
-                    type="email"
-                    placeholder="you@email.com"
-                    value={formData.email}
-                    onFocus={handleInputFocus}
-                    onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
-                  />
-                </div>
+            <div id="hardware" className="scroll-mt-20 glass rounded-2xl p-6 border border-white/[0.05]">
+              <div className="flex items-center gap-2 mb-4">
+                <Cpu size={16} className="text-amber-400 shrink-0" />
+                <h3 className="text-sm font-bold text-white">Hardware You Need</h3>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="ac-city" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">City / Location *</label>
-                  <input
-                    id="ac-city"
-                    required
-                    type="text"
-                    placeholder="e.g. Pune, Maharashtra"
-                    value={formData.city}
-                    onFocus={handleInputFocus}
-                    onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="ac-coords" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">Approx Coordinates (Optional)</label>
-                  <input
-                    id="ac-coords"
-                    type="text"
-                    placeholder="e.g. 18.5204, 73.8567"
-                    value={formData.coordinates}
-                    onChange={(e) => setFormData(p => ({ ...p, coordinates: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {[
+                  { icon: <Cpu size={20} />, name: 'Raspberry Pi / SBC', desc: 'Runs dump1090-fa decoder' },
+                  { icon: <Radio size={20} />, name: 'RTL-SDR Receiver', desc: 'USB SDR tuned to 1090 MHz' },
+                  { icon: <Antenna size={20} />, name: '1090 MHz Antenna', desc: 'Omni-directional outdoor' },
+                  { icon: <Wifi size={20} />, name: 'Internet Connection', desc: 'Fiber / 4G / 5G supported' },
+                ].map((hw) => (
+                  <div key={hw.name} className="flex items-start gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0">{hw.icon}</div>
+                    <div>
+                      <div className="text-xs font-bold text-white leading-tight">{hw.name}</div>
+                      <div className="text-[10px] text-sky-200/50 mt-0.5">{hw.desc}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="ac-placement" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">Antenna Placement *</label>
-                  <select
-                    id="ac-placement"
-                    required
-                    value={formData.placement}
-                    onChange={(e) => setFormData(p => ({ ...p, placement: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-amber-500/50 appearance-none text-sky-100"
-                  >
-                    <option value="" className="bg-[#0c1222]">Select placement</option>
-                    <option value="rooftop" className="bg-[#0c1222]">Outdoor Rooftop / Mast (Best)</option>
-                    <option value="balcony" className="bg-[#0c1222]">Balcony / High Floor</option>
-                    <option value="indoor" className="bg-[#0c1222]">Window / Indoor Setup</option>
-                    <option value="none" className="bg-[#0c1222]">None / Unsure</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="ac-internet" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">Internet Connectivity *</label>
-                  <select
-                    id="ac-internet"
-                    required
-                    value={formData.internet}
-                    onChange={(e) => setFormData(p => ({ ...p, internet: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white focus:outline-none focus:border-amber-500/50 appearance-none text-sky-100"
-                  >
-                    <option value="" className="bg-[#0c1222]">Select internet type</option>
-                    <option value="fiber" className="bg-[#0c1222]">Fiber / Broadband (Uncapped)</option>
-                    <option value="cellular" className="bg-[#0c1222]">4G / 5G Router</option>
-                    <option value="other" className="bg-[#0c1222]">Other</option>
-                  </select>
-                </div>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {['LNA + SAW filters', 'SMA coax cables', 'Waterproof enclosure', 'Rooftop mast'].map((u) => (
+                  <span key={u} className="text-[10px] px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.06] text-sky-200/50">+ {u}</span>
+                ))}
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-2">Hardware Status</label>
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    { val: 'has_pi', label: 'I own a Raspberry Pi / SBC' },
-                    { val: 'has_sdr', label: 'I own an RTL-SDR receiver' },
-                    { val: 'need_kit', label: 'I need an AeroSky AeroCaptain Kit' }
-                  ].map((hw) => (
-                    <label key={hw.val} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.05] cursor-pointer hover:border-amber-500/30 transition-colors text-xs text-sky-200/80">
-                      <input
-                        type="checkbox"
-                        value={hw.val}
-                        checked={formData.hardware.includes(hw.val)}
-                        onChange={handleCheckboxChange}
-                        className="w-3.5 h-3.5 rounded border-white/20 bg-white/[0.04] text-amber-500 focus:ring-amber-500/20"
-                      />
-                      {hw.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="ac-motivation" className="block text-xs font-bold text-sky-200/80 uppercase tracking-wider mb-1.5">Why would you like to host a ground station? (Optional)</label>
-                <textarea
-                  id="ac-motivation"
-                  rows={3}
-                  placeholder="Share details about your location, elevation, or interest in aviation."
-                  value={formData.motivation}
-                  onChange={(e) => setFormData(p => ({ ...p, motivation: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm text-white placeholder-sky-400/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20"
-                />
-              </div>
-
-              <button type="submit" className="w-full py-3.5 rounded-xl text-black font-bold text-sm transition-all hover:shadow-[0_0_20px_rgba(255,153,51,0.3)] cursor-pointer" style={{ background: `linear-gradient(135deg, ${INDIA_ORANGE}, #FFD700)` }}>
-                Apply to Become an AeroCaptain
-              </button>
-
-              {error && (
-                <p className="text-rose-400 text-xs font-mono text-center animate-pulse">{error}</p>
-              )}
-            </form>
-          )}
+              <p className="text-xs text-sky-200/50 leading-relaxed border-t border-white/5 pt-3">
+                AeroSky provides custom kits to qualified hosts in key regions. DIY RTL-SDR + Pi setups fully supported.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* ═══════════════ SECTION 3 — BENEFITS ═══════════════ */}
+      <section className="section-compact bg-black/10 border-t border-white/[0.03]">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/10 bg-amber-500/[0.03] text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase mb-2">
+              <Zap size={12} /> Founding Member Rewards
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">What you get as a Founding AeroCaptain</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { icon: <Award size={16} />, title: 'Founding AeroCaptain Badge', desc: 'Permanent digital token on your profile and the Hall of Fame' },
+              { icon: <BarChart3 size={16} />, title: 'Advanced Analytics Dashboard', desc: 'Real-time telemetry, range polar plots, uptime and MLAT stats' },
+              { icon: <Zap size={16} />, title: 'Platinum Subscription', desc: 'Complimentary lifetime Platinum tier for active station hosts' },
+              { icon: <Target size={16} />, title: 'Coverage Leaderboards', desc: 'Compete on signal range, message count, and station uptime' },
+              { icon: <Radar size={16} />, title: 'Early Platform Access', desc: 'Beta builds and direct feedback channel to the engineering team' },
+              { icon: <Shield size={16} />, title: 'Future Contributor Rewards', desc: 'Hardware kits, contributor programs, and advanced token systems' },
+            ].map((b) => (
+              <div key={b.title} className="flex items-start gap-3 p-3.5 rounded-xl glass border border-white/[0.04] hover:border-amber-500/15 transition-all duration-300 group">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0 group-hover:bg-amber-500/20 transition-colors">{b.icon}</div>
+                <div>
+                  <div className="text-xs font-bold text-white mb-0.5">{b.title}</div>
+                  <div className="text-[10px] text-sky-200/55 leading-relaxed">{b.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ SECTION 4 — FAQ (conditional) ═══════════════ */}
+      {faqs.length > 0 && (
+        <section className="section-compact border-t border-white/[0.03]">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/[0.06] text-[11px] font-mono font-bold tracking-widest text-sky-200/60 uppercase">
+                <HelpCircle size={12} className="text-amber-400" /> Common Questions
+              </div>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-5">Frequently Asked Questions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {faqs.map((faq, i) => (
+                <div key={faq.id || i} className="glass rounded-xl overflow-hidden">
+                  <button onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)} aria-expanded={openFaqIndex === i}
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.01] transition-colors">
+                    <span className="text-xs font-bold text-white pr-3">{faq.question}</span>
+                    <ChevronDown size={14} className={`text-amber-400 shrink-0 transition-transform ${openFaqIndex === i ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openFaqIndex === i && (
+                    <p className="px-4 pb-4 text-xs text-sky-200/60 leading-relaxed border-t border-white/5 pt-2">{faq.answer}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 };
